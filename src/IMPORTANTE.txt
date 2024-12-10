@@ -1,0 +1,67 @@
+Flujo de trabajo normal del desarrollador
+
+LISTAR RAMAS -> git branch
+
+ACORDATE DE POSICIONARTE SIEMPRE EN LA RAMA development
+-> git switch develpment
+
+1 - Actualiza tu rama development local para asegurarte de que estás trabajando con la última versión:
+
+    -> git switch development        (En caso de que no estes en esa rama)
+    -> git pull origin development
+
+2 - Crea una nueva rama para la característica desde development usando git branch:
+
+    -> git branch feature/nueva-caracteristica
+        o
+    -> git branch fix/especificar-error
+
+3 - Cambia a la nueva rama para comenzar a trabajar:
+
+    -> git switch <Nombre_de_rama_creada>
+
+4 - Hacer cambios en esa rama, arreglos, nuevas caracteristica, optimizacion, etc.
+Puedes hacer pequeños commit en esa rama
+
+    Los cambios guardarlos con:
+
+    -> git add .
+    -> git commit -m "Implementa la funcionalidad básica para [descripción breve]"
+        o
+    -> git add archivo.js
+    -> git commit -m "Corrige bug relacionado con [descripción breve]"
+
+5 - Prueba los cambios localmente para asegurarte de que funcionan correctamente.
+
+6 - Fusionar la rala nuevaCaracterística en development
+
+    ->git switch development
+    ->git pull origin development
+
+    SIEMPRE HACER GIT PULL PARA TRAER LOS CAMBIOS DEL EQUIPO Y EVITAR CONFLITOS MERGE
+    SIEMPRE HACER GIT PULL PARA TRAER LOS CAMBIOS DEL EQUIPO Y EVITAR CONFLITOS MERGE
+    SIEMPRE HACER GIT PULL PARA TRAER LOS CAMBIOS DEL EQUIPO Y EVITAR CONFLITOS MERGE
+
+    Mezclar la rama develpment con la rama nuevaCaracteristica
+
+    -> git merge feature/nueva-caracteristica
+
+    TODAVIA LOS CAMBIOS NO ESTAN EN EL REPOSITORIO REMOTO
+
+7 - Borramos la rama de caracteristica
+
+    -> git branch -d <Nombre_Rama>
+
+8 - Enviar los cambios al repositorio remoto
+
+    -> git push origin development
+
+
+Preparar los Cambios para PRODUCCIÓN
+    
+    -> git switch main
+    -> git pull origin main
+    -> git merge development
+    -> git push origin main
+
+
