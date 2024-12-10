@@ -1,5 +1,6 @@
-Flujo de trabajo normal del desarrollador
+===== Flujo de trabajo normal del desarrollador =====
 
+CLONAR REPOSITORIO -> git clone <URL del repositorio>
 LISTAR RAMAS -> git branch
 
 ACORDATE DE POSICIONARTE SIEMPRE EN LA RAMA development
