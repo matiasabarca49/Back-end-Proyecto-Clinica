@@ -36,6 +36,13 @@ app.use("/api/users", routeUser);
 app.use("/api/patients", routePatient);
 app.use("/api/clinicalHistories", routeClinicalHistories);
 
+//Docs
+import SwaggerJsdoc from 'swagger-jsdoc'
+import SwaggerUIExpress from 'swagger-ui-express'
+import { swaggerOption } from './config/options.js'
+const specs = SwaggerJsdoc(swaggerOption)
+app.use('/api/docs', SwaggerUIExpress.serve, SwaggerUIExpress.setup(specs));
+
 
 app.listen("8080", () => {
     console.log("Servidor Corriendo");

@@ -1,0 +1,131 @@
+paths:
+  /api/users/:
+    get:
+      summary: "Obtiene todos los usuarios de la Base de Datos"
+      tags:
+        - Users
+      responses:
+        "200":
+          description: "Los usuarios se obtuvieron exitosamente"
+          content:
+              application/json:
+                schema:
+                  $ref: "#/components/schemas/User" 
+        "404":
+          description: "Error en la obtencion de los productos."
+    post:
+      summary: "Agregar un Usuario a la Base de Datos"
+      tags:
+        - Users
+      requestBody:
+        description: "Escriba el usuario en formato JSON"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User"
+      responses:
+        "201":
+          description: "El usuario se creó exitosamente"
+        "500":
+          description: "Error en la creacion del usuario"
+  /api/users/{id}:
+    get:
+      summary: "Obtener un usuario por ID"
+      tags:
+        - Users
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: "ID del usuario"
+        schema: 
+          $type: String
+      responses:
+        "200":
+          description: "El usuario se obtuvo exitosamente"
+        "404":
+          description: "Error en la obtencion del Usuario"
+    put:
+      summary: "Actualizacion de un usuario"
+      tags:
+        - Users
+      requestBody:
+        description: "Por parametros se envia el ID y por body se envia la informacion a actualizar"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/User" 
+            example:
+              password: "New_Password"
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: "ID del usuario"
+        schema: 
+          $type: String
+      responses:
+        "201":
+          description: "El usuario se actualizó exitosamente"
+        "404":
+          description: "Error en la actualizacion del usuario"
+    delete:
+      summary: "Eliminar un usuario"
+      tags:
+        - Users
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: "ID del usuario"
+        schema: 
+          $type: String
+      responses:
+        "200":
+          description: "El usuario se eliminó exitosamente"
+        "404":
+          description: "Error en la eliminacion del Usuario"
+  /api/users/filter:
+    get:
+      summary: "Obtener un usuario por atributo distinto al ID"
+      tags: 
+        - Users
+      parameters:
+        - in: query
+          name: email
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "El usuario se obtuvo exitosamente"
+        "404":
+          description: "Error en la obtencion del Usuario"
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        name:
+          type: string
+          description: "Nombre de Usuario"
+        lastName: 
+          type: string
+          decription: "Apellido del usuario"
+        email:
+          type: string
+          description: "Email de usuario"
+        password: 
+          type: string
+          description: "Constraseña del Usuario"
+        rol:
+          type: string
+          description: "Los Roles están definido en un 'enum'. Admin, Doctor, Employee"
+      example:
+        name: "John"
+        lastName: "Dotton"
+        email: "johnd@example.com"
+        password: "securePassword123"
+        rol: "Doctor"
