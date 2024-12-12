@@ -10,6 +10,7 @@ export default class ServiceMongo{
             })
             .catch(error => { 
                 console.log(error);
+                documentsFromDB = false;
             })
         return documentsFromDB;   
     }
@@ -20,7 +21,10 @@ export default class ServiceMongo{
             .then( dt => {
                 documentFromDB = dt;
             })
-            .catch(error => console.log(error))
+            .catch(error => {
+                console.log(error);
+                documentFromDB = false;
+            })
         
         return documentFromDB;
     }
@@ -31,8 +35,11 @@ export default class ServiceMongo{
             .then( dt => {
                 documentFromDB = dt;
             })
-            .catch(error => console.log(error))
-        
+            .catch(error => {
+                console.log(error);
+                documentFromDB = false;
+                }
+            )
         return documentFromDB;
     }
 
@@ -41,12 +48,11 @@ export default class ServiceMongo{
 
         await Model.create(data)
         .then( dt => {
-            console.log(dt);
             userDT = dt;
             })
         .catch(error =>{ 
-            console.log(error)
-            return false
+            console.log(error);
+            userDT = false;
         })
         return userDT
     }

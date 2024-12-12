@@ -34,7 +34,7 @@ Puedes hacer pequeños commit en esa rama
 
 5 - Prueba los cambios localmente para asegurarte de que funcionan correctamente.
 
-6 - Fusionar la rala nuevaCaracterística en development
+6 - Fusionar la rama nuevaCaracterística en development
 
     ->git switch development
     ->git pull origin development

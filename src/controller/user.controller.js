@@ -29,9 +29,8 @@ export const getUserByFilter = async (req, res) =>{
 
 export const createUser = async (req, res) =>{
     const user = req.body;
-    console.log(user)
     const userCreated = await usersManager.createUser(user);
-    console.log(userCreated)
+    // console.log(userCreated)
     userCreated
     ? res.status(201).send({status: "Succes", users : userCreated
         })
