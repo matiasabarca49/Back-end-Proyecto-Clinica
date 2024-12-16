@@ -4,7 +4,7 @@ CLONAR REPOSITORIO -> git clone <URL del repositorio>
 LISTAR RAMAS -> git branch
 
 ACORDATE DE POSICIONARTE SIEMPRE EN LA RAMA development
--> git switch develpment
+-> git switch development
 
 1 - Actualiza tu rama development local para asegurarte de que estás trabajando con la última versión:
 
