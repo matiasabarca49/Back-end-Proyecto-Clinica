@@ -16,8 +16,18 @@ export default class PatientsManager{
         const patientFounded = await serviceMongo.getDocumentByID(Patient, id);
         return patientFounded;
     }
+    async getPatientByFilter(filter){
+            const patientFounded = await serviceMongo.getDocumentByFilter(Patient,filter);
+            return patientFounded;
+        }
     async createPatient(newPatient){
         const PatientAdded = await serviceMongo.createDocument(Patient, newPatient);
         return PatientAdded;
     } 
+        deletePatient(patientID){
+            return serviceMongo.deleteDocument(Patient, patientID);
+        }
+        updatePatient(patientID,toUpdate){
+            return serviceMongo.updateDocument(Patient, patientID,toUpdate);
+        }
 }

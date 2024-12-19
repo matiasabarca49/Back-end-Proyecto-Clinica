@@ -38,7 +38,7 @@ const patientsSchema = new mongoose.Schema({
             },
             doctorID: {
                 type: mongoose.Schema.Types.ObjectId,
-                ref: 'Doctor',
+                ref: 'doctors',
             },
             status: {
                 type: String,
@@ -47,5 +47,11 @@ const patientsSchema = new mongoose.Schema({
         }
     ]
 });
-
+//Population
+patientsSchema.pre("find", function(){
+    this.populate('appointments.doctorID')
+})
+patientsSchema.pre("findOne", function(){
+    this.populate('appointments.doctorID')
+})
 export const Patient = mongoose.model("patients", patientsSchema);
