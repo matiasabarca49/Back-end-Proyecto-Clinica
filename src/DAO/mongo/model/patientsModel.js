@@ -38,14 +38,20 @@ const patientsSchema = new mongoose.Schema({
             },
             doctorID: {
                 type: mongoose.Schema.Types.ObjectId,
-                ref: 'Doctor',
+                ref: 'doctors',
             },
             status: {
                 type: String,
-                enum:["Pending", " Finalized", "Canceled" ]  }
+                enum:["Pending", "Finalized", "Canceled" ]  }
             
         }
     ]
 });
-
+//Population
+patientsSchema.pre("find", function(){
+    this.populate('appointments.doctorID')
+})
+patientsSchema.pre("findOne", function(){
+    this.populate('appointments.doctorID')
+})
 export const Patient = mongoose.model("patients", patientsSchema);
