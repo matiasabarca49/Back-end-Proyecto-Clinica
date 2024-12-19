@@ -22,7 +22,7 @@ export default class DoctorsManager{
     }
     async createDoctor(newDoctor){
         const DoctorAdded = await serviceMongo.createDocument(Doctor, newDoctor);
-        return newDoctor;
+        return DoctorAdded;
     }
     async deleteDoctor(doctorID){
         return serviceMongo.deleteDocument(Doctor, doctorID);

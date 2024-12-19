@@ -1,0 +1,27 @@
+import PatientsManager from "../DAO/mongo/patients.mongo.js";
+const patientsManager = new PatientsManager();
+
+export const getPatients = async (req, res)=>{
+    const patientsGetted = await patientsManager.getPatients();
+    patientsGetted
+    ? res.status(200).send({status: "Success", patients : patientsGetted})
+    : res.status(500).send({status: "ERROR", reason: "Los Pacientes no se pudieron obtener"})
+}
+
+export const getPatientById = async (req, res)=>{
+    const patientID = req.params.id.trim();
+    const patientGetted = await patientsManager.getPatientById(patientID);
+    patientGetted
+    ? res.status(200).send({status: "Success", patients :patientGetted}) : res.status(404).send({status: "ERROR"})
+}
+export const createPatient = async (req, res)=>{
+    const patient = req.body
+    const patientCreated = await patientsManager.createPatient(patient);
+    patientCreated
+    ?res.status(201).send({status: "Success", patients : patientCreated}) : res.status(404).send({status:"ERROR"})
+}
+
+
+
+
+
