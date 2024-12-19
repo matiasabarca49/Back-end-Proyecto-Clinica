@@ -42,7 +42,7 @@ const patientsSchema = new mongoose.Schema({
             },
             status: {
                 type: String,
-                enum:["Pending", " Finalized", "Canceled" ]  }
+                enum:["Pending", "Finalized", "Canceled" ]  }
             
         }
     ]

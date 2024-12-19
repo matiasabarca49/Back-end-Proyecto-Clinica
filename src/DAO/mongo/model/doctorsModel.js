@@ -20,10 +20,21 @@ const doctorSchema = new mongoose.Schema({
         required: true,
         unique: true
     },
-    patients:{
-        type: Array,
-        required: true
+    patients:[
+        {
+            patientID:{
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'patients'
+            }   
     }
+  ]
 });
+//Population
+doctorSchema.pre("find", function(){
+    this.populate('patients.patientID')
+})
+doctorSchema.pre("findOne", function(){
+    this.populate('patients.patientID')
+})
 //Exportación del Modelo
 export const Doctor = mongoose.model("doctors", doctorSchema);
