@@ -7,3 +7,4 @@ export const createhash = (password)=>{
 export const isValidPassword = (user, password) =>{
     return bcrypt.compareSync(password, user.password);
 }
+

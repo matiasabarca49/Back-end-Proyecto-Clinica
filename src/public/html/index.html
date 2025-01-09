@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bienvenida al Backend</title>
+    <!-- Bootstrap CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
+</head>
+<body>
+    <div class="container mt-5">
+        <header class="text-center mb-4">
+            <h1>Bienvenido al Backend</h1>
+            <p class="lead">API RESTful Para administracion de Historias Clínicas</p>
+        </header>
+
+        <section class="container mt-5">
+            <div class="">
+              <h2>Documentación</h2>
+              <p>Consulta la documentación completa para entender cómo usar los endpoints y las tecnologías del backend.</p>
+              <a href="/api/docs" class="btn btn-primary btn-lg" target="_blank">
+                Ir a la Documentación
+              </a>
+            </div>
+          </section>
+
+        <section class="container mt-5">
+            <h2>Endpoints Destacados</h2>
+            <ul class="list-group">
+                <li class="list-group-item">
+                    <a href="/api/users/">GET /users</a> - Obtener todos los usuarios registrados. <br>
+                    <small class="text-danger fw-bold">Requiere autenticación con token JWT.</small>
+                </li>
+                <li class="list-group-item">
+                    <strong>POST /login</strong> - Iniciar sesión y obtener un token JWT. <br>
+                    <small>Envia el correo y contraseña del usuario.</small>
+                </li>
+                <li class="list-group-item">
+                    <strong>POST /logout</strong> - Cerrar sesión y eliminar el token JWT. <br>
+                    <small>No requiere autenticación previa.</small>
+                </li>
+            </ul>
+        </section>
+
+        <section class="container mt-5 mb-2">
+            <div class="text-center">
+              <h2>Tecnologías Utilizadas</h2>
+              <p>Este backend está desarrollado con un conjunto de tecnologías modernas que garantizan seguridad, escalabilidad y rendimiento.</p>
+              <div class="row mt-4">
+                <div class="col-md-4">
+                  <div class="card">
+                    <div class="card-body">
+                      <h5 class="card-title">Node.js</h5>
+                      <p class="card-text">Entorno de ejecución para JavaScript en el servidor.</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="card">
+                    <div class="card-body">
+                      <h5 class="card-title">Express.js</h5>
+                      <p class="card-text">Framework minimalista para construir aplicaciones web y APIs.</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="card">
+                    <div class="card-body">
+                      <h5 class="card-title">MongoDB</h5>
+                      <p class="card-text">Base de datos NoSQL para almacenar datos de forma flexible y escalable.</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4 mt-4">
+                  <div class="card">
+                    <div class="card-body">
+                      <h5 class="card-title">Mongoose</h5>
+                      <p class="card-text">ODM para trabajar con MongoDB de manera más eficiente.</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4 mt-4">
+                  <div class="card">
+                    <div class="card-body">
+                      <h5 class="card-title">Bcrypt</h5>
+                      <p class="card-text">Librería para encriptar contraseñas y aumentar la seguridad de los datos.</p>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4 mt-4">
+                  <div class="card">
+                    <div class="card-body">
+                      <h5 class="card-title">JWT</h5>
+                      <p class="card-text">Sistema de autenticación basado en tokens para sesiones seguras.</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+          <section class="container mt-5">
+            <div class="row justify-content-center">
+              <div class="col-md-6">
+                <h2 class="text-center">Autenticación</h2>
+                <p class="text-center">Autentícate para acceder y probar los endpoints protegidos.</p>
+                <form id="authForm" action="/api/sessions/login" method="post">
+                  <div class="mb-3">
+                    <label for="email" class="form-label">Correo Electrónico</label>
+                    <input type="email" class="form-control" id="email" placeholder="Ingresa tu correo electrónico" name="email" required>
+                  </div>
+                  <div class="mb-3">
+                    <label for="password" class="form-label">Contraseña</label>
+                    <input type="password" class="form-control" id="password" placeholder="Ingresa tu contraseña" name="password" required>
+                  </div>
+                  <div class="d-grid">
+                    <button type="submit" class="btn btn-primary">Autenticar</button>
+                  </div>
+                </form>
+                <div class="mt-3 text-center" id="authMessage"></div>
+              </div>
+            </div>
+          </section>
+    </div>
+
+    <!-- Bootstrap JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz" crossorigin="anonymous"></script>
+</body>
+</html>

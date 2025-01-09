@@ -31,6 +31,11 @@ export default class UsersManager{
         return userFounded ? userFounded : false;
     }
 
+    async getAllUserByFilter(filter){
+        const userFounded = await serviceMongo.getDocumentByFilter(User, filter);
+        return userFounded ? userFounded : false;
+    }
+
     //Devuelve un usuario formateado buscado por atributo no por clave usuario
     async getUserByFilter(filter){
         const userFounded = await serviceMongo.getDocumentByFilter(User, filter);
