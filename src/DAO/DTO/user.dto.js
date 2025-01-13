@@ -12,6 +12,7 @@ export class UserFormated {
 
     sendUser(){
         return {
+            id: this._id,
             name: this.name,
             lastName: this.lastName,
             email: this.email,
@@ -22,6 +23,7 @@ export class UserFormated {
 
 export const sendUserFormated = (user) =>{
     return {
+        id: user._id,
         name: user.name,
         lastName: user.lastName,
         email: user.email,
@@ -32,6 +34,7 @@ export const sendUserFormated = (user) =>{
 export const sendUsersFormated = (arrayUsers) =>{
     const arrayMaped = arrayUsers.map( user => {
         return {
+            id: user._id,
             name: user.name,
             lastName: user.lastName,
             email: user.email,
