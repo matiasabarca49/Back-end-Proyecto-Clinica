@@ -31,6 +31,13 @@ export default class UsersManager{
         return userFounded ? userFounded : false;
     }
 
+    async getUserPaginate(dQuery, dLimit, dPage, dSort){
+        const usersGetted = await serviceMongo.getDocumentsPaginate(User, dQuery, dLimit, dPage, dSort) 
+        return usersGetted
+         ? usersGetted.docs = sendUsersFormated(usersGetted.docs)
+         : false
+    }
+
     async getAllUserByFilter(filter){
         const userFounded = await serviceMongo.getDocumentByFilter(User, filter);
         return userFounded ? userFounded : false;

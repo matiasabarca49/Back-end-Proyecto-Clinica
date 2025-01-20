@@ -43,6 +43,21 @@ export default class ServiceMongo{
         return documentFromDB;
     }
 
+    async getDocumentsPaginate(Model, dQuery, dLimit, dPage, dSort){
+        let documents;
+        await Model.paginate(dQuery || {}, {limit: dLimit || 2, page: dPage || 1, sort: dSort || {} })
+        .then( dts =>{
+            documents = dts;
+        })
+        .catch( error =>{
+            console.log(error)
+            documents = false;
+            ;
+            }
+        )
+        return documents;
+    }
+
     async createDocument(Model, data){
         let userDT
 

@@ -27,6 +27,21 @@ export const getUserByFilter = async (req, res) =>{
 
 }
 
+export const getsUsersPaginate = async (req, res) =>{
+    let defaultQuery, defaultLimit, defaultPage, defaultSort;
+    const {query, sort, page , limit} = req.query;
+    //console.log(req.query)
+    query && (defaultQuery = {rol : query});
+    limit && (defaultLimit = parseInt(limit));
+    page && (defaultPage = parseInt(page));
+    sort && (defaultSort = {lastName: parseInt(sort)});
+    const usersGetted = await usersManager.getUserPaginate(defaultQuery, defaultLimit, defaultPage, defaultSort)
+    //console.log(usersGetted)
+    usersGetted
+        ? res.status(200).send({status: "Success", users: usersGetted})
+        : res.status(500).send({status: "ERROR"})
+}
+
 export const createUser = async (req, res) =>{
     const user = req.body;
     const userCreated = await usersManager.createUser(user);
