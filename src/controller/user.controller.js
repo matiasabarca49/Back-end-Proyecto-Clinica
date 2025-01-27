@@ -29,14 +29,16 @@ export const getUserByFilter = async (req, res) =>{
 
 export const getsUsersPaginate = async (req, res) =>{
     let defaultQuery, defaultLimit, defaultPage, defaultSort;
-    const {query, sort, page , limit} = req.query;
-    //console.log(req.query)
-    query && (defaultQuery = {rol : query});
+    const {search, query, sort, page , limit} = req.query;
+    console.log(req.query)
     limit && (defaultLimit = parseInt(limit));
     page && (defaultPage = parseInt(page));
     sort && (defaultSort = {lastName: parseInt(sort)});
+    search.length !== 0
+     ?  defaultQuery = {lastName: search}
+     : query !== "0" && (defaultQuery = {rol : query});
     const usersGetted = await usersManager.getUserPaginate(defaultQuery, defaultLimit, defaultPage, defaultSort)
-    //console.log(usersGetted)
+    console.log(usersGetted)
     usersGetted
         ? res.status(200).send({status: "Success", users: usersGetted})
         : res.status(500).send({status: "ERROR"})

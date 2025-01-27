@@ -22,6 +22,24 @@ export const getPatientByFilter = async (req, res) =>{
     : res.status(404).send({status: "ERROR"})
 
 }
+
+export const getsPatientsPaginate = async (req, res) =>{
+    let defaultQuery, defaultLimit, defaultPage, defaultSort;
+    const {search, query, sort, page , limit} = req.query;
+    console.log(req.query)
+    limit && (defaultLimit = parseInt(limit));
+    page && (defaultPage = parseInt(page));
+    sort && (defaultSort = {lastName: parseInt(sort)});
+    search.length !== 0
+     ?  defaultQuery = {lastName: search}
+     : query !== "0" && (defaultQuery = {rol : query});
+    const patientsGetted = await patientsManager.getPatientPaginate(defaultQuery, defaultLimit, defaultPage, defaultSort)
+    console.log(patientsGetted)
+    patientsGetted
+        ? res.status(200).send({status: "Success", patients: patientsGetted})
+        : res.status(500).send({status: "ERROR"})
+}
+
 export const createPatient = async (req, res)=>{
     const patient = req.body
     const patientCreated = await patientsManager.createPatient(patient);

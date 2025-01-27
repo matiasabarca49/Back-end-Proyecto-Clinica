@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import mongoosePaginate from 'mongoose-paginate-v2'
 
 const patientsSchema = new mongoose.Schema({
     name: {
@@ -9,24 +10,36 @@ const patientsSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    birth:{
+        type: String,
+        required: true
+    },
     DNI:{
         type: String,
         unique: true,
         required: true
     },
-    Sex:{
+    sex:{
         type: String,
         required: true
     },
-    Adress:{
+    adress:{
         type: String,
         required: true
     },
-    Phone:{
+    phone:{
         type: String,
         required: true
     },
-    Email:{
+    email:{
+        type: String,
+        required: true
+    },
+    medicalCoverage:{
+        type: String,
+        required: true
+    },
+    nAffiliate:{
         type: String,
         required: true
     },
@@ -45,8 +58,59 @@ const patientsSchema = new mongoose.Schema({
                 enum:["Pending", "Finalized", "Canceled" ]  }
             
         }
-    ]
+    ],
+    treatments: [
+        {
+            name:{
+                type: String,
+                required: true 
+            },
+            dateStart: {
+                type: String,
+                required: true,
+            },
+            dateEnd: {
+                type: String,
+                required: true,
+            },
+            status: {
+                type: String,
+                enum:["Pending", "Finalized", "Canceled" ]  }  
+        }
+    ],
+    observations: [
+        {
+            name:{
+                type: String,
+                required: true 
+            },
+            date: {
+                type: String,
+                required: true,
+            },
+            status: {
+                type: String,
+                enum:["Pending", "Finalized", "Canceled" ]}  
+        }
+    ],
+    dentalStatus: {
+        dientesSupLeft: {
+            type: Array
+        },
+        dientesSupRight:{
+            type: Array
+        },
+        dientesInfLeft:{
+            type: Array
+        },
+        dientesInfRight:{
+            type: Array
+        }
+    }
+    
 });
+mongoose.plugin(mongoosePaginate)
+
 //Population
 patientsSchema.pre("find", function(){
     this.populate('appointments.doctorID')
