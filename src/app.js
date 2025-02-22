@@ -26,7 +26,7 @@ app.use(cors({
     optionsSuccessStatus: 200,
     credentials: true,
     origin: "http://localhost:5173"
-  }))
+}))
 
 //Utilizacion de Cookies
 import cookieParser from 'cookie-parser';
@@ -51,7 +51,7 @@ import routeDoctor from './routes/doctor.router.js';
 import routeAppointments from './routes/appointment.router.js';
 import routeSession from './routes/session.router.js';
 import routeFailure from './routes/failure.router.js';
-
+import routeTreatments from './routes/treatments.router.js';
 app.use("/api/users", routeUser);
 app.use("/api/patients", routePatient);
 app.use("/api/clinicalHistories", routeClinicalHistories);
@@ -59,7 +59,7 @@ app.use("/api/doctors", routeDoctor);
 app.use("/api/appointments", routeAppointments);
 app.use("/api/sessions", routeSession);
 app.use("/api/fails", routeFailure);
-
+app.use("/api/treatments", routeTreatments)
 //Docs
 import SwaggerJsdoc from 'swagger-jsdoc'
 import SwaggerUIExpress from 'swagger-ui-express'

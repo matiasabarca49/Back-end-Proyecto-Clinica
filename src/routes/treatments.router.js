@@ -1,0 +1,13 @@
+import express from 'express';
+import { getTreatments, getTreatmentByID, getTreatmentByFilter, createTreatment, deleteTreatment, updateTreatment, getTreatmentsPaginate } from '../controller/treatment.controller.js';
+import { authToken, checkAuth, checkPermissionsAdmin } from '../utils/middlewares.js';
+const { Router } = express;
+const router = new Router();
+router.get("/", authToken, getTreatments);
+router.get("/paginate/", authToken, getTreatmentsPaginate);
+router.get("/filter/", authToken, getTreatmentByFilter);
+router.get("/:id", authToken, getTreatmentByID);
+router.post("/", authToken, checkPermissionsAdmin, createTreatment);
+router.delete("/:id", authToken, checkPermissionsAdmin, deleteTreatment);
+router.put("/:id", authToken, checkPermissionsAdmin, updateTreatment);
+export default router;
