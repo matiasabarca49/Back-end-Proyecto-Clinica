@@ -23,7 +23,7 @@ const patientsSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    adress:{
+    address:{
         type: String,
         required: true
     },
@@ -75,7 +75,15 @@ const patientsSchema = new mongoose.Schema({
             },
             status: {
                 type: String,
-                enum:["Pending", "Finalized", "Canceled" ]  }  
+                enum:["Pending", "Finalized", "Canceled" ]
+            },
+            idPatient:{
+                type: String,
+            },
+            doctorID: {
+                type: String,
+            }
+
         }
     ],
     observations: [
