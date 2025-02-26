@@ -1,0 +1,123 @@
+paths:
+  /api/treatments/:
+    get:
+      summary: "Obtener todos los tratamientos"
+      tags:
+        - Treatments
+      responses:
+        "200":
+          description: "Los tratamientos se obtuvieron exitosamente"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Treatment"
+        "404":
+          description: "Error en la obtención de los tratamientos"
+    post:
+      summary: "Agregar un tratamiento a la Base de Datos"
+      tags:
+        - Treatments
+      requestBody:
+        description: "Escriba el tratamiento en formato JSON"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Treatment"
+      responses:
+        "201":
+          description: "El tratamiento se creó exitosamente"
+        "404":
+          description: "Error en la creación del tratamiento"
+
+  /api/treatments/{id}:
+    get:
+      summary: "Obtener un tratamiento por ID"
+      tags:
+        - Treatments
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: "ID del tratamiento"
+        schema:
+          type: string
+      responses:
+        "200":
+          description: "El tratamiento se obtuvo exitosamente"
+        "404":
+          description: "Error en la obtención del tratamiento"
+    put:
+      summary: "Actualizar un tratamiento"
+      tags:
+        - Treatments
+      requestBody:
+        description: "Se envía el ID en la URL y la información a actualizar en el body"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Treatment"
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: "ID del tratamiento"
+        schema:
+          type: string
+      responses:
+        "201":
+          description: "El tratamiento se actualizó exitosamente"
+        "404":
+          description: "Error en la actualización del tratamiento"
+    delete:
+      summary: "Eliminar un tratamiento"
+      tags:
+        - Treatments
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: "ID del tratamiento"
+        schema:
+          type: string
+      responses:
+        "200":
+          description: "El tratamiento se eliminó exitosamente"
+        "404":
+          description: "Error en la eliminación del tratamiento"
+
+components:
+  schemas:
+    Treatment:
+      type: object
+      properties:
+        name:
+          type: string
+          description: "Nombre del tratamiento"
+        dateStart:
+          type: string
+          format: date
+          description: "Fecha de inicio del tratamiento"
+        dateEnd:
+          type: string
+          format: date
+          description: "Fecha de finalización del tratamiento"
+        status:
+          type: string
+          enum: ["In progress", "Completed", "Canceled"]
+          description: "Estado del tratamiento"
+        idPatient:
+          type: string
+          description: "ID del paciente asociado"
+        idDoctor:
+          type: string
+          description: "ID del doctor asignado"
+      example:
+        name: "Ortodoncia"
+        dateStart: "2024-02-01"
+        dateEnd: "2024-08-01"
+        status: "In progress"
+        idPatient: "65a1bc23de4f2e7c9a123456"
+        idDoctor: "65b2dc34ef5g3h8d7b234567"
+
