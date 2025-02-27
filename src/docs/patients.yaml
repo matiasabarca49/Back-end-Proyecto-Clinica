@@ -1,0 +1,231 @@
+paths:
+  /api/patients/:
+    get:
+      summary: "Obtener todos los pacientes"
+      tags:
+        - Patients
+      responses:
+        "200":
+          description: "Los pacientes se obtuvieron exitosamente"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Patient"
+        "500":
+          description: "Error en la obtención de los pacientes"
+    post:
+      summary: "Agregar un paciente a la Base de Datos"
+      tags:
+        - Patients
+      requestBody:
+        description: "Escriba el paciente en formato JSON"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Patient"
+      responses:
+        "201":
+          description: "El paciente se creó exitosamente"
+        "404":
+          description: "Error en la creación del paciente"
+
+  /api/patients/{id}:
+    get:
+      summary: "Obtener un paciente por ID"
+      tags:
+        - Patients
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: "ID del paciente"
+        schema:
+          type: string
+      responses:
+        "200":
+          description: "El paciente se obtuvo exitosamente"
+        "404":
+          description: "Error en la obtención del paciente"
+    put:
+      summary: "Actualizar un paciente"
+      tags:
+        - Patients
+      requestBody:
+        description: "Se envía el ID en la URL y la información a actualizar en el body"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Patient"
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: "ID del paciente"
+        schema:
+          type: string
+      responses:
+        "201":
+          description: "El paciente se actualizó exitosamente"
+        "404":
+          description: "Error en la actualización del paciente"
+    delete:
+      summary: "Eliminar un paciente"
+      tags:
+        - Patients
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: "ID del paciente"
+        schema:
+          type: string
+      responses:
+        "200":
+          description: "El paciente se eliminó exitosamente"
+        "404":
+          description: "Error en la eliminación del paciente"
+
+  /api/patients/filter:
+    get:
+      summary: "Obtener pacientes por filtro"
+      tags:
+        - Patients
+      parameters:
+        - name: query
+          in: query
+          required: false
+          description: "Parámetros de filtro como nombre, apellido, DNI, etc."
+          schema:
+            type: object
+      responses:
+        "200":
+          description: "Pacientes obtenidos exitosamente según el filtro"
+        "404":
+          description: "No se encontraron pacientes con el filtro aplicado"
+
+components:
+  schemas:
+    Patient:
+      type: object
+      properties:
+        name:
+          type: string
+          description: "Nombre del paciente"
+        lastName:
+          type: string
+          description: "Apellido del paciente"
+        birth:
+          type: string
+          description: "Fecha de nacimiento del paciente"
+        DNI:
+          type: string
+          description: "Documento de identidad del paciente"
+        sex:
+          type: string
+          description: "Sexo del paciente"
+        address:
+          type: string
+          description: "Dirección del paciente"
+        phone:
+          type: string
+          description: "Teléfono del paciente"
+        email:
+          type: string
+          description: "Correo electrónico del paciente"
+        medicalCoverage:
+          type: string
+          description: "Cobertura médica del paciente"
+        nAffiliate:
+          type: string
+          description: "Número de afiliado"
+        appointments:
+          type: array
+          description: "Citas médicas del paciente"
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+                description: "Fecha de la cita"
+              doctorID:
+                type: string
+                description: "ID del doctor asignado"
+              status:
+                type: string
+                enum: ["Pending", "Finalized", "Canceled"]
+                description: "Estado de la cita"
+        treatments:
+          type: array
+          description: "Tratamientos del paciente"
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                description: "Nombre del tratamiento"
+              dateStart:
+                type: string
+                description: "Fecha de inicio"
+              dateEnd:
+                type: string
+                description: "Fecha de finalización"
+              status:
+                type: string
+                enum: ["Pending", "Finalized", "Canceled"]
+                description: "Estado del tratamiento"
+              idPatient:
+                type: string
+                description: "ID del paciente"
+              doctorID:
+                type: string
+                description: "ID del doctor asignado"
+        observations:
+          type: array
+          description: "Observaciones del paciente"
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                description: "Nombre de la observación"
+              date:
+                type: string
+                description: "Fecha de la observación"
+              status:
+                type: string
+                enum: ["Pending", "Finalized", "Canceled"]
+                description: "Estado de la observación"
+        dentalStatus:
+          type: object
+          description: "Estado dental del paciente"
+          properties:
+            dientesSupLeft:
+              type: array
+              description: "Dientes superiores izquierdos"
+            dientesSupRight:
+              type: array
+              description: "Dientes superiores derechos"
+            dientesInfLeft:
+              type: array
+              description: "Dientes inferiores izquierdos"
+            dientesInfRight:
+              type: array
+              description: "Dientes inferiores derechos"
+      example:
+        name: "Juan"
+        lastName: "Pérez"
+        birth: "1990-05-15"
+        DNI: "12345678"
+        sex: "Male"
+        address: "Av. Siempre Viva 123"
+        phone: "555-1234"
+        email: "juan.perez@example.com"
+        medicalCoverage: "Obra Social X"
+        nAffiliate: "987654"
+        appointments: []
+        treatments: []
+        observations: []
+        dentalStatus: {}
