@@ -10,7 +10,9 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Treatment"
+                type: array
+                items:
+                  $ref: "#/components/schemas/Treatment"
         "404":
           description: "Error en la obtención de los tratamientos"
     post:
@@ -27,7 +29,7 @@ paths:
       responses:
         "201":
           description: "El tratamiento se creó exitosamente"
-        "404":
+        "400":
           description: "Error en la creación del tratamiento"
 
   /api/treatments/{id}:
@@ -51,13 +53,6 @@ paths:
       summary: "Actualizar un tratamiento"
       tags:
         - Treatments
-      requestBody:
-        description: "Se envía el ID en la URL y la información a actualizar en el body"
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/Treatment"
       parameters:
       - name: id
         in: path
@@ -65,10 +60,17 @@ paths:
         description: "ID del tratamiento"
         schema:
           type: string
+      requestBody:
+        description: "Datos a actualizar en el tratamiento"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Treatment"
       responses:
-        "201":
+        "200":
           description: "El tratamiento se actualizó exitosamente"
-        "404":
+        "400":
           description: "Error en la actualización del tratamiento"
     delete:
       summary: "Eliminar un tratamiento"
@@ -93,14 +95,26 @@ paths:
       tags:
         - Treatments
       parameters:
-        - name: query
+        - name: name
           in: query
           schema:
             type: string
-          description: "Filtro para buscar tratamientos"
+          description: "Nombre del tratamiento a buscar"
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: ["In progress", "Completed", "Canceled"]
+          description: "Estado del tratamiento a buscar"
       responses:
         "200":
           description: "Tratamientos encontrados exitosamente"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Treatment"
         "404":
           description: "No se encontraron tratamientos con ese filtro"
 
