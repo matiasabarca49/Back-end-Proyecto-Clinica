@@ -87,6 +87,23 @@ paths:
         "404":
           description: "Error en la eliminación del tratamiento"
 
+  /api/treatments/filter:
+    get:
+      summary: "Obtener tratamientos por filtro"
+      tags:
+        - Treatments
+      parameters:
+        - name: query
+          in: query
+          schema:
+            type: string
+          description: "Filtro para buscar tratamientos"
+      responses:
+        "200":
+          description: "Tratamientos encontrados exitosamente"
+        "404":
+          description: "No se encontraron tratamientos con ese filtro"
+
 components:
   schemas:
     Treatment:
@@ -120,4 +137,3 @@ components:
         status: "In progress"
         idPatient: "65a1bc23de4f2e7c9a123456"
         idDoctor: "65b2dc34ef5g3h8d7b234567"
-
