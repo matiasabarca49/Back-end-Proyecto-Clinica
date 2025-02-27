@@ -1,5 +1,5 @@
 import express from 'express';
-import { createAppointment, deleteAppointment, getAppointmentById, getAppointments, getAppointmentsByFilter, updateAppointment } from '../controller/appointment.controller.js';
+import { createAppointment, deleteAppointment, getAppointmentById, getAppointments, getAppointmentsByFilter, getAppointmentsPaginate, updateAppointment } from '../controller/appointment.controller.js';
 
 const { Router } = express;
 const router = new Router();
@@ -8,7 +8,7 @@ const router = new Router();
 router.get("/", getAppointments);
 router.get("/:id", getAppointmentById);
 router.get("/filter/", getAppointmentsByFilter);
-
+router.get("/paginate",getAppointmentsPaginate);
 // Crear
 router.post("/", createAppointment);
 
