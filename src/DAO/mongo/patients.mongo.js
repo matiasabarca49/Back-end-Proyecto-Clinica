@@ -14,12 +14,12 @@ export default class PatientsManager {
 
     async getPatientById(id) {
         const patientFounded = await serviceMongo.getDocumentByID(Patient, id);
-        return sendPatientFormated(patientFounded);
+        return patientFounded ? sendPatientFormated(patientFounded) : null;
     }
 
     async getPatientByFilter(filter) {
         const patientFounded = await serviceMongo.getDocumentByFilter(Patient, filter);
-        return sendPatientFormated(patientFounded);
+        return patientFounded ? sendPatientFormated(patientFounded) : null;
     }
 
     async getPatientPaginate(dQuery, dLimit, dPage, dSort) {
@@ -28,20 +28,20 @@ export default class PatientsManager {
             patientsGetted.docs = sendPatientsFormated(patientsGetted.docs);
         }
         console.log(patientsGetted);
-        return patientsGetted || false;
+        return patientsGetted ? patientsGetted : false;
     }
 
     async createPatient(newPatient) {
-        const patientFormatted = new PatientFormated(newPatient); // CORREGIDO: Ahora se usa 'new'
+        const patientFormatted = new PatientFormated(newPatient); // Asegurar que se usa 'new'
         const patientAdded = await serviceMongo.createDocument(Patient, patientFormatted);
         return patientAdded;
     }
 
-    async deletePatient(patientID) {
+    deletePatient(patientID) {
         return serviceMongo.deleteDocument(Patient, patientID);
     }
 
-    async updatePatient(patientID, toUpdate) {
+    updatePatient(patientID, toUpdate) {
         return serviceMongo.updateDocument(Patient, patientID, toUpdate);
     }
 }
