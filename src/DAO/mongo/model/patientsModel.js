@@ -49,7 +49,7 @@ const patientsSchema = new mongoose.Schema({
                 type: Date,
                 required: true 
             },
-            doctorID: {
+            IDdoctor: {
                 type: mongoose.Schema.Types.ObjectId,
                 ref: 'doctors',
             },
@@ -77,10 +77,10 @@ const patientsSchema = new mongoose.Schema({
                 type: String,
                 enum:["Pending", "Finalized", "Canceled" ]
             },
-            idPatient:{
+            IDPatient:{
                 type: String,
             },
-            doctorID: {
+            IDdoctor: {
                 type: String,
             }
 
@@ -121,9 +121,9 @@ mongoose.plugin(mongoosePaginate)
 
 //Population
 patientsSchema.pre("find", function(){
-    this.populate('appointments.doctorID')
+    this.populate('appointments.IDdoctor')
 })
 patientsSchema.pre("findOne", function(){
-    this.populate('appointments.doctorID')
+    this.populate('appointments.IDdoctor')
 })
 export const Patient = mongoose.model("patients", patientsSchema);

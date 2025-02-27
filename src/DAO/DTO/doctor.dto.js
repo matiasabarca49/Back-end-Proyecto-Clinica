@@ -4,7 +4,7 @@ export class DoctorFormated {
         this.lastName = doctor.lastName;
         this.dni = doctor.dni;
         this.professionalLicense = doctor.professionalLicense;
-        this.patients = doctor.patients?.map(patient => patient.patientID) || [];
+        this.patients = [];
     }
 
     sendDoctor() {
@@ -26,7 +26,7 @@ export const sendDoctorFormated = (doctor) => {
         lastName: doctor.lastName,
         dni: doctor.dni,
         professionalLicense: doctor.professionalLicense,
-        patients: doctor.patients?.map(patient => patient.patientID) || []
+        patients: doctor.patients
     };
 };
 
@@ -37,6 +37,6 @@ export const sendDoctorsFormated = (arrayDoctors) => {
         lastName: doctor.lastName,
         dni: doctor.dni,
         professionalLicense: doctor.professionalLicense,
-        patients: doctor.patients?.map(patient => patient.patientID) || []
+        patients: doctor.patients 
     }));
 };

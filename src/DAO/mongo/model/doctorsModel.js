@@ -1,40 +1,39 @@
 import mongoose from "mongoose";
-//Creacion del Modelo
+
 const doctorSchema = new mongoose.Schema({
-    //Nombre de Atributo y Tipo
-    name:{
+    name: {
         type: String,
         required: true
     },
-    lastName:{
+    lastName: {
         type: String,
         required: true
     },
-    dni:{
+    dni: {
         type: String,
         required: true,
         unique: true
     },
-    professionalLicense:{
+    professionalLicense: {
         type: String,
         required: true,
         unique: true
     },
-    patients:[
+    patients: [
         {
-            patientID:{
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'patients'
-            }   
-    }
-  ]
+            IDPatient:{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'patients'
+            }
+        }
+    ]
 });
-//Population
-doctorSchema.pre("find", function(){
-    this.populate('patients.patientID')
-})
-doctorSchema.pre("findOne", function(){
-    this.populate('patients.patientID')
-})
-//Exportación del Modelo
+
+doctorSchema.pre("find", function() {
+    this.populate('patients.IDPatient');
+});
+doctorSchema.pre("findOne", function() {
+    this.populate('patients.IDPatient');
+});
+
 export const Doctor = mongoose.model("doctors", doctorSchema);

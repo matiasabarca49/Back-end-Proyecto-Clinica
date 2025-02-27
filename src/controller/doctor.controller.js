@@ -43,6 +43,7 @@ export const getDoctorsPaginate = async (req, res) => {
 
 export const createDoctor = async (req, res) => {
     const doctor = req.body;
+    console.log(req.body)
     const doctorCreated = await doctorsManager.createDoctor(doctor);
     doctorCreated
         ? res.status(201).send({ status: "Succes", doctors: doctorCreated })

@@ -1,0 +1,138 @@
+paths:
+  /api/doctors:
+    get:
+      summary: "Obtiene todos los doctores"
+      tags:
+        - Doctors
+      responses:
+        "200":
+          description: "Los doctores se obtuvieron exitosamente"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  doctors:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Doctor"
+        "500":
+          description: "Error al obtener los doctores"
+    post:
+      summary: "Agregar un doctor a la base de datos"
+      tags:
+        - Doctors
+      requestBody:
+        description: "Escriba los datos del doctor en formato JSON"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Doctor"
+      responses:
+        "201":
+          description: "El doctor se creó exitosamente"
+        "400":
+          description: "Error en la creación del doctor"
+  /api/doctors/{id}:
+    get:
+      summary: "Obtener un doctor por ID"
+      tags:
+        - Doctors
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: "ID del doctor"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "El doctor se obtuvo exitosamente"
+        "404":
+          description: "Error al obtener el doctor"
+    put:
+      summary: "Actualizar un doctor"
+      tags:
+        - Doctors
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: "ID del doctor"
+          schema:
+            type: string
+      requestBody:
+        description: "Datos a actualizar del doctor en formato JSON"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Doctor"
+      responses:
+        "200":
+          description: "El doctor se actualizó exitosamente"
+        "404":
+          description: "Error al actualizar el doctor"
+    delete:
+      summary: "Eliminar un doctor"
+      tags:
+        - Doctors
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: "ID del doctor"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "El doctor se eliminó exitosamente"
+        "404":
+          description: "Error al eliminar el doctor"
+  /api/doctors/filter:
+    get:
+      summary: "Obtener un doctor por filtro (nombre o apellido)"
+      tags:
+        - Doctors
+      parameters:
+        - name: search
+          in: query
+          required: false
+          description: "Buscar por nombre o apellido"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "El doctor se obtuvo exitosamente"
+        "404":
+          description: "Error al obtener el doctor"
+components:
+  schemas:
+    Doctor:
+      type: object
+      properties:
+        name:
+          type: string
+          description: "Nombre del doctor"
+        lastName:
+          type: string
+          description: "Apellido del doctor"
+        dni:
+          type: string
+          description: "DNI del doctor"
+        professionalLicense:
+          type: string
+          description: "Licencia profesional del doctor"
+        patients:
+          type: array
+          items:
+            type: string
+            description: "Lista de pacientes asignados al doctor"
+      example:
+        name: "Carlos"
+        lastName: "Pérez"
+        dni: "1968476"
+        professionalLicense: "AF7564KJ"
