@@ -27,7 +27,7 @@ export default class PatientsManager {
         if (patientsGetted) {
             patientsGetted.docs = sendPatientsFormated(patientsGetted.docs);
         }
-        console.log(patientsGetted);
+            //console.log(patientsGetted);
         return patientsGetted ? patientsGetted : false;
     }
 

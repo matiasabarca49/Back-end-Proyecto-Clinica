@@ -50,8 +50,8 @@ paths:
                   $ref: "#/components/schemas/User" 
         "401":
           description: "No autorizado. Necesita permisos de Administrador"
-        "404":
-          description: "Error en la obtencion de los productos."
+        "500":
+          description: "Error en la obtencion de los usuarios."
     post:
       summary: "Agregar un Usuario a la Base de Datos"
       tags:
@@ -146,8 +146,8 @@ paths:
       responses:
         "200":
           description: "El usuario se obtuvo exitosamente"
-        "404":
-          description: "Error en la obtencion del Usuario"
+        "400":
+          description: "Error en la obtencion del Usuario. Solicitud mal formada"
 components:
   schemas:
     User:

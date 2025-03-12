@@ -26,7 +26,7 @@ export const getPatientByFilter = async (req, res) =>{
 export const getsPatientsPaginate = async (req, res) =>{
     let defaultQuery, defaultLimit, defaultPage, defaultSort;
     const {search, query, sort, page , limit} = req.query;
-    console.log(req.query)
+        //console.log(req.query)
     limit && (defaultLimit = parseInt(limit));
     page && (defaultPage = parseInt(page));
     sort && (defaultSort = {lastName: parseInt(sort)});
@@ -34,7 +34,7 @@ export const getsPatientsPaginate = async (req, res) =>{
      ?  defaultQuery = {lastName: search}
      : query !== "0" && (defaultQuery = {rol : query});
     const patientsGetted = await patientsManager.getPatientPaginate(defaultQuery, defaultLimit, defaultPage, defaultSort)
-    console.log(patientsGetted)
+        //console.log(patientsGetted)
     patientsGetted
         ? res.status(200).send({status: "Success", patients: patientsGetted})
         : res.status(500).send({status: "ERROR"})
@@ -58,10 +58,9 @@ export const deletePatient = async (req, res) =>{
 export const updatePatient = async (req, res) =>{
     const patientData = req.body;
     const idPatient=req.params.id.trim();
-    console.log(patientData)
-    
+        //console.log(patientData)
     const patientUpdated = await patientsManager.updatePatient(idPatient,patientData);
-    console.log(patientUpdated)
+        //console.log(patientUpdated)
     patientUpdated
     ? res.status(201).send({status: "Succes", patients : patientUpdated
         })

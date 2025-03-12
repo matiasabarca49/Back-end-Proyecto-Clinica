@@ -5,10 +5,10 @@ export class PatientFormated {
         this.lastName = patient.lastName;
         this.birth = patient.birth;
         this.typeDNI = patient.typeDNI;
-        this.DNI = patient.email;
+        this.DNI = patient.DNI;
         this.sex = patient.sex;
         this.address = patient.address;
-        this.phone = patient.address;
+        this.phone = patient.phone;
         this.email = patient.email;
         this.medicalCoverage = patient.medicalCoverage;
         this.nAffiliate= patient.nAffiliate;

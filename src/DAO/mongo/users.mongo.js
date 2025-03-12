@@ -1,5 +1,6 @@
 import ServiceMongo from "../../service/dbMongoService.js";
 import { sendUserFormated, UserFormated, sendUsersFormated } from "../DTO/user.dto.js";
+//Controlador de Persistencia
 const serviceMongo = new ServiceMongo();
 //Modelo
 import { User } from "./model/usersModel.js";
@@ -11,6 +12,7 @@ export default class UsersManager{
     }
 
     async getUsers(){
+        //Se llama al Controlador de Persistencia
         const arrayUser = await serviceMongo.getDocuments(User);
         return sendUsersFormated(arrayUser); 
     }
@@ -34,7 +36,7 @@ export default class UsersManager{
     async getUserPaginate(dQuery, dLimit, dPage, dSort){
         const usersGetted = await serviceMongo.getDocumentsPaginate(User, dQuery, dLimit, dPage, dSort) 
         usersGetted && (usersGetted.docs = sendUsersFormated(usersGetted.docs))
-        console.log(usersGetted)
+        //console.log(usersGetted)
         return usersGetted
          ? usersGetted
          : false

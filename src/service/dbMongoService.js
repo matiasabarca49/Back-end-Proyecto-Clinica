@@ -45,7 +45,7 @@ export default class ServiceMongo{
 
     async getDocumentsPaginate(Model, dQuery, dLimit, dPage, dSort){
         let documents;
-        await Model.paginate(dQuery || {}, {limit: dLimit || 2, page: dPage || 1, sort: dSort || {} })
+        await Model.paginate(dQuery || {}, {limit: dLimit || 5, page: dPage || 1, sort: dSort || {} })
         .then( dts =>{
             documents = dts;
         })
@@ -77,7 +77,7 @@ export default class ServiceMongo{
 
         await Model.deleteOne( {_id:id})
         .then( dt => {
-            console.log(dt);
+            //console.log(dt);
             userDT = dt;
             })
         .catch(error =>{ 
@@ -91,7 +91,7 @@ export default class ServiceMongo{
     
         await Model.updateOne( {_id:idDocumento},toUpdate)
         .then( dt => {
-            console.log(dt);
+            //console.log(dt);
             userDT = dt;
             })
         .catch(error =>{ 
