@@ -23,11 +23,11 @@ export default class DoctorsManager {
     }
 
     async getDoctorPaginate(dQuery, dLimit, dPage, dSort) {
-        const doctorsGetted = await serviceMongo.getDocumentsPaginate(Doctor, dQuery, dLimit, dPage, dSort);
-        doctorsGetted && (doctorsGetted.docs = sendDoctorsFormated(doctorsGetted.docs));
-        return doctorsGetted ? doctorsGetted : false;
-    }
-
+    const doctorsGetted = await serviceMongo.getDocumentsPaginate(Doctor, dQuery, dLimit, dPage, dSort);
+    doctorsGetted && (doctorsGetted.docs = sendDoctorsFormated(doctorsGetted.docs));
+    return doctorsGetted ? doctorsGetted : false;
+}
+    
     async getAllDoctorByFilter(filter) {
         const doctorFounded = await serviceMongo.getDocumentByFilter(Doctor, filter);
         return doctorFounded ? doctorFounded : false;

@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-
+import mongoosePaginate from 'mongoose-paginate-v2'
 const doctorSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -28,6 +28,7 @@ const doctorSchema = new mongoose.Schema({
         }
     ]
 });
+mongoose.plugin(mongoosePaginate)
 
 doctorSchema.pre("find", function() {
     this.populate('patients.IDPatient');

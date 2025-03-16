@@ -31,12 +31,15 @@ export const sendDoctorFormated = (doctor) => {
 };
 
 export const sendDoctorsFormated = (arrayDoctors) => {
-    return arrayDoctors.map(doctor => ({
-        id: doctor._id,
-        name: doctor.name,
-        lastName: doctor.lastName,
-        dni: doctor.dni,
-        professionalLicense: doctor.professionalLicense,
-        patients: doctor.patients 
-    }));
+    const arrayMaped = arrayDoctors.map(doctor => {
+        return{
+            id: doctor._id,
+            name: doctor.name,
+            lastName: doctor.lastName,
+            dni: doctor.dni,
+            professionalLicense: doctor.professionalLicense,
+            patients: doctor.patients
+        }
+    })
+    return arrayMaped;
 };
