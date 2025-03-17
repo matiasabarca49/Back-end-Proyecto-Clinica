@@ -1,0 +1,126 @@
+paths:
+  /api/appointments/:
+    get:
+      summary: "Obtener todas las citas"
+      tags:
+        - Appointments
+      responses:
+        "200":
+          description: "Las citas se obtuvieron exitosamente"
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Appointment"
+        "404":
+          description: "Error en la obtención de las citas"
+    post:
+      summary: "Agregar una cita a la Base de Datos"
+      tags:
+        - Appointments
+      requestBody:
+        description: "Escriba la cita en formato JSON"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Appointment"
+      responses:
+        "201":
+          description: "La cita se creó exitosamente"
+        "400":
+          description: "Error en la creación de la cita"
+
+  /api/appointments/{id}:
+    get:
+      summary: "Obtener una cita por ID"
+      tags:
+        - Appointments
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: "ID de la cita"
+        schema:
+          type: string
+      responses:
+        "200":
+          description: "La cita se obtuvo exitosamente"
+        "404":
+          description: "Error en la obtención de la cita"
+    put:
+      summary: "Actualizar una cita"
+      tags:
+        - Appointments
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: "ID de la cita"
+        schema:
+          type: string
+      requestBody:
+        description: "Datos a actualizar en la cita"
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum: ["Pending", "Finalized", "Canceled"]
+                  description: "Estado de la cita"
+            example:
+              status: "Finalized"
+      responses:
+        "200":
+          description: "La cita se actualizó exitosamente"
+        "400":
+          description: "Error en la actualización de la cita"
+    delete:
+      summary: "Eliminar una cita"
+      tags:
+        - Appointments
+      parameters:
+      - name: id
+        in: path
+        required: true
+        description: "ID de la cita"
+        schema:
+          type: string
+      responses:
+        "200":
+          description: "La cita se eliminó exitosamente"
+        "404":
+          description: "Error en la eliminación de la cita"
+
+components:
+  schemas:
+    Appointment:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date-time
+          description: "Fecha y hora de la cita"
+        doctorID:
+          type: string
+          description: "ID del doctor asignado"
+        patientID:
+          type: string
+          description: "ID del paciente asociado"
+        status:
+          type: string
+          enum: ["Pending", "Finalized", "Canceled"]
+          description: "Estado de la cita"
+        observations:
+          type: string
+          description: "Observaciones sobre la cita"
+      example:
+        date: "2024-06-01T10:30:00Z"
+        doctorID: "676491db50d8d925d49439cc"
+        patientID: "6797d8bda81e0d869ae05572"
+        status: "Pending"
+        observations: "El paciente debe traer exámenes previos"

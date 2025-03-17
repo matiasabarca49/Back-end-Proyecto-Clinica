@@ -25,18 +25,17 @@ export default class AppointmentsManager {
     async getAppointmentsPaginate(dQuery, dLimit, dPage, dSort) {
         const appointmentsGetted = await serviceMongo.getDocumentsPaginate(Appointment, dQuery, dLimit, dPage, dSort);
         appointmentsGetted && (appointmentsGetted.docs = sendAppointmentsFormated(appointmentsGetted.docs));
-        console.log(appointmentsGetted);
         return appointmentsGetted ? appointmentsGetted : false;
     }
 
     async getAppointmentsByFilter(filter) {
-        const appointmentsFound = await serviceMongo.getDocumentByFilter(Appointment, filter);
-        return appointmentsFound ? appointmentsFound : false;
+        const appointmentsFounded = await serviceMongo.getDocumentByFilter(Appointment, filter);
+        return appointmentsFounded ? appointmentsFounded : false;
     }
 
     async getAppointmentByFilter(filter) {
-        const appointmentFound = await serviceMongo.getDocumentByFilter(Appointment, filter);
-        return appointmentFound ? sendAppointmentFormated(appointmentFound) : false;
+        const appointmentFounded = await serviceMongo.getDocumentByFilter(Appointment, filter);
+        return appointmentFounded ? sendAppointmentFormated(appointmentFounded) : false;
     }
 
     async createAppointment(newAppointment) {
