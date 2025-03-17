@@ -32,10 +32,9 @@ export const getAppointmentsPaginate = async (req, res) => {
     page && (defaultPage = parseInt(page));
     sort && (defaultSort = { date: parseInt(sort) });
     search.length !== 0
-        ? (defaultQuery = { patientName: search })
+        ? (defaultQuery = { date: search })
         : query !== "0" && (defaultQuery = { doctorId: query });
     const appointmentsGetted = await appointmentsManager.getAppointmentsPaginate(defaultQuery, defaultLimit, defaultPage, defaultSort);
-    console.log(appointmentsGetted);
     appointmentsGetted
         ? res.status(200).send({ status: "Success", appointments: appointmentsGetted })
         : res.status(500).send({ status: "ERROR" });
@@ -60,8 +59,6 @@ export const deleteAppointment = async (req, res) => {
 export const updateAppointment = async (req, res) => {
     const appointmentData = req.body;
     const appointmentID = req.params.id;
-    console.log(appointmentData);
-    
     const appointmentUpdated = await appointmentsManager.updateAppointment(appointmentID, appointmentData);
     console.log(appointmentUpdated);
     appointmentUpdated

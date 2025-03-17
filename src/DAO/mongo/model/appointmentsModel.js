@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-
+import mongoosePaginate from 'mongoose-paginate-v2'
 // Creación del Modelo para Appointments
 const appointmentSchema = new mongoose.Schema({
     date: {
@@ -25,6 +25,7 @@ const appointmentSchema = new mongoose.Schema({
         type: String
     }
 });
+mongoose.plugin(mongoosePaginate)
 
 // Population
 appointmentSchema.pre("find", function() {
