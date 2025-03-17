@@ -1,3 +1,7 @@
+/**
+ * Definición del esquema de la colección 'patients' para la base de datos MongoDB.
+ * Este esquema describe la estructura de los documentos de pacientes, incluyendo campos como nombre, apellido, DNI, etc.
+ */
 import mongoose from "mongoose";
 import mongoosePaginate from 'mongoose-paginate-v2'
 
@@ -55,8 +59,8 @@ const patientsSchema = new mongoose.Schema({
             },
             status: {
                 type: String,
-                enum:["Pending", "Finalized", "Canceled" ]  }
-            
+                enum:["Pending", "Finalized", "Canceled" ]  
+            }
         }
     ],
     treatments: [
@@ -83,7 +87,6 @@ const patientsSchema = new mongoose.Schema({
             IDdoctor: {
                 type: String,
             }
-
         }
     ],
     observations: [
@@ -98,7 +101,8 @@ const patientsSchema = new mongoose.Schema({
             },
             status: {
                 type: String,
-                enum:["Pending", "Finalized", "Canceled" ]}  
+                enum:["Pending", "Finalized", "Canceled" ]  
+            }  
         }
     ],
     dentalStatus: {
@@ -115,15 +119,21 @@ const patientsSchema = new mongoose.Schema({
             type: Array
         }
     }
-    
 });
+
+// Plugin para la paginación de documentos en la base de datos.
 mongoose.plugin(mongoosePaginate)
 
-//Population
+/**
+ * Funciones de pre-consulta para poblar los datos relacionados de las citas.
+ * La función `populate` carga los datos del doctor asociado a cada cita.
+ */
 patientsSchema.pre("find", function(){
     this.populate('appointments.IDdoctor')
-})
+});
 patientsSchema.pre("findOne", function(){
     this.populate('appointments.IDdoctor')
-})
+});
+
+// Exportación del modelo Patient
 export const Patient = mongoose.model("patients", patientsSchema);

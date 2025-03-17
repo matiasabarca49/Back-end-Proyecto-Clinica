@@ -1,6 +1,14 @@
+/**
+ * Clase que formatea la información de un paciente.
+ * Se encarga de estructurar los datos recibidos y de prepararlos para ser enviados.
+ */
 export class PatientFormated {
 
-    constructor(patient){
+    /**
+     * Constructor de la clase.
+     * @param {Object} patient Objeto paciente con los datos a formatear.
+     */
+    constructor(patient) {
         this.name = patient.name;
         this.lastName = patient.lastName;
         this.birth = patient.birth;
@@ -11,7 +19,7 @@ export class PatientFormated {
         this.phone = patient.phone;
         this.email = patient.email;
         this.medicalCoverage = patient.medicalCoverage;
-        this.nAffiliate= patient.nAffiliate;
+        this.nAffiliate = patient.nAffiliate;
         this.observations = [];
         this.treatments = [];
         this.appointments = [];
@@ -20,10 +28,14 @@ export class PatientFormated {
             dientesSupRight: [],
             dientesInfLeft: [],
             dientesInfRight: []
-        }
+        };
     }
 
-    sendPatient(){
+    /**
+     * Método para devolver el objeto paciente formateado.
+     * @returns {Object} Objeto con los datos del paciente en formato estructurado.
+     */
+    sendPatient() {
         return {
             id: this._id,
             name: this.name,
@@ -41,11 +53,16 @@ export class PatientFormated {
             treatments: this.treatments,
             appointments: this.appointments,
             dentalStatus: this.dentalStatus
-        }
+        };
     }
 }
 
-export const sendPatientFormated = (patient) =>{
+/**
+ * Función que recibe un paciente y devuelve sus datos formateados.
+ * @param {Object} patient Objeto paciente con los datos a formatear.
+ * @returns {Object} Objeto con los datos del paciente en formato estructurado.
+ */
+export const sendPatientFormated = (patient) => {
     return {
         id: patient._id,
         name: patient.name,
@@ -63,11 +80,16 @@ export const sendPatientFormated = (patient) =>{
         treatments: patient.treatments,
         appointments: patient.appointments,
         dentalStatus: patient.dentalStatus
-    }
-}
+    };
+};
 
-export const sendPatientsFormated = (arrayPatients) =>{
-    const arrayMaped = arrayPatients.map( patient => {
+/**
+ * Función que recibe un arreglo de pacientes y devuelve un arreglo con los datos de cada uno formateados.
+ * @param {Array} arrayPatients Arreglo de objetos pacientes a formatear.
+ * @returns {Array} Arreglo con los datos de los pacientes en formato estructurado.
+ */
+export const sendPatientsFormated = (arrayPatients) => {
+    const arrayMaped = arrayPatients.map(patient => {
         return {
             id: patient._id,
             name: patient.name,
@@ -81,7 +103,7 @@ export const sendPatientsFormated = (arrayPatients) =>{
             email: patient.email,
             medicalCoverage: patient.medicalCoverage,
             nAffiliate: patient.nAffiliate,
-        }
-    })
+        };
+    });
     return arrayMaped;
-}
+};
