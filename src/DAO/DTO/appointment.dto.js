@@ -1,4 +1,12 @@
+/**
+ * Clase que formatea la información de una cita médica.
+ * Se encarga de estructurar los datos recibidos y de prepararlos para ser enviados.
+ */
 export class AppointmentFormated {
+    /**
+     * Constructor de la clase.
+     * @param {Object} appointment Objeto cita con los datos a formatear.
+     */
     constructor(appointment) {
         this.id = appointment._id;
         this.date = appointment.date;
@@ -7,6 +15,11 @@ export class AppointmentFormated {
         this.status = appointment.status;
         this.observations = appointment.observations;
     }
+
+    /**
+     * Método para devolver el objeto cita formateado.
+     * @returns {Object} Objeto con los datos de la cita en formato estructurado.
+     */
 
     sendAppointment() {
         return {
@@ -21,6 +34,11 @@ export class AppointmentFormated {
 }
 
 // Corrección en la función de formato
+/**
+ * Función que recibe una cita y devuelve sus datos formateados.
+ * @param {Object} appointment Objeto cita con los datos a formatear.
+ * @returns {Object} Objeto con los datos de la cita en formato estructurado.
+ */
 export const sendAppointmentFormated = (appointment) => {
     return {
         id: appointment._id,
@@ -31,6 +49,12 @@ export const sendAppointmentFormated = (appointment) => {
         observations: appointment.observations
     };
 };
+
+/**
+ * Función que recibe un arreglo de citas y devuelve un arreglo con los datos de cada una formateados.
+ * @param {Array} arrayAppointments Arreglo de objetos citas a formatear.
+ * @returns {Array} Arreglo con los datos de las citas en formato estructurado.
+ */
 
 export const sendAppointmentsFormated = (arrayAppointments) => {
     const arrayMaped = arrayAppointments.map(appointment => {

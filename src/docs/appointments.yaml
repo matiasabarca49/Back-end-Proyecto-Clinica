@@ -96,6 +96,37 @@ paths:
         "404":
           description: "Error en la eliminación de la cita"
 
+  /api/appointments/filter:
+    get:
+      summary: "Obtener citas por filtro (fecha, doctor o paciente)"
+      tags:
+        - Appointments
+      parameters:
+        - name: date
+          in: query
+          required: false
+          description: "Filtrar citas por fecha"
+          schema:
+            type: string
+            format: date
+        - name: doctorID
+          in: query
+          required: false
+          description: "Filtrar citas por ID de doctor"
+          schema:
+            type: string
+        - name: patientID
+          in: query
+          required: false
+          description: "Filtrar citas por ID de paciente"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Las citas se obtuvieron exitosamente"
+        "404":
+          description: "No se encontraron citas con los criterios especificados"
+
 components:
   schemas:
     Appointment:
@@ -107,10 +138,10 @@ components:
           description: "Fecha y hora de la cita"
         doctorID:
           type: string
-          description: "ID del doctor asignado"
+          description: "ID del doctor asignado (referencia a la colección doctors)"
         patientID:
           type: string
-          description: "ID del paciente asociado"
+          description: "ID del paciente asociado (referencia a la colección patients)"
         status:
           type: string
           enum: ["Pending", "Finalized", "Canceled"]

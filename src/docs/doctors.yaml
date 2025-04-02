@@ -1,7 +1,7 @@
 paths:
-  /api/doctors:
+  /api/doctors/:
     get:
-      summary: "Obtiene todos los doctores"
+      summary: "Obtener todos los doctores"
       tags:
         - Doctors
       responses:
@@ -10,18 +10,13 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                  doctors:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/Doctor"
-        "500":
-          description: "Error al obtener los doctores"
+                type: array
+                items:
+                  $ref: "#/components/schemas/Doctor"
+        "404":
+          description: "Error en la obtención de los doctores"
     post:
-      summary: "Agregar un doctor a la base de datos"
+      summary: "Agregar un nuevo doctor a la Base de Datos"
       tags:
         - Doctors
       requestBody:
@@ -36,79 +31,114 @@ paths:
           description: "El doctor se creó exitosamente"
         "400":
           description: "Error en la creación del doctor"
+
   /api/doctors/{id}:
     get:
       summary: "Obtener un doctor por ID"
       tags:
         - Doctors
       parameters:
-        - name: id
-          in: path
-          required: true
-          description: "ID del doctor"
-          schema:
-            type: string
+      - name: id
+        in: path
+        required: true
+        description: "ID del doctor"
+        schema:
+          type: string
       responses:
         "200":
           description: "El doctor se obtuvo exitosamente"
         "404":
-          description: "Error al obtener el doctor"
+          description: "Error en la obtención del doctor"
     put:
       summary: "Actualizar un doctor"
       tags:
         - Doctors
       parameters:
-        - name: id
-          in: path
-          required: true
-          description: "ID del doctor"
-          schema:
-            type: string
+      - name: id
+        in: path
+        required: true
+        description: "ID del doctor"
+        schema:
+          type: string
       requestBody:
-        description: "Datos a actualizar del doctor en formato JSON"
+        description: "Datos a actualizar del doctor"
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Doctor"
+              type: object
+              properties:
+                name:
+                  type: string
+                  description: "Nombre del doctor"
+                lastName:
+                  type: string
+                  description: "Apellido del doctor"
+                professionalLicense:
+                  type: string
+                  description: "Licencia profesional del doctor"
+                patients:
+                  type: array
+                  items:
+                    type: string
+                  description: "Lista de IDs de pacientes"
+            example:
+              name: "Juan"
+              lastName: "Pérez"
+              professionalLicense: "ABC1234"
+              patients: ["623f6b10f1d2d35c47d8f324", "623f6b10f1d2d35c47d8f325"]
       responses:
         "200":
           description: "El doctor se actualizó exitosamente"
-        "404":
-          description: "Error al actualizar el doctor"
+        "400":
+          description: "Error en la actualización del doctor"
     delete:
       summary: "Eliminar un doctor"
       tags:
         - Doctors
       parameters:
-        - name: id
-          in: path
-          required: true
-          description: "ID del doctor"
-          schema:
-            type: string
+      - name: id
+        in: path
+        required: true
+        description: "ID del doctor"
+        schema:
+          type: string
       responses:
         "200":
           description: "El doctor se eliminó exitosamente"
         "404":
-          description: "Error al eliminar el doctor"
+          description: "Error en la eliminación del doctor"
+
   /api/doctors/filter:
     get:
-      summary: "Obtener un doctor por filtro (nombre o apellido)"
+      summary: "Obtener doctores por filtro (nombre, apellido, número de licencia)"
       tags:
         - Doctors
       parameters:
-        - name: query
+        - name: name
           in: query
           required: false
-          description: "Buscar por nombre o apellido"
+          description: "Filtrar doctores por nombre"
+          schema:
+            type: string
+        - name: lastName
+          in: query
+          required: false
+          description: "Filtrar doctores por apellido"
+          schema:
+            type: string
+        - name: professionalLicense
+          in: query
+          required: false
+          description: "Filtrar doctores por número de licencia"
           schema:
             type: string
       responses:
         "200":
-          description: "El doctor se obtuvo exitosamente"
+          description: "Los doctores se obtuvieron exitosamente"
         "404":
-          description: "Error al obtener el doctor"
+          description: "No se encontraron doctores con los criterios especificados"
+
 components:
   schemas:
     Doctor:
@@ -122,17 +152,23 @@ components:
           description: "Apellido del doctor"
         dni:
           type: string
-          description: "DNI del doctor"
+          description: "Número de DNI del doctor"
         professionalLicense:
           type: string
           description: "Licencia profesional del doctor"
         patients:
           type: array
           items:
-            type: string
-            description: "Lista de pacientes asignados al doctor"
+            type: object
+            properties:
+              IDPatient:
+                type: string
+                description: "ID del paciente asociado"
       example:
-        name: "Carlos"
+        name: "Juan"
         lastName: "Pérez"
-        dni: "1968476"
-        professionalLicense: "AF7564KJ"
+        dni: "12345678"
+        professionalLicense: "ABC1234"
+        patients:
+          - IDPatient: "623f6b10f1d2d35c47d8f324"
+          - IDPatient: "623f6b10f1d2d35c47d8f325"

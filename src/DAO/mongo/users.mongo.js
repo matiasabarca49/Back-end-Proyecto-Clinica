@@ -36,7 +36,6 @@ export default class UsersManager{
     async getUserPaginate(dQuery, dLimit, dPage, dSort){
         const usersGetted = await serviceMongo.getDocumentsPaginate(User, dQuery, dLimit, dPage, dSort) 
         usersGetted && (usersGetted.docs = sendUsersFormated(usersGetted.docs))
-        //console.log(usersGetted)
         return usersGetted
          ? usersGetted
          : false
@@ -74,10 +73,4 @@ export default class UsersManager{
     updateUser(userID,toUpdate){
         return serviceMongo.updateDocument(User, userID,toUpdate);
     }
-
-
-
-
-
-
 }

@@ -125,9 +125,7 @@ export const deleteUser = async (req, res) =>{
 export const updateUser = async (req, res) =>{
     const userData = req.body;
     const idUser=req.params.id;
-        //console.log(userData)
     const userUpdated = await usersManager.updateUser(idUser,userData);
-    console.log(userUpdated)
     userUpdated
     ? res.status(201).send({status: "Succes", users : userUpdated
         })
