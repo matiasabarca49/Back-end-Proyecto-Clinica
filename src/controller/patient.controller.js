@@ -65,7 +65,7 @@ export const getsPatientsPaginate = async (req, res) => {
     sort && (defaultSort = { lastName: parseInt(sort) });
     search.length !== 0
         ? (defaultQuery = { lastName: search })
-        : query !== "0" && (defaultQuery = { rol: query });
+        : query !== "0" && (defaultQuery = { sex: query });
     // Se realiza la búsqueda con paginación
     const patientsGetted = await patientsManager.getPatientPaginate(defaultQuery, defaultLimit, defaultPage, defaultSort);
     patientsGetted
