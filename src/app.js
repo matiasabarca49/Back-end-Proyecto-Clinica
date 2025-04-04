@@ -46,7 +46,6 @@ app.get("/", (req, res) =>{
 
 import routeUser from './routes/user.router.js';
 import routePatient from './routes/patient.router.js';
-import routeClinicalHistories from './routes/clinicalHistory.router.js';
 import routeDoctor from './routes/doctor.router.js';
 import routeAppointments from './routes/appointment.router.js';
 import routeSession from './routes/session.router.js';
@@ -54,7 +53,6 @@ import routeFailure from './routes/failure.router.js';
 import routeTreatments from './routes/treatments.router.js';
 app.use("/api/users", routeUser);
 app.use("/api/patients", routePatient);
-app.use("/api/clinicalHistories", routeClinicalHistories);
 app.use("/api/doctors", routeDoctor);
 app.use("/api/appointments", routeAppointments);
 app.use("/api/sessions", routeSession);

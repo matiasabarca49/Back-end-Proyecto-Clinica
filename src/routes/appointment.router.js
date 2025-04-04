@@ -10,12 +10,12 @@ router.get("/filter/", authToken, getAppointmentsByFilter);
 router.get("/:id", authToken, getAppointmentById);
 router.get("/paginate", authToken, getAppointmentsPaginate);
 // Crear
-router.post("/", authToken, checkPermissionsAdmin, createAppointment);
+router.post("/", authToken, createAppointment);
 
 // Eliminar
-router.delete("/:id", authToken, checkPermissionsAdmin, deleteAppointment);
+router.delete("/:id", authToken, deleteAppointment);
 
 // Actualizar
-router.put("/:id", authToken, checkPermissionsAdmin, updateAppointment);
+router.put("/:id", authToken, updateAppointment);
 
 export default router;

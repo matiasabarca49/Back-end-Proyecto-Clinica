@@ -1,5 +1,6 @@
 import expres from 'express';
 import { createPatient, getPatients, getPatientById, getPatientByFilter, deletePatient, updatePatient, getsPatientsPaginate } from '../controller/patient.controller.js'
+import { authToken } from '../utils/middlewares.js';
 const { Router } = expres;
 const router = new Router();
 
@@ -8,7 +9,7 @@ const router = new Router();
  * @route GET /patients
  * @returns {Array} Lista de pacientes
  */
-router.get("/", getPatients)
+router.get("/", authToken, getPatients)
 
 /**
  * Ruta para obtener pacientes con paginación.
@@ -17,7 +18,7 @@ router.get("/", getPatients)
  * @param {Number} limit Número de pacientes por página.
  * @returns {Object} Resultado con datos de pacientes paginados.
  */
-router.get("/paginate/", getsPatientsPaginate)
+router.get("/paginate/", authToken, getsPatientsPaginate)
 
 /**
  * Ruta para obtener pacientes con filtros específicos.
@@ -25,7 +26,7 @@ router.get("/paginate/", getsPatientsPaginate)
  * @param {Object} filter Filtros para la búsqueda de pacientes.
  * @returns {Array} Lista de pacientes que cumplen con los filtros.
  */
-router.get("/filter/", getPatientByFilter)
+router.get("/filter/", authToken, getPatientByFilter)
 
 /**
  * Ruta para obtener un paciente por su ID.
@@ -33,7 +34,7 @@ router.get("/filter/", getPatientByFilter)
  * @param {String} id ID del paciente a obtener.
  * @returns {Object} Paciente con el ID especificado.
  */
-router.get("/:id", getPatientById)
+router.get("/:id", authToken, getPatientById)
 
 /**
  * Ruta para crear un nuevo paciente.
@@ -41,7 +42,7 @@ router.get("/:id", getPatientById)
  * @param {Object} patient Datos del paciente a crear.
  * @returns {Object} El paciente recién creado.
  */
-router.post("/", createPatient)
+router.post("/", authToken, createPatient)
 
 /**
  * Ruta para eliminar un paciente por su ID.
@@ -49,7 +50,7 @@ router.post("/", createPatient)
  * @param {String} id ID del paciente a eliminar.
  * @returns {String} Mensaje de confirmación.
  */
-router.delete("/:id", deletePatient)
+router.delete("/:id", authToken, deletePatient)
 
 /**
  * Ruta para actualizar los datos de un paciente por su ID.
@@ -58,7 +59,7 @@ router.delete("/:id", deletePatient)
  * @param {Object} updatedData Datos a actualizar en el paciente.
  * @returns {Object} Paciente actualizado.
  */
-router.put("/:id", updatePatient)
+router.put("/:id", authToken, updatePatient)
 
 export default router
 

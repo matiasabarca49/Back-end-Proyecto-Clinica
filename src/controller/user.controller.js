@@ -62,7 +62,6 @@ export const getsUsersPaginate = async (req, res) =>{
     let defaultQuery, defaultLimit, defaultPage, defaultSort;
     //Descomposición del objeto query
     const {search, query, sort, page , limit} = req.query;
-        //console.log(req.query)
     //Verificamos las query que vienen en la solicitud
     limit && (defaultLimit = parseInt(limit));
     page && (defaultPage = parseInt(page));
@@ -74,7 +73,6 @@ export const getsUsersPaginate = async (req, res) =>{
      : query !== "0" && (defaultQuery = {rol : query});
     //Se pason las query o los valores por defecto al Controlador Logico
     const usersGetted = await usersManager.getUserPaginate(defaultQuery, defaultLimit, defaultPage, defaultSort)
-        //console.log(usersGetted)
     usersGetted
         ? res.status(200).send({status: "Success", users: usersGetted})
         : res.status(500).send({status: "ERROR"})
@@ -91,7 +89,6 @@ export const getsUsersPaginate = async (req, res) =>{
 export const createUser = async (req, res) =>{
     const user = req.body;
     const userCreated = await usersManager.createUser(user);
-    // console.log(userCreated)
     userCreated
     ? res.status(201).send({status: "Succes", users : userCreated
         })

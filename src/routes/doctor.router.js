@@ -9,10 +9,10 @@ router.get("/filter/",authToken, getDoctorByFilter);
 router.get("/:id",authToken, getDoctorById);
 router.get("/paginate", authToken, getDoctorsPaginate)
 //Crear
-router.post("/", authToken,checkPermissionsAdmin, createDoctor);
+router.post("/", authToken, createDoctor);
 //Deletear
-router.delete("/:id", authToken, checkPermissionsAdmin, deleteDoctor);
+router.delete("/:id", authToken, deleteDoctor);
 //Actualizar
-router.put("/:id",authToken, checkPermissionsAdmin, updateDoctor);
+router.put("/:id",authToken, updateDoctor);
 
 export default router

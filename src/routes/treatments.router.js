@@ -42,7 +42,7 @@ router.get("/:id", authToken, getTreatmentByID);
  * @param {Object} treatment Datos del tratamiento a crear.
  * @returns {Object} El tratamiento recién creado.
  */
-router.post("/", authToken, checkPermissionsAdmin, createTreatment);
+router.post("/", authToken, createTreatment);
 
 /**
  * Ruta para eliminar un tratamiento por su ID.
@@ -50,7 +50,7 @@ router.post("/", authToken, checkPermissionsAdmin, createTreatment);
  * @param {String} id ID del tratamiento a eliminar.
  * @returns {String} Mensaje de confirmación.
  */
-router.delete("/:id", authToken, checkPermissionsAdmin, deleteTreatment);
+router.delete("/:id", authToken, deleteTreatment);
 
 /**
  * Ruta para actualizar los datos de un tratamiento por su ID.
@@ -59,6 +59,6 @@ router.delete("/:id", authToken, checkPermissionsAdmin, deleteTreatment);
  * @param {Object} updatedData Datos a actualizar en el tratamiento.
  * @returns {Object} Tratamiento actualizado.
  */
-router.put("/:id", authToken, checkPermissionsAdmin, updateTreatment);
+router.put("/:id", authToken, updateTreatment);
 
 export default router;
