@@ -80,9 +80,15 @@ export const getDoctorsPaginate = async (req, res) => {
 export const createDoctor = async (req, res) => {
     const doctor = req.body;
     const doctorCreated = await doctorsManager.createDoctor(doctor);
-    doctorCreated
-        ? res.status(201).send({ status: "Succes", doctors: doctorCreated })
-        : res.status(404).send({ status: "ERROR" });
+    if(!doctorCreated.status)
+        if(doctorCreated.error.code === 11000){
+            res.status(409).send({ status: "ERROR", code: 11000 });
+        }else{
+            res.status(500).send({ status: "ERROR" });
+        }
+    else{
+        res.status(201).send({ status: "Success", patients: doctorCreatedCreated.dt})
+    }
 };
 
 /**

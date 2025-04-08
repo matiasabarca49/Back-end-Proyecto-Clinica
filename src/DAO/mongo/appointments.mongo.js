@@ -93,9 +93,9 @@ export default class AppointmentsManager {
         const newAppointmentFormated = new AppointmentFormated(newAppointment);
         const appointmentAdded = await serviceMongo.createDocument(Appointment, newAppointmentFormated);
         if (appointmentAdded) {
-            return newAppointmentFormated.sendAppointment();
+            return {...appointmentAdded, dt: sendAppointmentFormated(appointmentAdded.dt)};
         } else {
-            return false;
+            return appointmentAdded;
         }
     }
 

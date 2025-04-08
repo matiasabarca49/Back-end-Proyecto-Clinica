@@ -75,7 +75,14 @@ export default class TreatmentsManager {
     async createTreatment(newTreatment) {
         const newTreatmentFormated = new TreatmentFormated(newTreatment);
         const treatmentAdded = await serviceMongo.createDocument(Treatment, newTreatmentFormated);
-        return treatmentAdded ? newTreatmentFormated.sendTreatment() : false;
+        if(treatmentAdded.status){
+            //Retorna un usuario Formateado 
+            return newTreatmentFormated.sendUser();
+        }
+        else{
+            //En caso de producirse un error al persistir el usuario. Se retorna false
+            return treatmentAdded
+        }
     }
 
     /**

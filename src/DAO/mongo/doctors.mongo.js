@@ -92,7 +92,14 @@ export default class DoctorsManager {
     async createDoctor(newDoctor) {
         const newDoctorFormated = new DoctorFormated(newDoctor);
         const doctorAdded = await serviceMongo.createDocument(Doctor, newDoctorFormated);
-        return doctorAdded ? newDoctorFormated.sendDoctor() : false;
+        if(doctorAdded.status){
+            //Retorna un usuario Formateado 
+            return {...doctorAdded, dt: sendDoctorFormated(doctorAdded.dt)};
+        }
+        else{
+            //En caso de producirse un error al persistir el usuario. Se retorna false
+            return doctorAdded
+        }
     }
 
     /**

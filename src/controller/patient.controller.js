@@ -85,9 +85,15 @@ export const createPatient = async (req, res) => {
     const patient = req.body;
     // Se crea el paciente en la base de datos
     const patientCreated = await patientsManager.createPatient(patient);
-    patientCreated
-        ? res.status(201).send({ status: "Success", patients: patientCreated })
-        : res.status(404).send({ status: "ERROR" });
+    if(!patientCreated.status)
+        if(patientCreated.error.code === 11000){
+            res.status(409).send({ status: "ERROR", code: 11000 });
+        }else{
+            res.status(500).send({ status: "ERROR" });
+        }
+    else{
+        res.status(201).send({ status: "Success", patients: patientCreated.dt})
+    }
 };
 
 /**

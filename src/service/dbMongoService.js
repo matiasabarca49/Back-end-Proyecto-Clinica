@@ -63,11 +63,11 @@ export default class ServiceMongo{
 
         await Model.create(data)
         .then( dt => {
-            userDT = dt;
+            userDT = {status: true, dt: dt};
             })
         .catch(error =>{ 
             console.log(error);
-            userDT = false;
+            userDT = {status: false, error: error};
         })
         return userDT
     }

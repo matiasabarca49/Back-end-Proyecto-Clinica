@@ -89,10 +89,18 @@ export const getsUsersPaginate = async (req, res) =>{
 export const createUser = async (req, res) =>{
     const user = req.body;
     const userCreated = await usersManager.createUser(user);
-    userCreated
-    ? res.status(201).send({status: "Succes", users : userCreated
-        })
-    : res.status(500).send({status: "ERROR"})
+    console.log(userCreated)
+    if(!userCreated.status){
+        console.log(userCreated)
+        if(userCreated.error.code === 11000){
+            res.status(409).send({ status: "ERROR", code: 11000 });
+        }else{
+            res.status(500).send({ status: "ERROR" });
+        }
+    }
+    else{
+        res.status(201).send({ status: "Success", patients: userCreated})
+    }
 }
 
 /**

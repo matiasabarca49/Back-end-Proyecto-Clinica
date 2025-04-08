@@ -57,13 +57,13 @@ export default class UsersManager{
     async createUser(newUsuario){
         const newUserFormated =  new UserFormated(newUsuario);
         const userAdded = await serviceMongo.createDocument(User, newUserFormated)
-        if(userAdded){
+        if(userAdded.status){
             //Retorna un usuario Formateado 
-            return newUserFormated.sendUser();
+            return {...userAdded, dt: sendUserFormated(userAdded.dt)};
         }
         else{
             //En caso de producirse un error al persistir el usuario. Se retorna false
-            return false
+            return userAdded
         }
     }
 
