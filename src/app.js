@@ -13,8 +13,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 //Archivos estaticos
 app.use(express.static(__dirname + '/public'))
-
-
+//passport google 
+import passport from 'passport';
+import "./config/passport.config.js";
+app.use(passport.initialize());
 //Inicio y Conexion DB
 import MongoManager from './DAO/mongo/db.js';
 const mongoManager = new MongoManager("mongodb://localhost:27017/clinica_odontologica");
@@ -51,13 +53,15 @@ import routeAppointments from './routes/appointment.router.js';
 import routeSession from './routes/session.router.js';
 import routeFailure from './routes/failure.router.js';
 import routeTreatments from './routes/treatments.router.js';
+import routeAuth from './routes/passports/google.passport.router.js';
 app.use("/api/users", routeUser);
 app.use("/api/patients", routePatient);
 app.use("/api/doctors", routeDoctor);
 app.use("/api/appointments", routeAppointments);
 app.use("/api/sessions", routeSession);
 app.use("/api/fails", routeFailure);
-app.use("/api/treatments", routeTreatments)
+app.use("/api/treatments", routeTreatments);
+app.use("/api/auth",routeAuth);
 //Docs
 import SwaggerJsdoc from 'swagger-jsdoc'
 import SwaggerUIExpress from 'swagger-ui-express'
