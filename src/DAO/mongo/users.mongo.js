@@ -41,11 +41,6 @@ export default class UsersManager{
          : false
         
     }
-// En UsersManager
-async getUser(email) {
-    const userFounded = await serviceMongo.getDocumentByFilter(User, { email });
-    return userFounded ? sendUserFormated(userFounded) : false;
-}
 
     async getAllUserByFilter(filter){
         const userFounded = await serviceMongo.getDocumentByFilter(User, filter);

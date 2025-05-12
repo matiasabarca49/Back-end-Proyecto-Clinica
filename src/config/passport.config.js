@@ -1,11 +1,8 @@
 import passport from "passport";
 import UserManager from '../DAO/mongo/users.mongo.js';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
-import { sendUserFormated, UserFormated } from '../DAO/DTO/user.dto.js';
+import { UserFormated } from '../DAO/DTO/user.dto.js';
 import crypto from 'crypto';
-import dotenv from 'dotenv';
-
-dotenv.config();
 
 const userManager = new UserManager();
 
@@ -19,30 +16,22 @@ passport.use('google', new GoogleStrategy({
         const data = profile._json || profile;
 
         const name = data.given_name || profile.name?.givenName || '';
-        const lastName = data.family_name || profile.name?.familyName || '';
         const email = data.email || profile.emails?.[0]?.value || '';
 
-        if (!name || !lastName || !email) {
-            return done(new Error('Missing required user data from Google profile'));
-        }
-
-        let userFound = await userManager.getUser(email);
+        let userFound = await userManager.getUserByFilter({ email: email });
 
         if (!userFound) {
-            // Crear nuevo usuario con rol Employee
             const newUser = {
                 name,
-                lastName,
                 email,
                 password: crypto.randomUUID(),
-                rol: 'Employee'
             };
+
             const formattedUser = new UserFormated(newUser);
             userFound = await userManager.createUser(formattedUser);
         }
 
         return done(null, userFound);
-
     } catch (error) {
         return done(error, false);
     }

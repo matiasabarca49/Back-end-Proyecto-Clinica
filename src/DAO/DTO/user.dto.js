@@ -3,7 +3,7 @@ import { createhash } from "../../utils/utils.js";
 export class UserFormated {
     constructor(user) {
         this.name = user.name;
-        this.lastName = user.lastName;
+        this.lastName = user.lastName || " - ";
         this.email = user.email;
 
         

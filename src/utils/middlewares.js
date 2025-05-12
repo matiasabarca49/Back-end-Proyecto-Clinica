@@ -31,25 +31,6 @@ export const authToken = (req, res, next) => {
     });
 };
 
-// ✅ Middleware para verificar JWT desde el header Authorization (para frontend o Postman)
-export const verificarJWT = (req, res, next) => {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return res.status(401).json({ mensaje: 'Token no proporcionado o formato inválido' });
-    }
-
-    const token = authHeader.split(' ')[1];
-
-    try {
-        const payload = jwt.verify(token, secretKey);
-        req.user = payload;
-        next();
-    } catch (error) {
-        res.status(403).json({ mensaje: 'Token inválido o expirado' });
-    }
-};
-
 // Verifica si es admin
 export const checkPermissionsAdmin = (req, res, next) => {
     if (req.user.rol === "Admin") {

@@ -1,6 +1,7 @@
 import express from 'express';
 const app = express();
-
+//variables de entorno
+import 'dotenv/config'
 //Parsear los datos que viene en formato JSON
 app.use(express.json());
 //recibir datos complejos del navegador
