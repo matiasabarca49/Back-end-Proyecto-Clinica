@@ -17,18 +17,20 @@ passport.use('google', new GoogleStrategy({
 
         const name = data.given_name || profile.name?.givenName || '';
         const email = data.email || profile.emails?.[0]?.value || '';
+        const lastName = data.family_name || '';
 
         let userFound = await userManager.getUserByFilter({ email: email });
 
         if (!userFound) {
             const newUser = {
                 name,
+                lastName,
                 email,
                 password: crypto.randomUUID(),
             };
 
             const formattedUser = new UserFormated(newUser);
-            userFound = await userManager.createUser(formattedUser);
+            userFound = await userManager.createUser(formattedUser).dt;
         }
 
         return done(null, userFound);
