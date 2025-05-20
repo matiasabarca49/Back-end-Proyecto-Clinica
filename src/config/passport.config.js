@@ -15,9 +15,11 @@ passport.use('google', new GoogleStrategy({
     try {
         const data = profile._json || profile;
 
+
         const name = data.given_name || profile.name?.givenName || '';
         const email = data.email || profile.emails?.[0]?.value || '';
         const lastName = data.family_name || '';
+
 
         let userFound = await userManager.getUserByFilter({ email: email });
 
@@ -30,10 +32,11 @@ passport.use('google', new GoogleStrategy({
             };
 
             const formattedUser = new UserFormated(newUser);
-            userFound = await userManager.createUser(formattedUser).dt;
+            const userCreated = await userManager.createUser(formattedUser);
+            return done(null, userCreated.dt)
+        }else{
+            return done(null, userFound);
         }
-
-        return done(null, userFound);
     } catch (error) {
         return done(error, false);
     }
