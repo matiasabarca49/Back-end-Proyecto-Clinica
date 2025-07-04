@@ -18,8 +18,9 @@ app.use(express.static(__dirname + '/public'))
 import passport from 'passport';
 import "./config/passport.config.js";
 app.use(passport.initialize());
+
 //Inicio y Conexion DB
-import MongoManager from './DAO/mongo/db.js';
+import MongoManager from './config/dbMongoDB.js';
 const mongoManager = new MongoManager("mongodb://localhost:27017/clinica_odontologica");
 
 
@@ -54,7 +55,6 @@ import routeAppointments from './routes/appointment.router.js';
 import routeSession from './routes/session.router.js';
 import routeFailure from './routes/failure.router.js';
 import routeTreatments from './routes/treatments.router.js';
-import routeAuth from './routes/passports/google.passport.router.js';
 app.use("/api/users", routeUser);
 app.use("/api/patients", routePatient);
 app.use("/api/doctors", routeDoctor);
@@ -62,7 +62,15 @@ app.use("/api/appointments", routeAppointments);
 app.use("/api/sessions", routeSession);
 app.use("/api/fails", routeFailure);
 app.use("/api/treatments", routeTreatments);
-app.use("/api/auth",routeAuth);
+
+//Autenticación Google
+import routeAuth from './routes/passports/google.passport.router.js';
+let googleAuth = false;
+if(process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_SECRET || process.env.GOOGLE_CALLBACK_URL){
+    app.use("/api/auth",routeAuth);
+    googleAuth = true;
+}
+
 //Docs
 import SwaggerJsdoc from 'swagger-jsdoc'
 import SwaggerUIExpress from 'swagger-ui-express'
@@ -76,7 +84,21 @@ app.use("*", (req, res) =>{
     res.status(404).send({status:"Error", reason: "Error 404 NotFound"})
 });
 
-app.listen("8080", () => {
-    console.log("Servidor Corriendo");
-    mongoManager.connect();
+const portSelected = process.env.PORT || "8080";
+
+app.listen(portSelected, () => {
+    mongoManager.connect()
+    console.log("==========================================");
+    console.log("🟢 [STATUS] Servidor Backend Clínica UP");
+    console.log("==========================================");
+    console.log(`✅ [OK] Servidor corriendo en el puerto ${portSelected} 🚀`);
+
+    setTimeout(()=>{
+        if(googleAuth){
+            console.log("✅ [OK] Autenticacion con Google Activada -")
+        }else{
+            console.log("⚠️ [Info] Autenticacion con Google NO Activada -")
+        }
+        console.log("==========================================")
+    }, 1000)
 })

@@ -1,6 +1,6 @@
 import express from 'express';
 import { currentUser, disconnectUser, loginUser } from '../controller/session.controller.js';
-import { authToken} from '../utils/middlewares.js';
+import { authToken} from '../middlewares/middlewares.js';
 
 const { Router } = express;
 const router = new Router();

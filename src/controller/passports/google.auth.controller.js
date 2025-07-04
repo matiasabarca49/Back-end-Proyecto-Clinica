@@ -1,4 +1,4 @@
-import { generateToken } from "../../utils/middlewares.js";
+import { generateToken } from "../../middlewares/middlewares.js";
 
 export const authGoogle = (req, res) => {
 

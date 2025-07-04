@@ -1,13 +1,12 @@
-
-import UsersManager from "../DAO/mongo/users.mongo.js";
+import UsersService from "../service/mongo/users.mongo.js";
 import { isValidPassword } from "../utils/utils.js";
-import { generateToken } from "../utils/middlewares.js";
-const usersManager = new UsersManager();
+import { generateToken } from "../middlewares/middlewares.js";
+const usersService = new UsersService();
 
 
 export const loginUser = async (req,res)=>{
     const {email, password } = req.body;
-    const userFounded = await usersManager.getAllUserByFilter({email: email});
+    const userFounded = await usersService.getAllUserByFilter({email: email});
     if(!userFounded){
         res.clearCookie('token'); // Borrar la cookie
         res.status(401).send({status: "ERROR", reason: "Credenciales Incorrectas"})

@@ -1,10 +1,10 @@
 import passport from "passport";
-import UserManager from '../DAO/mongo/users.mongo.js';
+import UsersService from '../service/mongo/users.mongo.js';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
-import { UserFormated } from '../DAO/DTO/user.dto.js';
+import { UserFormated } from '../dto/user.dto.js';
 import crypto from 'crypto';
 
-const userManager = new UserManager();
+const usersService = new UsersService();
 
 passport.use('google', new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
@@ -21,7 +21,7 @@ passport.use('google', new GoogleStrategy({
         const lastName = data.family_name || '';
 
 
-        let userFound = await userManager.getUserByFilter({ email: email });
+        let userFound = await usersService.getUserByFilter({ email: email });
 
         if (!userFound) {
             const newUser = {
@@ -32,7 +32,7 @@ passport.use('google', new GoogleStrategy({
             };
 
             const formattedUser = new UserFormated(newUser);
-            const userCreated = await userManager.createUser(formattedUser);
+            const userCreated = await usersService.createUser(formattedUser);
             return done(null, userCreated.dt)
         }else{
             return done(null, userFound);

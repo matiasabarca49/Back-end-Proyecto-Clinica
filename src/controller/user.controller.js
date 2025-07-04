@@ -1,5 +1,5 @@
-import UsersManager from "../DAO/mongo/users.mongo.js";
-const usersManager = new UsersManager();
+import UsersService from "../service/mongo/users.mongo.js";
+const usersService = new UsersService();
 
 
 /**
@@ -10,7 +10,7 @@ const usersManager = new UsersManager();
 */
 export const getUsers = async (req, res)=>{
     //Obtenemos los usuarios utilizando el método especifico del Controlador Lógico de Usuarios
-    const usersGetted = await usersManager.getUsers();
+    const usersGetted = await usersService.getUsers();
     usersGetted
     ? res.status(200).send({status: "Succes", users : usersGetted})
     : res.status(500).send({status: "ERROR"})
@@ -27,7 +27,7 @@ export const getUsers = async (req, res)=>{
 */
 export const getUserByID = async (req, res) =>{
     const userID = req.params.id;
-    const userGetted = await usersManager.getUserById(userID);
+    const userGetted = await usersService.getUserById(userID);
     userGetted
     ? res.status(200).send({status: "Succes", users : userGetted})
     : res.status(404).send({status: "ERROR"})
@@ -44,7 +44,7 @@ export const getUserByID = async (req, res) =>{
 */
 export const getUserByFilter = async (req, res) =>{
     const filter = req.query;
-    const userGetted = await usersManager.getUserByFilter(filter);
+    const userGetted = await usersService.getUserByFilter(filter);
     userGetted
     ? res.status(200).send({status: "Succes", users : userGetted})
     : res.status(400).send({status: "ERROR"})
@@ -72,7 +72,7 @@ export const getsUsersPaginate = async (req, res) =>{
      ?  defaultQuery = {lastName: search}
      : query !== "0" && (defaultQuery = {rol : query});
     //Se pason las query o los valores por defecto al Controlador Logico
-    const usersGetted = await usersManager.getUserPaginate(defaultQuery, defaultLimit, defaultPage, defaultSort)
+    const usersGetted = await usersService.getUserPaginate(defaultQuery, defaultLimit, defaultPage, defaultSort)
     usersGetted
         ? res.status(200).send({status: "Success", users: usersGetted})
         : res.status(500).send({status: "ERROR"})
@@ -88,7 +88,7 @@ export const getsUsersPaginate = async (req, res) =>{
 */
 export const createUser = async (req, res) =>{
     const user = req.body;
-    const userCreated = await usersManager.createUser(user);
+    const userCreated = await usersService.createUser(user);
     console.log(userCreated)
     if(!userCreated.status){
         console.log(userCreated)
@@ -112,7 +112,7 @@ export const createUser = async (req, res) =>{
 */
 export const deleteUser = async (req, res) =>{
     const userID = req.params.id;
-    const userDeleted = await usersManager.deleteUser(userID);
+    const userDeleted = await usersService.deleteUser(userID);
     userDeleted
     ? res.status(200).send({status: "Succes", users : userDeleted})
     : res.status(404).send({status: "ERROR"})
@@ -130,7 +130,7 @@ export const deleteUser = async (req, res) =>{
 export const updateUser = async (req, res) =>{
     const userData = req.body;
     const idUser=req.params.id;
-    const userUpdated = await usersManager.updateUser(idUser,userData);
+    const userUpdated = await usersService.updateUser(idUser,userData);
     userUpdated
     ? res.status(201).send({status: "Succes", users : userUpdated
         })
