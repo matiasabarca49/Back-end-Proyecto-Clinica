@@ -1,6 +1,6 @@
 import expres from 'express';
 import { createPatient, getPatients, getPatientById, getPatientByFilter, deletePatient, updatePatient, getsPatientsPaginate } from '../controller/patient.controller.js'
-import { authToken } from '../utils/middlewares.js';
+import { authToken } from '../middlewares/middlewares.js';
 const { Router } = expres;
 const router = new Router();
 

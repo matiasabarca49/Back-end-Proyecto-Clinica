@@ -1,5 +1,6 @@
-import AppointmentsManager from "../DAO/mongo/appointments.mongo.js";
-const appointmentsManager = new AppointmentsManager();
+import AppointmentsService from "../service/mongo/appointments.mongo.js"
+const appointmentsManager = new AppointmentsService();
+
 
 /**
  * Endpoint que retorna todas las citas de la DB
