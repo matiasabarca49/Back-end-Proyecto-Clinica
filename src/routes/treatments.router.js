@@ -1,6 +1,6 @@
 import express from 'express';
 import { getTreatments, getTreatmentByID, getTreatmentByFilter, createTreatment, deleteTreatment, updateTreatment, getTreatmentsPaginate } from '../controller/treatment.controller.js';
-import { authToken, checkAuth, checkPermissionsAdmin } from '../utils/middlewares.js';
+import { authToken, checkAuth, checkPermissionsAdmin } from '../middlewares/middlewares.js';
 const { Router } = express;
 const router = new Router();
 

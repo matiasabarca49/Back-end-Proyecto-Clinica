@@ -1,5 +1,5 @@
 import AppointmentsService from "../service/mongo/appointments.mongo.js"
-const appointmentsManager = new AppointmentsService();
+const appointmentsService = new AppointmentsService();
 
 
 /**
@@ -10,7 +10,7 @@ const appointmentsManager = new AppointmentsService();
  */
 
 export const getAppointments = async (req, res) => {
-    const appointmentsGetted = await appointmentsManager.getAppointments();
+    const appointmentsGetted = await appointmentsService.getAppointments();
     appointmentsGetted
         ? res.status(200).send({ status: "Succes", appointments: appointmentsGetted })
         : res.status(404).send({ status: "ERROR" });
@@ -26,7 +26,7 @@ export const getAppointments = async (req, res) => {
 
 export const getAppointmentById = async (req, res) => {
     const appointmentID = req.params.id;
-    const appointmentGetted = await appointmentsManager.getAppointmentById(appointmentID);
+    const appointmentGetted = await appointmentsService.getAppointmentById(appointmentID);
     appointmentGetted
         ? res.status(200).send({ status: "Succes", appointment: appointmentGetted })
         : res.status(404).send({ status: "ERROR" });
@@ -42,7 +42,7 @@ export const getAppointmentById = async (req, res) => {
 
 export const getAppointmentsByFilter = async (req, res) => {
     const filter = req.query;
-    const appointmentsGetted = await appointmentsManager.getAppointmentsByFilter(filter);
+    const appointmentsGetted = await appointmentsService.getAppointmentsByFilter(filter);
     appointmentsGetted
         ? res.status(200).send({ status: "Succes", appointments: appointmentsGetted })
         : res.status(404).send({ status: "ERROR" });
@@ -65,7 +65,7 @@ export const getAppointmentsPaginate = async (req, res) => {
     search.length !== 0
         ? (defaultQuery = { date: search })
         : query !== "0" && (defaultQuery = { doctorId: query });
-    const appointmentsGetted = await appointmentsManager.getAppointmentsPaginate(defaultQuery, defaultLimit, defaultPage, defaultSort);
+    const appointmentsGetted = await appointmentsService.getAppointmentsPaginate(defaultQuery, defaultLimit, defaultPage, defaultSort);
     appointmentsGetted
         ? res.status(200).send({ status: "Success", appointments: appointmentsGetted })
         : res.status(500).send({ status: "ERROR" });
@@ -81,7 +81,7 @@ export const getAppointmentsPaginate = async (req, res) => {
 
 export const createAppointment = async (req, res) => {
     const appointment = req.body;
-    const appointmentCreated = await appointmentsManager.createAppointment(appointment);
+    const appointmentCreated = await appointmentsService.createAppointment(appointment);
     if(!appointmentCreated.status)
         if(appointmentCreated.error.code === 11000){
             res.status(409).send({ status: "ERROR", code: 11000 });
@@ -104,7 +104,7 @@ export const createAppointment = async (req, res) => {
 
 export const deleteAppointment = async (req, res) => {
     const appointmentID = req.params.id;
-    const appointmentDeleted = await appointmentsManager.deleteAppointment(appointmentID);
+    const appointmentDeleted = await appointmentsService.deleteAppointment(appointmentID);
     appointmentDeleted
         ? res.status(200).send({ status: "Succes", appointment: appointmentDeleted })
         : res.status(404).send({ status: "ERROR" });
@@ -122,7 +122,7 @@ export const deleteAppointment = async (req, res) => {
 export const updateAppointment = async (req, res) => {
     const appointmentData = req.body;
     const appointmentID = req.params.id;
-    const appointmentUpdated = await appointmentsManager.updateAppointment(appointmentID, appointmentData);
+    const appointmentUpdated = await appointmentsService.updateAppointment(appointmentID, appointmentData);
     appointmentUpdated
         ? res.status(201).send({ status: "Succes", appointment: appointmentUpdated })
         : res.status(404).send({ status: "ERROR" });

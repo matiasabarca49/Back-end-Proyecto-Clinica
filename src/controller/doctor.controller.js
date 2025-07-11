@@ -1,5 +1,5 @@
-import DoctorsManager from "../DAO/mongo/doctors.mongo.js";
-const doctorsManager = new DoctorsManager();
+import DoctorsService from "../service/mongo/doctors.mongo.js"
+const doctorsService = new DoctorsService();
 
 /**
  * Endpoint que retorna todos los doctores de la DB
@@ -9,7 +9,7 @@ const doctorsManager = new DoctorsManager();
  */
 
 export const getDoctors = async (req, res) => {
-    const doctorsGetted = await doctorsManager.getDoctors();
+    const doctorsGetted = await doctorsService.getDoctors();
     doctorsGetted
         ? res.status(200).send({ status: "Succes", doctors: doctorsGetted })
         : res.status(404).send({ status: "ERROR" });
@@ -26,7 +26,7 @@ export const getDoctors = async (req, res) => {
 
 export const getDoctorById = async (req, res) => {
     const doctorID = req.params.id.trim();
-    const doctorGetted = await doctorsManager.getDoctorById(doctorID);
+    const doctorGetted = await doctorsService.getDoctorById(doctorID);
     doctorGetted
     ? res.status(200).send({ status: "Succes", doctors: doctorGetted }) : res.status(404).send({ status: "ERROR" });
 };
@@ -41,7 +41,7 @@ export const getDoctorById = async (req, res) => {
 
 export const getDoctorByFilter = async (req, res) => {
     const filter = req.query;
-    const doctorGetted = await doctorsManager.getDoctorByFilter(filter);
+    const doctorGetted = await doctorsService.getDoctorByFilter(filter);
     doctorGetted
     ? res.status(200).send({ status: "Succes", doctors: doctorGetted }) : res.status(404).send({ status: "ERROR" });
 };
@@ -63,7 +63,7 @@ export const getDoctorsPaginate = async (req, res) => {
     search.length !== 0
         ? (defaultQuery = { lastName: search })
         : query !== "0" && (defaultQuery = {lastName: query });
-    const doctorsGetted = await doctorsManager.getDoctorPaginate(defaultQuery, defaultLimit, defaultPage, defaultSort);
+    const doctorsGetted = await doctorsService.getDoctorPaginate(defaultQuery, defaultLimit, defaultPage, defaultSort);
     doctorsGetted
         ? res.status(200).send({ status: "Success", doctors: doctorsGetted })
         : res.status(500).send({ status: "ERROR" });
@@ -79,7 +79,7 @@ export const getDoctorsPaginate = async (req, res) => {
 
 export const createDoctor = async (req, res) => {
     const doctor = req.body;
-    const doctorCreated = await doctorsManager.createDoctor(doctor);
+    const doctorCreated = await doctorsService.createDoctor(doctor);
     if(!doctorCreated.status)
         if(doctorCreated.error.code === 11000){
             res.status(409).send({ status: "ERROR", code: 11000 });
@@ -101,7 +101,7 @@ export const createDoctor = async (req, res) => {
 
 export const deleteDoctor = async (req, res) => {
     const doctorID = req.params.id;
-    const doctorDeleted = await doctorsManager.deleteDoctor(doctorID);
+    const doctorDeleted = await doctorsService.deleteDoctor(doctorID);
     doctorDeleted
         ? res.status(200).send({ status: "Succes", doctors: doctorDeleted })
         : res.status(404).send({ status: "ERROR" });
@@ -119,7 +119,7 @@ export const deleteDoctor = async (req, res) => {
 export const updateDoctor = async (req, res) => {
     const doctorData = req.body;
     const idDoctor = req.params.id;
-    const doctorUpdated = await doctorsManager.updateDoctor(idDoctor, doctorData);
+    const doctorUpdated = await doctorsService.updateDoctor(idDoctor, doctorData);
     doctorUpdated
         ? res.status(201).send({ status: "Succes", doctors: doctorUpdated })
         : res.status(404).send({ status: "ERROR" });
