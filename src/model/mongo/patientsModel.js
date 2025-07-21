@@ -47,22 +47,6 @@ const patientsSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    appointments: [
-        {
-            date:{
-                type: Date,
-                required: true 
-            },
-            IDdoctor: {
-                type: mongoose.Schema.Types.ObjectId,
-                ref: 'doctors',
-            },
-            status: {
-                type: String,
-                enum:["Pending", "Finalized", "Canceled" ]  
-            }
-        }
-    ],
     treatments: [
         {
             name:{
@@ -124,16 +108,6 @@ const patientsSchema = new mongoose.Schema({
 // Plugin para la paginación de documentos en la base de datos.
 mongoose.plugin(mongoosePaginate)
 
-/**
- * Funciones de pre-consulta para poblar los datos relacionados de las citas.
- * La función `populate` carga los datos del doctor asociado a cada cita.
- */
-patientsSchema.pre("find", function(){
-    this.populate('appointments.IDdoctor')
-});
-patientsSchema.pre("findOne", function(){
-    this.populate('appointments.IDdoctor')
-});
 
 // Exportación del modelo Patient
 export const Patient = mongoose.model("patients", patientsSchema);

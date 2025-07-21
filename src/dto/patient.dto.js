@@ -22,7 +22,6 @@ export class PatientFormated {
         this.nAffiliate = patient.nAffiliate;
         this.observations = [];
         this.treatments = [];
-        this.appointments = [];
         this.dentalStatus = {
             dientesSupLeft: [],
             dientesSupRight: [],
@@ -51,7 +50,6 @@ export class PatientFormated {
             nAffiliate: this.nAffiliate,
             observations: this.observations,
             treatments: this.treatments,
-            appointments: this.appointments,
             dentalStatus: this.dentalStatus
         };
     }
@@ -78,7 +76,6 @@ export const sendPatientFormated = (patient) => {
         nAffiliate: patient.nAffiliate,
         observations: patient.observations,
         treatments: patient.treatments,
-        appointments: patient.appointments,
         dentalStatus: patient.dentalStatus
     };
 };

@@ -87,7 +87,7 @@ export const createDoctor = async (req, res) => {
             res.status(500).send({ status: "ERROR" });
         }
     else{
-        res.status(201).send({ status: "Success", patients: doctorCreatedCreated.dt})
+        res.status(201).send({ status: "Success", patients: doctorCreated.dt})
     }
 };
 

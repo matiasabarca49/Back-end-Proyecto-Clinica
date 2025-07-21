@@ -14,27 +14,20 @@ const doctorSchema = new mongoose.Schema({
         required: true,
         unique: true
     },
+    phone:{
+        type: String,
+        required: true
+    },
+    email:{
+        type: String,
+        required: true
+    },
     professionalLicense: {
         type: String,
         required: true,
         unique: true
-    },
-    patients: [
-        {
-            IDPatient:{
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'patients'
-            }
-        }
-    ]
+    }
 });
 mongoose.plugin(mongoosePaginate)
-
-doctorSchema.pre("find", function() {
-    this.populate('patients.IDPatient');
-});
-doctorSchema.pre("findOne", function() {
-    this.populate('patients.IDPatient');
-});
 
 export const Doctor = mongoose.model("doctors", doctorSchema);
