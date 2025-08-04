@@ -1,3 +1,4 @@
+import { Query } from "mongoose";
 import PatientsService from "../service/mongo/patients.mongo.js";
 const patientsService = new PatientsService();
 
@@ -44,6 +45,14 @@ export const getsPatientsPaginate = async (req, res) => {
         ? res.status(200).send({ status: "Success", patients: patientsGetted })
         : res.status(500).send({ status: "ERROR" });
 };
+
+export const getPatientByQuery = async (req, res) =>{
+    const { query } = req.query;
+    const patientFounded = await patientsService.getPatientByQuery(query)
+    patientFounded
+        ? res.status(200).json({success: true, data: patientFounded})
+        : res.status(500).json({success: false, error: "No se encontró pacientes que coincidan"})
+}
 
 export const createPatient = async (req, res) => {
     const patient = req.body;

@@ -30,6 +30,18 @@ export default class PatientsService {
         return patientsGetted ? patientsGetted : false;
     }
 
+    async getPatientByQuery(query){
+        const searchRegex = new RegExp(query, 'i')
+        return persistController.getDocumentByQuery(Patient, {
+            $or:[
+                {name: searchRegex},
+                {lastName: searchRegex},
+                {email: searchRegex},
+                {DNI: searchRegex}
+            ]
+        })
+    }
+
     async createPatient(newPatient) {
         const patientFormatted = new PatientFormated(newPatient);
         const patientAdded = await persistController.createDocument(Patient, patientFormatted);

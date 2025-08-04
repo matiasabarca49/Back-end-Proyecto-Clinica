@@ -1,5 +1,5 @@
 import expres from 'express';
-import { createPatient, getPatients, getPatientById, getPatientByFilter, deletePatient, updatePatient, getsPatientsPaginate } from '../controller/patient.controller.js'
+import { createPatient, getPatients, getPatientById, getPatientByFilter, deletePatient, updatePatient, getsPatientsPaginate, getPatientByQuery } from '../controller/patient.controller.js'
 import { authToken } from '../middlewares/middlewares.js';
 const { Router } = expres;
 const router = new Router();
@@ -29,12 +29,21 @@ router.get("/paginate/", authToken, getsPatientsPaginate)
 router.get("/filter/", authToken, getPatientByFilter)
 
 /**
+ * Ruta para buscar pacientes.
+ * @route GET /patients/search
+ * @query {String} .
+ * @returns {Object} Paciente con que coincida con la query especificada.
+ */
+router.get("/search", authToken, getPatientByQuery)
+
+/**
  * Ruta para obtener un paciente por su ID.
  * @route GET /patients/:id
  * @param {String} id ID del paciente a obtener.
  * @returns {Object} Paciente con el ID especificado.
  */
 router.get("/:id", authToken, getPatientById)
+
 
 /**
  * Ruta para crear un nuevo paciente.
