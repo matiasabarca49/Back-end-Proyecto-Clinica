@@ -40,6 +40,19 @@ export default class DoctorsService {
         return doctorFounded ? sendDoctorFormated(doctorFounded) : false;
     }
 
+    async getDoctorByQuery(query){
+        const searchRegex = new RegExp(query, 'i')
+        return persistController.getDocumentByQuery(Doctor, {
+            $or:[
+                {name: searchRegex},
+                {name_search: searchRegex},
+                {lastName: searchRegex},
+                {dni: searchRegex},
+                {professionalLicense: searchRegex}
+            ]
+        })
+    }
+
     async createDoctor(newDoctor) {
         const newDoctorFormated = new DoctorFormated(newDoctor);
         const doctorAdded = await persistController.createDocument(Doctor, newDoctorFormated);

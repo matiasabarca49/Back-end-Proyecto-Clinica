@@ -4,6 +4,7 @@ import { sendUserFormated, UserFormated, sendUsersFormated } from "../../dto/use
 const persistController = new PersistController();
 //Modelo
 import { User } from "../../model/mongo/usersModel.js";
+import { normalizeText } from "../../utils/utils.js";
 
 export default class UsersService{
 
@@ -54,8 +55,17 @@ export default class UsersService{
     }
 
     //Persiste un usuario completo en la DB
-    async createUser(newUsuario){
-        const newUserFormated =  new UserFormated(newUsuario);
+    async createUser(newUser){
+
+        //Normalizando información
+        const userNormalized = {
+            ...newUser,
+            name:  normalizeText( newUser.name ),
+            lastName: normalizeText(newUser.lastName),
+            rol: normalizeText(newUser.rol) 
+        }
+        
+        const newUserFormated =  new UserFormated(userNormalized);
         const userAdded = await persistController.createDocument(User, newUserFormated)
         if(userAdded.status){
             //Retorna un usuario Formateado 

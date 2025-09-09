@@ -1,6 +1,7 @@
 import PersistController from "../../DAO/persistController.js";
 import { sendPatientFormated, PatientFormated, sendPatientsFormated } from "../../dto/patient.dto.js";
 import { Patient } from "../../model/mongo/patientsModel.js";
+import { normalizeText } from "../../utils/utils.js";
 
 const persistController = new PersistController();
 
@@ -43,7 +44,15 @@ export default class PatientsService {
     }
 
     async createPatient(newPatient) {
-        const patientFormatted = new PatientFormated(newPatient);
+
+        const patientNormalized = {
+            ...newPatient,
+            name: normalizeText(newPatient.name),
+            lastName: normalizeText(newPatient.lastName),
+            sex: normalizeText(newPatient.sex),
+        }
+
+        const patientFormatted = new PatientFormated(patientNormalized);
         const patientAdded = await persistController.createDocument(Patient, patientFormatted);
         if (patientAdded.status) {
             return { ...patientAdded, dt: sendPatientFormated(patientAdded.dt) };

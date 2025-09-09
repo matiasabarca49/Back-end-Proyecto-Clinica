@@ -1,4 +1,4 @@
-import AppointmentsService from "../service/mongo/appointments.mongo.js"
+import AppointmentsService from "../service/mongo/appointments.service.js"
 const appointmentsService = new AppointmentsService();
 
 
@@ -70,6 +70,20 @@ export const getAppointmentsPaginate = async (req, res) => {
         ? res.status(200).send({ status: "Success", appointments: appointmentsGetted })
         : res.status(500).send({ status: "ERROR" });
 };
+
+export const getAppointmentByQuery = async (req, res) =>{
+    const { query } = req.query;
+    try {
+        const appointmetsFounded = await appointmentsService.getAppointmentByQuery(query);
+        appointmetsFounded
+            ? res.status(200).json({success: true, data: appointmetsFounded})
+            : res.status(500).json({success: false, error: "No se encontró turnos que coincidan"})
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({success: false, error: "Error en el Servidor. Intente mas tarde"})
+    }
+    
+}
 
 /**
  * Endpoint que crea una nueva cita en la colección de citas

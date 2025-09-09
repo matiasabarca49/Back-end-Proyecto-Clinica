@@ -1,4 +1,4 @@
-import UsersService from "../service/mongo/users.mongo.js";
+import UsersService from "../service/mongo/users.service.js";
 const usersService = new UsersService();
 
 
@@ -88,19 +88,25 @@ export const getsUsersPaginate = async (req, res) =>{
 */
 export const createUser = async (req, res) =>{
     const user = req.body;
-    const userCreated = await usersService.createUser(user);
-    console.log(userCreated)
-    if(!userCreated.status){
-        console.log(userCreated)
-        if(userCreated.error.code === 11000){
-            res.status(409).send({ status: "ERROR", code: 11000 });
-        }else{
-            res.status(500).send({ status: "ERROR" });
+    try {
+        const userCreated = await usersService.createUser(user);
+        //console.log(userCreated)
+        if(!userCreated.status){
+            //console.log(userCreated)
+            if(userCreated.error.code === 11000){
+                res.status(409).send({ status: "ERROR", code: 11000 });
+            }else{
+                res.status(500).send({ status: "ERROR" });
+            }
         }
+        else{
+            res.status(201).send({ status: "Success", patients: userCreated})
+        }
+    } catch (error) {
+        console.log(error)
+        res.status(500).send({ status: "ERROR" });
     }
-    else{
-        res.status(201).send({ status: "Success", patients: userCreated})
-    }
+    
 }
 
 /**

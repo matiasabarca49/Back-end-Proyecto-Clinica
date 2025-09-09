@@ -1,4 +1,4 @@
-import DoctorsService from "../service/mongo/doctors.mongo.js"
+import DoctorsService from "../service/mongo/doctors.service.js"
 const doctorsService = new DoctorsService();
 
 /**
@@ -68,6 +68,20 @@ export const getDoctorsPaginate = async (req, res) => {
         ? res.status(200).send({ status: "Success", doctors: doctorsGetted })
         : res.status(500).send({ status: "ERROR" });
 };
+
+export const getDoctorByQuery = async (req, res) =>{
+    const { query } = req.query;
+    try {
+        const doctorsFounded = await doctorsService.getDoctorByQuery(query)
+        doctorsFounded
+            ? res.status(200).json({success: true, data: doctorsFounded})
+            : res.status(500).json({success: false, error: "No se encontró pacientes que coincidan"})
+    } catch (error) {
+        console.log(error);
+        res.status(500).json({success: false, error: "Error en el Servidor. Intentar más tarde"})
+    }
+    
+}
 
 /**
  * Endpoint que crea un nuevo doctor en la colección de doctores

@@ -1,6 +1,14 @@
+import mongoose from "mongoose";
 import PersistController from "../../DAO/persistController.js";
 import { sendAppointmentFormated, AppointmentFormated, sendAppointmentsFormated } from "../../dto/appointment.dto.js";
 import { Appointment } from "../../model/mongo/appointmentsModel.js";
+//Patients
+import PatientsService from './patients.service.js'
+const patientsService = new PatientsService();
+//Doctors
+import DoctorsService from './doctors.service.js'
+const doctorsService = new DoctorsService();
+
 
 const persistController = new PersistController();
 
@@ -38,6 +46,56 @@ export default class AppointmentsService {
     async getAppointmentByFilter(filter) {
         const appointmentFounded = await persistController.getDocumentByFilter(Appointment, filter);
         return appointmentFounded ? sendAppointmentFormated(appointmentFounded) : false;
+    }
+
+    async getAppointmentByQuery(query){
+        const filters = [];
+        if(mongoose.Types.ObjectId.isValid(query)){
+                filters.push({doctorID: query});
+                filters.push({patientID: query});
+                filters.push({_id: query});
+        }else if(!isNaN(Date.parse(query))){
+
+            const fecha = new Date(query);
+
+            let fechaInicio, fechaFin;
+
+            // Caso: solo año
+            if (/^\d{4}$/.test(query)) {
+                fechaInicio = new Date(`${query}-01-01T00:00:00.000Z`);
+                fechaFin = new Date(`${query}-12-31T23:59:59.999Z`);
+            }
+            // Caso: año-mes
+            else if (/^\d{4}-\d{2}$/.test(query)) {
+                fechaInicio = new Date(`${query}-01T00:00:00.000Z`);
+                fechaFin = new Date(new Date(fechaInicio).setMonth(fechaInicio.getMonth() + 1) - 1);
+            }
+            // Caso: fecha completa
+            else {
+                fechaInicio = new Date(fecha.setHours(0,0,0,0));
+                fechaFin = new Date(fecha.setHours(23,59,59,999));
+            }
+
+            filters.push({ date: { $gte: fechaInicio, $lte: fechaFin } });
+
+        }else if( typeof query === "string" && query.length > 1){
+            const searchRegex = new RegExp(query, "i");
+            //Buscando Pacientes y doctores que coincidan con la query
+            const patientsFounded = await patientsService.getPatientByQuery(searchRegex);
+            const doctorsFounded = await doctorsService.getDoctorByQuery(searchRegex);
+            console.log(doctorsFounded)
+            //Usamos un conjunto de concidencias para un campo. En este caso [_id, _id, _id, _id]
+            if (patientsFounded.length > 0) {
+                filters.push({ patientID: { $in: patientsFounded.map(p => p._id) } });
+            }
+             if (doctorsFounded.length > 0) {
+                filters.push({ doctorID: { $in: doctorsFounded.map(d => d._id) } });
+            }
+        }
+        
+        return persistController.getDocumentByQuery(Appointment, {
+            $or: filters
+        })
     }
 
     async createAppointment(newAppointment) {

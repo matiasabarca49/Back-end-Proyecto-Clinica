@@ -1,5 +1,5 @@
 import { Query } from "mongoose";
-import PatientsService from "../service/mongo/patients.mongo.js";
+import PatientsService from "../service/mongo/patients.service.js";
 const patientsService = new PatientsService();
 
 export const getPatients = async (req, res) => {
@@ -56,15 +56,20 @@ export const getPatientByQuery = async (req, res) =>{
 
 export const createPatient = async (req, res) => {
     const patient = req.body;
-    const patientCreated = await patientsService.createPatient(patient);
-    if (!patientCreated.status) {
-        if (patientCreated.error.code === 11000) {
-            res.status(409).send({ status: "ERROR", code: 11000 });
+    try {
+        const patientCreated = await patientsService.createPatient(patient);
+        if (!patientCreated.status) {
+            if (patientCreated.error.code === 11000) {
+                res.status(409).send({ status: "ERROR", code: 11000 });
+            } else {
+                res.status(500).send({ status: "ERROR" });
+            }
         } else {
-            res.status(500).send({ status: "ERROR" });
+            res.status(201).send({ status: "Success", patients: patientCreated.dt });
         }
-    } else {
-        res.status(201).send({ status: "Success", patients: patientCreated.dt });
+    } catch (error) {
+        console.log(error);
+        res.status(500).send({ status: "ERROR" });
     }
 };
 
