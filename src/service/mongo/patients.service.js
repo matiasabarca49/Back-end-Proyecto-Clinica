@@ -8,8 +8,13 @@ const persistController = new PersistController();
 export default class PatientsService {
     constructor() {}
 
-    async getPatients() {
-        const arrayPatient = await persistController.getDocuments(Patient);
+    async getPatients(user) {
+        let arrayPatient;
+        if(user.rol === "Doctor"){
+            arrayPatient = await persistController.getDocumentsByFilter(Patient, {idDoctor: user.id})
+        }else{
+            arrayPatient = await persistController.getDocuments(Patient);
+        }
         return sendPatientsFormated(arrayPatient);
     }
 
@@ -23,8 +28,13 @@ export default class PatientsService {
         return patientFounded ? sendPatientFormated(patientFounded) : false;
     }
 
-    async getPatientPaginate(dQuery, dLimit, dPage, dSort) {
-        const patientsGetted = await persistController.getDocumentsPaginate(Patient, dQuery, dLimit, dPage, dSort);
+    async getPatientPaginate(dQuery, dLimit, dPage, dSort, user) {
+        let patientsGetted;
+        if(user.rol === "Doctor"){
+            patientsGetted = await persistController.getDocumentsPaginate(Patient, dQuery, dLimit, dPage, dSort, user.id);
+        }else{
+            patientsGetted = await persistController.getDocumentsPaginate(Patient, dQuery, dLimit, dPage, dSort);
+        }
         if (patientsGetted) {
             patientsGetted.docs = sendPatientsFormated(patientsGetted.docs);
         }
@@ -43,13 +53,14 @@ export default class PatientsService {
         })
     }
 
-    async createPatient(newPatient) {
+    async createPatient(newPatient, user) {
 
         const patientNormalized = {
             ...newPatient,
             name: normalizeText(newPatient.name),
             lastName: normalizeText(newPatient.lastName),
             sex: normalizeText(newPatient.sex),
+            idDoctor: user.rol === "Doctor" ?  user.id  :  newPatient.idDoctor
         }
 
         const patientFormatted = new PatientFormated(patientNormalized);

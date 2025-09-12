@@ -5,6 +5,11 @@
 import mongoose from "mongoose";
 import mongoosePaginate from 'mongoose-paginate-v2'
 
+// Verificamos si el modelo está en la caché para evitar errores
+/* if (mongoose.models["patients"]) {
+  delete mongoose.models["patients"];
+} */
+
 const patientsSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -102,7 +107,12 @@ const patientsSchema = new mongoose.Schema({
         dientesInfRight:{
             type: Array
         }
-    }
+    },
+    idDoctor: {
+            type: String,
+            required: true
+        }
+
 });
 
 // Plugin para la paginación de documentos en la base de datos.
@@ -111,3 +121,6 @@ mongoose.plugin(mongoosePaginate)
 
 // Exportación del modelo Patient
 export const Patient = mongoose.model("patients", patientsSchema);
+
+
+

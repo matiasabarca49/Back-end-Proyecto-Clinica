@@ -43,6 +43,12 @@ export default class UsersService{
         
     }
 
+    async getManyUsersByFilter(filter){
+        const usersFounded = await persistController.getDocumentsByFilter(User, filter);
+        return usersFounded ? sendUsersFormated(usersFounded): false;
+    }
+
+    //Obtiene el usuario completo
     async getAllUserByFilter(filter){
         const userFounded = await persistController.getDocumentByFilter(User, filter);
         return userFounded ? userFounded : false;

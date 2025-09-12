@@ -27,7 +27,8 @@ export class PatientFormated {
             dientesSupRight: [],
             dientesInfLeft: [],
             dientesInfRight: []
-        };
+        },
+        this.idDoctor = patient.idDoctor
     }
 
     /**
@@ -50,7 +51,8 @@ export class PatientFormated {
             nAffiliate: this.nAffiliate,
             observations: this.observations,
             treatments: this.treatments,
-            dentalStatus: this.dentalStatus
+            dentalStatus: this.dentalStatus,
+            idDoctor: this.idDoctor
         };
     }
 }
@@ -76,7 +78,8 @@ export const sendPatientFormated = (patient) => {
         nAffiliate: patient.nAffiliate,
         observations: patient.observations,
         treatments: patient.treatments,
-        dentalStatus: patient.dentalStatus
+        dentalStatus: patient.dentalStatus,
+        idDoctor: patient.idDoctor
     };
 };
 
@@ -100,6 +103,7 @@ export const sendPatientsFormated = (arrayPatients) => {
             email: patient.email,
             medicalCoverage: patient.medicalCoverage,
             nAffiliate: patient.nAffiliate,
+            idDoctor: patient.idDoctor
         };
     });
     return arrayMaped;

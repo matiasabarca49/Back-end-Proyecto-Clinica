@@ -3,10 +3,16 @@ import PatientsService from "../service/mongo/patients.service.js";
 const patientsService = new PatientsService();
 
 export const getPatients = async (req, res) => {
-    const patientsGetted = await patientsService.getPatients();
-    patientsGetted
-        ? res.status(200).send({ status: "Success", patients: patientsGetted })
-        : res.status(500).send({ status: "ERROR", reason: "Los Pacientes no se pudieron obtener" });
+    try {
+        const patientsGetted = await patientsService.getPatients(req.user);
+        patientsGetted
+            ? res.status(200).send({ status: "Success", patients: patientsGetted })
+            : res.status(404).send({ status: "ERROR", reason: "Los Pacientes no se pudieron obtener" });
+    } catch (error) {
+        console.log(error)
+        res.status(500).send({ status: "ERROR", reason: "Error en el servidor, intente más tarde" });
+    }
+    
 };
 
 export const getPatientById = async (req, res) => {
@@ -34,16 +40,22 @@ export const getsPatientsPaginate = async (req, res) => {
     search.length !== 0
         ? (defaultQuery = { lastName: search })
         : query !== "0" && (defaultQuery = { sex: query });
-
-    const patientsGetted = await patientsService.getPatientPaginate(
+    try {
+        const patientsGetted = await patientsService.getPatientPaginate(
         defaultQuery,
         defaultLimit,
         defaultPage,
-        defaultSort
-    );
-    patientsGetted
-        ? res.status(200).send({ status: "Success", patients: patientsGetted })
-        : res.status(500).send({ status: "ERROR" });
+        defaultSort,
+        req.user
+        );
+        patientsGetted
+            ? res.status(200).send({ status: "Success", patients: patientsGetted })
+            : res.status(500).send({ status: "ERROR" });
+    } catch (error) {
+        console.log(error)
+         res.status(500).send({ status: "ERROR", reason: "Error en el servidor, intente más tarde" });
+    }
+    
 };
 
 export const getPatientByQuery = async (req, res) =>{
@@ -57,7 +69,7 @@ export const getPatientByQuery = async (req, res) =>{
 export const createPatient = async (req, res) => {
     const patient = req.body;
     try {
-        const patientCreated = await patientsService.createPatient(patient);
+        const patientCreated = await patientsService.createPatient(patient, req.user);
         if (!patientCreated.status) {
             if (patientCreated.error.code === 11000) {
                 res.status(409).send({ status: "ERROR", code: 11000 });

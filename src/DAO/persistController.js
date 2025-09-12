@@ -15,6 +15,19 @@ export default class PersistController{
         return documentsFromDB;   
     }
 
+    async getDocumentsByFilter(Model, filter){
+        let documentsFromDB;
+        await Model.find(filter)
+            .then( dts => {
+                documentsFromDB = dts;
+            })
+            .catch(error => { 
+                console.log(error);
+                documentsFromDB = false;
+            })
+        return documentsFromDB;   
+    }
+
     async getDocumentByID(Model, id){
         let documentFromDB;
         await Model.findOne({_id: id})
@@ -33,6 +46,7 @@ export default class PersistController{
         let documentFromDB;
         await Model.findOne(filter)
             .then( dt => {
+                //console.log(dt)
                 documentFromDB = dt;
             })
             .catch(error => {
@@ -57,9 +71,9 @@ export default class PersistController{
 
     }
 
-    async getDocumentsPaginate(Model, dQuery, dLimit, dPage, dSort){
+    async getDocumentsPaginate(Model, dQuery, dLimit, dPage, dSort, idUser = false){
         let documents;
-        await Model.paginate(dQuery || {}, {limit: dLimit || 5, page: dPage || 1, sort: dSort || {} })
+        await Model.paginate(idUser ? {...dQuery, idDoctor: idUser} : dQuery || {}, {limit: dLimit || 5, page: dPage || 1, sort: dSort || {} })
         .then( dts =>{
             documents = dts;
         })

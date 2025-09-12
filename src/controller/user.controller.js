@@ -17,6 +17,28 @@ export const getUsers = async (req, res)=>{
 
 }
 
+/**
+ * Endpoint que retorna un Documento de la Colección usuario filtrado mediante un atributo
+ * Query: { clave : Valor }
+ * Respuesta: 
+ *        200: retorna un Json con estado y Objeto Usuario
+ *        400: Error. El atributo no existe en el modelo o solicitud mal hecha
+*/
+export const getManyUsersByFilter = async (req, res) =>{
+    const filter = req.query;
+    try {
+         const usersGetted = await usersService.getManyUsersByFilter(filter);
+        usersGetted
+        ? res.status(200).send({status: "Succes", users : usersGetted})
+        : res.status(400).send({status: "ERROR"})
+
+    } catch (error) {
+        console.log(error)
+        res.status(500).send({status: "ERROR", reason: "Error en el servidor, intentar más tarde"})
+    }
+   
+}
+
 
 /**
  * Endpoint que retorna un Documento de la Colección usuario mediante su ID

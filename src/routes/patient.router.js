@@ -20,6 +20,7 @@ router.get("/", authToken, getPatients)
  */
 router.get("/paginate/", authToken, getsPatientsPaginate)
 
+
 /**
  * Ruta para obtener pacientes con filtros específicos.
  * @route GET /patients/filter
