@@ -6,6 +6,19 @@ const appointmentSchema = new mongoose.Schema({
         type: Date,
         required: true
     },
+    slots: {
+        type: [Number], // uno o varios slots (ej: [4] o [10,11,12])
+        required: true,
+        validate: {
+            validator: function(slots) {
+                return slots.every(s => s >= 0 && s <= 17); // 18 slots en total
+            },
+            message: "Los slots deben estar entre 0 y 17"
+            }
+    },
+    room: {
+        type: String
+    },
     doctorID: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'doctors',
@@ -18,11 +31,12 @@ const appointmentSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ["Pending", "Finalized", "Canceled"],
+        enum: ["Pending", "Confirmed", "NoShow", "Rescheduled","Finalized", "Canceled"],
         required: true
     },
     observations: {
-        type: String
+        type: String,
+        maxlength: 500
     }
 });
 mongoose.plugin(mongoosePaginate)

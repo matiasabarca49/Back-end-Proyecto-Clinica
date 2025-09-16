@@ -1,4 +1,4 @@
-import UsersService from "../service/mongo/users.service.js";
+import UsersService from "../service/mongo/user.service.js";
 import { isValidPassword } from "../utils/utils.js";
 import { generateToken } from "../middlewares/middlewares.js";
 const usersService = new UsersService();

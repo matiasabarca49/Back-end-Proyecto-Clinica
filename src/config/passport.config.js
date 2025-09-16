@@ -1,5 +1,5 @@
 import passport from "passport";
-import UsersService from '../service/mongo/users.service.js';
+import UsersService from '../service/mongo/user.service.js';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { UserFormated } from '../dto/user.dto.js';
 import crypto from 'crypto';

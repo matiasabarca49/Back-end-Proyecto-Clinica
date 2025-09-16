@@ -1,4 +1,4 @@
-import TreatmentsService from "../service/mongo/treatments.service.js";
+import TreatmentsService from "../service/mongo/treatment.service.js";
 const treatmentsService = new TreatmentsService();
 
 /**

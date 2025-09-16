@@ -1,4 +1,4 @@
-import UsersService from "../service/mongo/users.service.js";
+import UsersService from "../service/mongo/user.service.js";
 const usersService = new UsersService();
 
 

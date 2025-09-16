@@ -3,10 +3,10 @@ import PersistController from "../../DAO/persistController.js";
 import { sendAppointmentFormated, AppointmentFormated, sendAppointmentsFormated } from "../../dto/appointment.dto.js";
 import { Appointment } from "../../model/mongo/appointmentsModel.js";
 //Patients
-import PatientsService from './patients.service.js'
+import PatientsService from './patient.service.js'
 const patientsService = new PatientsService();
 //Doctors
-import DoctorsService from './doctors.service.js'
+import DoctorsService from './doctor.service.js'
 const doctorsService = new DoctorsService();
 
 

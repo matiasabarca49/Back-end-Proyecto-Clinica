@@ -1,5 +1,5 @@
 import { Query } from "mongoose";
-import PatientsService from "../service/mongo/patients.service.js";
+import PatientsService from "../service/mongo/patient.service.js";
 const patientsService = new PatientsService();
 
 export const getPatients = async (req, res) => {

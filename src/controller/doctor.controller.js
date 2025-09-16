@@ -1,4 +1,4 @@
-import DoctorsService from "../service/mongo/doctors.service.js"
+import DoctorsService from "../service/mongo/doctor.service.js"
 const doctorsService = new DoctorsService();
 
 /**

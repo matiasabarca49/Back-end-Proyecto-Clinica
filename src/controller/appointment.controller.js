@@ -1,4 +1,4 @@
-import AppointmentsService from "../service/mongo/appointments.service.js"
+import AppointmentsService from "../service/mongo/appointment.service.js"
 const appointmentsService = new AppointmentsService();
 
 
