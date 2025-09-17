@@ -95,16 +95,22 @@ export const getAppointmentByQuery = async (req, res) =>{
 
 export const createAppointment = async (req, res) => {
     const appointment = req.body;
-    const appointmentCreated = await appointmentsService.createAppointment(appointment);
-    if(!appointmentCreated.status)
-        if(appointmentCreated.error.code === 11000){
-            res.status(409).send({ status: "ERROR", code: 11000 });
-        }else{
-            res.status(500).send({ status: "ERROR" });
+    try {
+        const appointmentCreated = await appointmentsService.createAppointment(appointment);
+        if(!appointmentCreated.status)
+            if(appointmentCreated.error.code === 11000){
+                res.status(409).send({ status: "ERROR", code: 11000 });
+            }else{
+                res.status(500).send({ status: "ERROR" });
+            }
+        else{
+            res.status(201).send({ status: "Success", patients: appointmentCreated.dt})
         }
-    else{
-        res.status(201).send({ status: "Success", patients: appointmentCreated.dt})
+    } catch (error) {
+        console.log(error)
+        res.status(500).send({ status: "ERROR", reason: "Error en el servidor, intente más tarde" });
     }
+    
 };
 
 
