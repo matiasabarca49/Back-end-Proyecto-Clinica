@@ -4,7 +4,8 @@ import mongoosePaginate from 'mongoose-paginate-v2'
 const appointmentSchema = new mongoose.Schema({
     date: {
         type: Date,
-        required: true
+        required: true,
+        match: /^\d{4}-\d{2}-\d{2}$/  // valida formato YYYY-MM-DD
     },
     slots: {
         type: [Number], // uno o varios slots (ej: [4] o [10,11,12])
@@ -15,6 +16,11 @@ const appointmentSchema = new mongoose.Schema({
             },
             message: "Los slots deben estar entre 0 y 17"
             }
+    },
+    typeAppointment: {
+        type: String,
+        enum: ["consulta", "cirugia", "control", "tratamiento"],
+        required: true,
     },
     room: {
         type: String

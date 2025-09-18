@@ -1,3 +1,6 @@
+import { dateNotHours } from "../utils/dates.helper.js";
+import { slotsToHours, slotsToRanges } from "../utils/slots.helper.js";
+
 /**
  * Clase que formatea la información de una cita médica.
  * Se encarga de estructurar los datos recibidos y de prepararlos para ser enviados.
@@ -8,8 +11,10 @@ export class AppointmentFormated {
      * @param {Object} appointment Objeto cita con los datos a formatear.
      */
     constructor(appointment) {
-        this.id = appointment._id;
-        this.date = appointment.date;
+        this.date = dateNotHours(appointment.date);
+        this.slots = appointment.slots,
+        this.typeAppointment = appointment.typeAppointment;
+        this.room = appointment.room;
         this.doctorID = appointment.doctorID;  
         this.patientID = appointment.patientID;  
         this.status = appointment.status;
@@ -43,6 +48,10 @@ export const sendAppointmentFormated = (appointment) => {
     return {
         id: appointment._id,
         date: appointment.date,
+        slots: appointment.slots,
+        slotsText: slotsToRanges(appointment.slots),
+        typeAppointment: appointment.typeAppointment,
+        room: appointment.room,
         doctorID: appointment.doctorID,  
         patientID: appointment.patientID,  
         status: appointment.status,
@@ -61,11 +70,16 @@ export const sendAppointmentsFormated = (arrayAppointments) => {
         return {
             id: appointment._id,
             date: appointment.date,
-            doctor: appointment.doctorID,
-            patient: appointment.patientID,
+            slots: appointment.slots,
+            slotsText: slotsToRanges(appointment.slots),
+            typeAppointment: appointment.typeAppointment,
+            room: appointment.room,
+            doctorID: appointment.doctorID,
+            patientID: appointment.patientID,
             status: appointment.status,
             observations: appointment.observations
         }
     })
     return arrayMaped;
 };
+

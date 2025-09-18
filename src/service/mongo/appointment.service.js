@@ -99,9 +99,20 @@ export default class AppointmentsService {
     }
 
     async createAppointment(newAppointment) {
+
+        const { date , idDoctor, slots } = newAppointment
+        //Verificar si el turno existe
+        
+        const turnoFounded = await persistController.getDocumentByFilter(Appointment, 
+            {date: date, idDoctor: idDoctor, slots: { $in: slots }})
+        if (turnoFounded){
+            throw new Error(`El slot ya está reservado para ese día`);
+        }
+        
+
         const newAppointmentFormated = new AppointmentFormated(newAppointment);
         const appointmentAdded = await persistController.createDocument(Appointment, newAppointmentFormated);
-        return appointmentAdded
+        return appointmentAdded.status
             ? { ...appointmentAdded, dt: sendAppointmentFormated(appointmentAdded.dt) }
             : appointmentAdded;
     }
