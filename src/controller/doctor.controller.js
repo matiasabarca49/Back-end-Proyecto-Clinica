@@ -1,4 +1,4 @@
-import DoctorsService from "../service/mongo/doctor.service.js"
+import DoctorsService from "../service/mongo/doctor.service.js";
 const doctorsService = new DoctorsService();
 
 /**
@@ -7,14 +7,17 @@ const doctorsService = new DoctorsService();
  *        200: retorna un JSON con estado y array de doctores
  *        404: Error. Problema al obtener la colección de la DB
  */
-
 export const getDoctors = async (req, res) => {
-    const doctorsGetted = await doctorsService.getDoctors();
-    doctorsGetted
-        ? res.status(200).send({ status: "Succes", doctors: doctorsGetted })
-        : res.status(404).send({ status: "ERROR" });
+    try {
+        const doctorsGetted = await doctorsService.getDoctors();
+        doctorsGetted
+            ? res.status(200).send({ status: "Succes", doctors: doctorsGetted })
+            : res.status(404).send({ status: "ERROR" });
+    } catch (error) {
+        console.error("Error en getDoctors:", error);
+        res.status(500).send({ status: "ERROR", message: "Error en el servidor" });
+    }
 };
-
 
 /**
  * Endpoint que retorna un doctor de la colección mediante su ID
@@ -23,12 +26,17 @@ export const getDoctors = async (req, res) => {
  *        200: retorna un JSON con estado y objeto doctor
  *        404: Error. ID incorrecto o no existe en la DB
  */
-
 export const getDoctorById = async (req, res) => {
-    const doctorID = req.params.id.trim();
-    const doctorGetted = await doctorsService.getDoctorById(doctorID);
-    doctorGetted
-    ? res.status(200).send({ status: "Succes", doctors: doctorGetted }) : res.status(404).send({ status: "ERROR" });
+    try {
+        const doctorID = req.params.id.trim();
+        const doctorGetted = await doctorsService.getDoctorById(doctorID);
+        doctorGetted
+            ? res.status(200).send({ status: "Succes", doctors: doctorGetted })
+            : res.status(404).send({ status: "ERROR" });
+    } catch (error) {
+        console.error("Error en getDoctorById:", error);
+        res.status(500).send({ status: "ERROR", message: "Error en el servidor" });
+    }
 };
 
 /**
@@ -38,12 +46,17 @@ export const getDoctorById = async (req, res) => {
  *        200: retorna un JSON con estado y array de doctores
  *        404: Error. El atributo no existe en el modelo o solicitud mal hecha
  */
-
 export const getDoctorByFilter = async (req, res) => {
-    const filter = req.query;
-    const doctorGetted = await doctorsService.getDoctorByFilter(filter);
-    doctorGetted
-    ? res.status(200).send({ status: "Succes", doctors: doctorGetted }) : res.status(404).send({ status: "ERROR" });
+    try {
+        const filter = req.query;
+        const doctorGetted = await doctorsService.getDoctorByFilter(filter);
+        doctorGetted
+            ? res.status(200).send({ status: "Succes", doctors: doctorGetted })
+            : res.status(404).send({ status: "ERROR" });
+    } catch (error) {
+        console.error("Error en getDoctorByFilter:", error);
+        res.status(500).send({ status: "ERROR", message: "Error en el servidor" });
+    }
 };
 
 /**
@@ -53,35 +66,43 @@ export const getDoctorByFilter = async (req, res) => {
  *        200: retorna un JSON con estado y objeto de doctores paginados
  *        500: Error. El atributo no existe en el modelo o solicitud mal hecha
  */
-
 export const getDoctorsPaginate = async (req, res) => {
-    let defaultQuery, defaultLimit, defaultPage, defaultSort;
-    const { search, query, sort, page, limit } = req.query;
-    limit && (defaultLimit = parseInt(limit));
-    page && (defaultPage = parseInt(page));
-    sort && (defaultSort = {lastName: parseInt(sort)});
-    search.length !== 0
-        ? (defaultQuery = { lastName: search })
-        : query !== "0" && (defaultQuery = {lastName: query });
-    const doctorsGetted = await doctorsService.getDoctorPaginate(defaultQuery, defaultLimit, defaultPage, defaultSort);
-    doctorsGetted
-        ? res.status(200).send({ status: "Success", doctors: doctorsGetted })
-        : res.status(500).send({ status: "ERROR" });
+    try {
+        let defaultQuery, defaultLimit, defaultPage, defaultSort;
+        const { search, query, sort, page, limit } = req.query;
+        limit && (defaultLimit = parseInt(limit));
+        page && (defaultPage = parseInt(page));
+        sort && (defaultSort = { lastName: parseInt(sort) });
+        search.length !== 0
+            ? (defaultQuery = { lastName: search })
+            : query !== "0" && (defaultQuery = { lastName: query });
+        const doctorsGetted = await doctorsService.getDoctorPaginate(
+            defaultQuery,
+            defaultLimit,
+            defaultPage,
+            defaultSort
+        );
+        doctorsGetted
+            ? res.status(200).send({ status: "Success", doctors: doctorsGetted })
+            : res.status(500).send({ status: "ERROR" });
+    } catch (error) {
+        console.error("Error en getDoctorsPaginate:", error);
+        res.status(500).send({ status: "ERROR", message: "Error en el servidor" });
+    }
 };
 
-export const getDoctorByQuery = async (req, res) =>{
-    const { query } = req.query;
+export const getDoctorByQuery = async (req, res) => {
     try {
-        const doctorsFounded = await doctorsService.getDoctorByQuery(query)
+        const { query } = req.query;
+        const doctorsFounded = await doctorsService.getDoctorByQuery(query);
         doctorsFounded
-            ? res.status(200).json({success: true, data: doctorsFounded})
-            : res.status(500).json({success: false, error: "No se encontró pacientes que coincidan"})
+            ? res.status(200).json({ success: true, data: doctorsFounded })
+            : res.status(500).json({ success: false, error: "No se encontró pacientes que coincidan" });
     } catch (error) {
-        console.log(error);
-        res.status(500).json({success: false, error: "Error en el Servidor. Intentar más tarde"})
+        console.error("Error en getDoctorByQuery:", error);
+        res.status(500).json({ success: false, error: "Error en el Servidor. Intentar más tarde" });
     }
-    
-}
+};
 
 /**
  * Endpoint que crea un nuevo doctor en la colección de doctores
@@ -90,18 +111,22 @@ export const getDoctorByQuery = async (req, res) =>{
  *        201: retorna un JSON con estado y objeto doctor creado
  *        404: Error. Datos inválidos o solicitud mal hecha
  */
-
 export const createDoctor = async (req, res) => {
-    const doctor = req.body;
-    const doctorCreated = await doctorsService.createDoctor(doctor);
-    if(!doctorCreated.status)
-        if(doctorCreated.error.code === 11000){
-            res.status(409).send({ status: "ERROR", code: 11000 });
-        }else{
-            res.status(500).send({ status: "ERROR" });
+    try {
+        const doctor = req.body;
+        const doctorCreated = await doctorsService.createDoctor(doctor);
+        if (!doctorCreated.status)
+            if (doctorCreated.error.code === 11000) {
+                res.status(409).send({ status: "ERROR", code: 11000 });
+            } else {
+                res.status(500).send({ status: "ERROR" });
+            }
+        else {
+            res.status(201).send({ status: "Success", patients: doctorCreated.dt });
         }
-    else{
-        res.status(201).send({ status: "Success", patients: doctorCreated.dt})
+    } catch (error) {
+        console.error("Error en createDoctor:", error);
+        res.status(500).send({ status: "ERROR", message: "Error en el servidor" });
     }
 };
 
@@ -112,13 +137,17 @@ export const createDoctor = async (req, res) => {
  *        200: retorna un JSON con estado y objeto del doctor eliminado
  *        404: Error. El ID no existe en la DB o solicitud mal hecha
  */
-
 export const deleteDoctor = async (req, res) => {
-    const doctorID = req.params.id;
-    const doctorDeleted = await doctorsService.deleteDoctor(doctorID);
-    doctorDeleted
-        ? res.status(200).send({ status: "Succes", doctors: doctorDeleted })
-        : res.status(404).send({ status: "ERROR" });
+    try {
+        const doctorID = req.params.id;
+        const doctorDeleted = await doctorsService.deleteDoctor(doctorID);
+        doctorDeleted
+            ? res.status(200).send({ status: "Succes", doctors: doctorDeleted })
+            : res.status(404).send({ status: "ERROR" });
+    } catch (error) {
+        console.error("Error en deleteDoctor:", error);
+        res.status(500).send({ status: "ERROR", message: "Error en el servidor" });
+    }
 };
 
 /**
@@ -129,12 +158,16 @@ export const deleteDoctor = async (req, res) => {
  *        201: retorna un JSON con estado y objeto doctor actualizado
  *        404: Error. El ID no existe en la DB o solicitud mal hecha
  */
-
 export const updateDoctor = async (req, res) => {
-    const doctorData = req.body;
-    const idDoctor = req.params.id;
-    const doctorUpdated = await doctorsService.updateDoctor(idDoctor, doctorData);
-    doctorUpdated
-        ? res.status(201).send({ status: "Succes", doctors: doctorUpdated })
-        : res.status(404).send({ status: "ERROR" });
+    try {
+        const doctorData = req.body;
+        const idDoctor = req.params.id;
+        const doctorUpdated = await doctorsService.updateDoctor(idDoctor, doctorData);
+        doctorUpdated
+            ? res.status(201).send({ status: "Succes", doctors: doctorUpdated })
+            : res.status(404).send({ status: "ERROR" });
+    } catch (error) {
+        console.error("Error en updateDoctor:", error);
+        res.status(500).send({ status: "ERROR", message: "Error en el servidor" });
+    }
 };
