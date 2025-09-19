@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import PersistController from "../../DAO/persistController.js";
 import { sendAppointmentFormated, AppointmentFormated, sendAppointmentsFormated } from "../../dto/appointment.dto.js";
-import { Appointment } from "../../model/mongo/appointmentsModel.js";
+import { Appointment } from "../../model/mongo/appointment.model.js"
 //Patients
 import PatientsService from './patient.service.js'
 const patientsService = new PatientsService();

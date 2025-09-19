@@ -1,6 +1,6 @@
 import PersistController from "../../DAO/persistController.js";
 import { sendPatientFormated, PatientFormated, sendPatientsFormated } from "../../dto/patient.dto.js";
-import { Patient } from "../../model/mongo/patientsModel.js";
+import { Patient } from "../../model/mongo/patient.model.js";
 import { normalizeText } from "../../utils/utils.js";
 
 const persistController = new PersistController();

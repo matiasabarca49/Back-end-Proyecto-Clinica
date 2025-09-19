@@ -1,6 +1,6 @@
 import PersistController from "../../DAO/persistController.js";
 import { sendTreatmentFormated, TreatmentFormated, sendTreatmentsFormated } from "../../dto/treatment.dto.js";
-import { Treatment } from "../../model/mongo/treatmentsModel.js";
+import { Treatment } from "../../model/mongo/treatment.model.js";
 
 const persistController = new PersistController();
 

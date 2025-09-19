@@ -3,7 +3,7 @@ import { sendUserFormated, UserFormated, sendUsersFormated } from "../../dto/use
 //Controlador de Persistencia
 const persistController = new PersistController();
 //Modelo
-import { User } from "../../model/mongo/usersModel.js";
+import { User } from "../../model/mongo/user.model.js";
 import { normalizeText } from "../../utils/utils.js";
 
 export default class UsersService{
