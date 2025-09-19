@@ -8,9 +8,9 @@ const router = new Router();
 router.get("/", authToken, getAppointments);
 router.get("/filter/", authToken, getAppointmentsByFilter);
 //Busqueda
+router.get("/paginate", authToken, getAppointmentsPaginate);
 router.get("/search", authToken, getAppointmentByQuery)
 router.get("/:id", authToken, getAppointmentById);
-router.get("/paginate", authToken, getAppointmentsPaginate);
 // Crear
 router.post("/", authToken, createAppointment);
 
