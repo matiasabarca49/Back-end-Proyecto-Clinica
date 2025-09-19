@@ -7,6 +7,7 @@ import PatientsService from './patient.service.js'
 const patientsService = new PatientsService();
 //Doctors
 import DoctorsService from './doctor.service.js'
+import { determineSearchType } from "../../utils/utils.js";
 const doctorsService = new DoctorsService();
 
 
@@ -48,15 +49,30 @@ export default class AppointmentsService {
         return appointmentFounded ? sendAppointmentFormated(appointmentFounded) : false;
     }
 
-    async getAppointmentByQuery(query){
-        const filters = [];
-        if(mongoose.Types.ObjectId.isValid(query)){
-                filters.push({doctorID: query});
-                filters.push({patientID: query});
-                filters.push({_id: query});
-        }else if(!isNaN(Date.parse(query))){
-
-            const fecha = new Date(query);
+    async getAppointmentByQuery(person, query, status,limit, page, sort){
+        const filtersPerson = [];
+        const filtersQuery = [];
+        let filters = {};
+        if(mongoose.Types.ObjectId.isValid(person)){
+                filtersPerson.push({doctorID: person});
+                filtersPerson.push({patientID: person});
+                filtersPerson.push({_id: person});
+        }else if( typeof person === "string" && person.length > 1){
+            const searchRegex = new RegExp(person, "i");
+            //Buscando Pacientes y doctores que coincidan con la persona
+            const patientsFounded = await patientsService.getPatientByQuery(searchRegex);
+            const doctorsFounded = await doctorsService.getDoctorByQuery(searchRegex);
+            //Usamos un conjunto de concidencias para un campo. En este caso [_id, _id, _id, _id]
+            if (patientsFounded.docs.length > 0) {
+                filtersPerson.push({ patientID: { $in: patientsFounded.docs.map(p => p._id) } });
+            }
+            if (doctorsFounded.docs.length > 0) {
+                filtersPerson.push({ doctorID: { $in: doctorsFounded.docs.map(d => d._id) } });
+            }
+        }
+        
+        if(determineSearchType(query) === "fecha"){
+           const fecha = new Date(query);
 
             let fechaInicio, fechaFin;
 
@@ -76,26 +92,43 @@ export default class AppointmentsService {
                 fechaFin = new Date(fecha.setHours(23,59,59,999));
             }
 
-            filters.push({ date: { $gte: fechaInicio, $lte: fechaFin } });
-
-        }else if( typeof query === "string" && query.length > 1){
+            filtersQuery.push({ date: { $gte: fechaInicio, $lte: fechaFin } });
+            
+        }else if(typeof query === "string" && query.length > 3){
             const searchRegex = new RegExp(query, "i");
-            //Buscando Pacientes y doctores que coincidan con la query
-            const patientsFounded = await patientsService.getPatientByQuery(searchRegex);
-            const doctorsFounded = await doctorsService.getDoctorByQuery(searchRegex);
-            console.log(doctorsFounded)
-            //Usamos un conjunto de concidencias para un campo. En este caso [_id, _id, _id, _id]
-            if (patientsFounded.length > 0) {
-                filters.push({ patientID: { $in: patientsFounded.map(p => p._id) } });
-            }
-             if (doctorsFounded.length > 0) {
-                filters.push({ doctorID: { $in: doctorsFounded.map(d => d._id) } });
-            }
+            filtersQuery.push({$or: [ 
+                {typeAppointment: searchRegex},
+                {room: searchRegex}
+            ]})
         }
-        
-        return persistController.getDocumentByQuery(Appointment, {
-            $or: filters
-        })
+
+        if(person && query){
+            filters = {
+                $and: [
+                    {
+                        $or: filtersPerson
+                    },
+                    {
+                        $or: filtersQuery 
+                    }
+                ]}
+            //status && (filters.status = status)
+        }else if(!person){
+            filters = filtersQuery.length > 1 ? { $or: filtersQuery } : filtersQuery[0] 
+            //console.log(filters)
+        }else{
+            filters = filtersPerson.length > 1 ? { $or: filtersPerson } : filtersPerson[0]
+        }
+
+        if (!filters || typeof filters !== 'object') {
+        filters = {};
+        }
+
+        if(status) {
+            filters.status = status
+        };
+
+        return persistController.getDocumentByQuery(Appointment, filters, limit, page, sort)
     }
 
     async createAppointment(newAppointment) {

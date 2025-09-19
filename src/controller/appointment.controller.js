@@ -95,8 +95,8 @@ export const getAppointmentsPaginate = async (req, res) => {
 
 export const getAppointmentByQuery = async (req, res) => {
     try {
-        const { query } = req.query;
-        const appointmetsFounded = await appointmentsService.getAppointmentByQuery(query);
+        const { person, query, status,limit, page, sort } = req.query;
+        const appointmetsFounded = await appointmentsService.getAppointmentByQuery(person, query, status,limit, page, sort);
         appointmetsFounded
             ? res.status(200).json({ success: true, data: appointmetsFounded })
             : res.status(500).json({ success: false, error: "No se encontró turnos que coincidan" });

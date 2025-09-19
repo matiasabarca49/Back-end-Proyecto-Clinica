@@ -57,9 +57,9 @@ export default class PersistController{
         return documentFromDB;
     }
 
-    async getDocumentByQuery(Model, query){
+    async getDocumentByQuery(Model, filter, limit, page, sort){
         let documents;
-        await Model.find(query)
+        await Model.paginate(filter, {limit: limit || 10, page: page || 1, sort: sort || {} })
             .then(  dts => {
                 documents = dts;
             }  )
