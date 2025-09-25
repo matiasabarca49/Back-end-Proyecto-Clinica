@@ -127,8 +127,14 @@ export default class AppointmentsService {
         if(status) {
             filters.status = status
         };
+        
+        const appointmentsFounded = await persistController.getDocumentByQuery(Appointment, filters, limit, page, sort)
 
-        return persistController.getDocumentByQuery(Appointment, filters, limit, page, sort)
+        if (appointmentsFounded) {
+            appointmentsFounded.docs = sendAppointmentsFormated(appointmentsFounded.docs);
+        }
+        return appointmentsFounded || false;
+    
     }
 
     async createAppointment(newAppointment) {
