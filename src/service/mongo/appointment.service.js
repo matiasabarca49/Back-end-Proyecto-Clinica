@@ -127,6 +127,15 @@ export default class AppointmentsService {
         if(status) {
             filters.status = status
         };
+
+        switch(parseInt(sort)){
+            case -1:
+                sort = "-date"
+                break;
+            default: 
+                sort = "date"
+                break;
+        }
         
         const appointmentsFounded = await persistController.getDocumentByQuery(Appointment, filters, limit, page, sort)
 
