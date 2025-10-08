@@ -8,6 +8,8 @@ const patientsService = new PatientsService();
 //Doctors
 import DoctorsService from './doctor.service.js'
 import { determineSearchType } from "../../utils/utils.js";
+import { getAvailableSlots, slotsToHours } from "../../utils/slots.helper.js";
+import e from "express";
 const doctorsService = new DoctorsService();
 
 
@@ -172,4 +174,81 @@ export default class AppointmentsService {
     updateAppointment(appointmentID, toUpdate) {
         return persistController.updateDocument(Appointment, appointmentID, toUpdate);
     }
+
+
+    async getAvailableAppointments(idDoctor, day){
+        /* console.log("idDoctor:", idDoctor);
+        console.log("day:", day); */
+
+        // Obtener todos los turnos del doctor en la fecha dada
+        const appointments = await persistController.getAllDocumentByQuery(Appointment, {
+            doctorID: idDoctor,
+            date: new Date(day)
+        });
+
+        //console.log("total appointments:", appointments);
+
+        let success;
+
+        if (!appointments) {
+            success = false;
+            return { success: false  };
+        }
+
+        if (appointments && appointments.length === 0) {
+            // Si no hay citas, todos los slots están disponibles
+            return { success: true , data: Array.from({ length: 18 }, (_, i) => i) };
+        } else {
+            // Obtener todos los slots ocupados
+            const occupiedSlots = appointments.reduce((acc, appointment) => {
+                acc = [ ...acc, ...appointment.slots ];
+                return acc;
+            }, []);
+            //console.log("occupied slots:", occupiedSlots);
+            // Con los ocupados, obtener los slots disponibles
+            const availableSlots = getAvailableSlots(occupiedSlots);
+            return { success: true , data: availableSlots };
+        }
+    }
+
+    async getNearestAppointments(idDoctor, totalSlots = 18) {
+
+        // Obtener la fecha actual y sumarle 1 dia
+        const today = new Date();
+        //setUTCHours para evitar problemas de zona horaria
+        today.setUTCHours(0, 0, 0, 0); // Establecer a medianoche para comparar solo fechas
+        const nextDay = new Date(today);
+        nextDay.setDate(today.getDate() + 1);
+        nextDay.setUTCHours(0, 0, 0, 0); // Establecer a medianoche para comparar solo fechas
+
+        /* console.log("today:", today);
+        console.log("nextDay:", nextDay); */
+
+        
+        let dayFounded = false;
+
+        do {
+            
+            // Obtener los turnos disponibles para el doctor en la fecha actual
+            const availableAppointments = await this.getAvailableAppointments(idDoctor, nextDay);
+    
+            //console.log("availableAppointments:", availableAppointments);
+    
+            if (availableAppointments.success && availableAppointments.data.length > 0) {
+                // Si hay citas disponibles, devolver la primera encontrada
+                dayFounded = true;
+                //console.log("Citas disponibles encontradas para el día:", nextDay);
+                return { success: true, date: nextDay, slots: slotsToHours(availableAppointments.data) };
+            }else {
+                // Si no hay citas, todos los slots están ocupados. Pasar al siguiente día
+                nextDay.setDate(nextDay.getDate() + 1);
+                //console.log("No hay citas disponibles. Buscando en el siguiente día:", nextDay);
+            }
+
+        } while (!dayFounded);
+        return { success: false  };
+    } 
+
+
+
 }

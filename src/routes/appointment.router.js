@@ -1,5 +1,5 @@
 import express from 'express';
-import { createAppointment, deleteAppointment, getAppointmentById, getAppointments, getAppointmentsByFilter, getAppointmentsPaginate, getAppointmentByQuery,updateAppointment } from '../controller/appointment.controller.js';
+import { createAppointment, deleteAppointment, getAppointmentById, getAppointments, getAppointmentsByFilter, getAppointmentsPaginate, getAppointmentByQuery,updateAppointment, getAvailableAppointments, getNearestAppointments } from '../controller/appointment.controller.js';
 import { authToken } from '../middlewares/middlewares.js';
 const { Router } = express;
 const router = new Router();
@@ -10,6 +10,8 @@ router.get("/filter/", authToken, getAppointmentsByFilter);
 //Busqueda
 router.get("/paginate", authToken, getAppointmentsPaginate);
 router.get("/search", authToken, getAppointmentByQuery)
+router.get("/available/:id", authToken, getAvailableAppointments)
+router.get("/nearest/:id", authToken, getNearestAppointments)
 router.get("/:id", authToken, getAppointmentById);
 // Crear
 router.post("/", authToken, createAppointment);

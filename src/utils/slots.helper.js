@@ -115,3 +115,15 @@ Input: slots = [1, 2, 3, 5, 6, 7, 10], startHour = "09:00", slotDuration = 30
 Output: ["09:30-11:00", "11:30-13:00", "12:00-12:30"]
 */
 
+/**
+ * Obtiene los slots disponibles a partir de los slots ocupados
+ * @param {*} occupiedSlots 
+ * @param {*} totalSlots 
+ * @returns 
+ */
+export const getAvailableSlots = (occupiedSlots, totalSlots = 18) => {
+  const allSlots = Array.from({ length: totalSlots }, (_, i) => i); // [0, 1, 2, ..., 17]
+  const occupiedSet = new Set(occupiedSlots); // Convertir a Set para búsqueda rápida
+  return allSlots.filter(slot => !occupiedSet.has(slot)); // Filtrar los slots ocupados
+}
+

@@ -57,6 +57,7 @@ export default class PersistController{
         return documentFromDB;
     }
 
+    //Traer documentos con una query. Con paginación
     async getDocumentByQuery(Model, filter, limit, page, sort){
         let documents;
         await Model.paginate(filter, {limit: limit || 10, page: page || 1, sort: sort || {} })
@@ -70,6 +71,23 @@ export default class PersistController{
             return documents;
 
     }
+
+    // Similar a getDocumentByQuery pero sin paginación
+    async getAllDocumentByQuery(Model, filter){
+        let documents;
+        await Model.find(filter)
+            .then(  dts => {
+                documents = dts;
+            }  )
+            .catch ( error => {
+                console.log(error);
+                documents = false;
+            })
+            return documents;
+
+    }
+
+    
 
     async getDocumentsPaginate(Model, dQuery, dLimit, dPage, dSort, idUser = false){
         let documents;

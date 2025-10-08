@@ -1,3 +1,4 @@
+import { get } from "mongoose";
 import AppointmentsService from "../service/mongo/appointment.service.js";
 const appointmentsService = new AppointmentsService();
 
@@ -173,3 +174,32 @@ export const updateAppointment = async (req, res) => {
         res.status(500).send({ status: "ERROR", message: "Error en el servidor" });
     }
 };
+
+
+export const getAvailableAppointments = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { day } = req.query;
+        const availableAppointments = await appointmentsService.getAvailableAppointments(id, day);
+        availableAppointments
+            ? res.status(200).json({ success: "Success", data: availableAppointments.data })
+            : res.status(404).json({ success: "ERROR", error: "No se encontraron turnos disponibles" });
+    } catch (error) {
+        console.error("Error en getAvailableAppointments:", error);
+        res.status(500).json({ success: "ERROR", error: "Error en el Servidor. Intente mas tarde" });
+    }
+};
+
+export const getNearestAppointments = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const nearestAppointments = await appointmentsService.getNearestAppointments(id);
+        nearestAppointments
+            ? res.status(200).json({ success: "Success", data: nearestAppointments })
+            : res.status(404).json({ success: "ERROR", error: "No se encontraron turnos disponibles" });
+    } catch (error) {
+        console.error("Error en getNearestAppointments:", error);
+        res.status(500).json({ success: "ERROR", error: "Error en el Servidor. Intente mas tarde" });
+    }
+}
+

@@ -1,4 +1,7 @@
 import express from 'express';
+
+console.time("Servidor levantado en");
+
 const app = express();
 //variables de entorno
 import 'dotenv/config'
@@ -99,6 +102,7 @@ app.listen(portSelected, () => {
         }else{
             console.log("⚠️ [Info] Autenticacion con Google NO Activada -")
         }
+        console.timeEnd("Servidor levantado en");
         console.log("==========================================")
     }, 1000)
 })
