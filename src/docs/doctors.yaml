@@ -4,144 +4,392 @@ paths:
       summary: "Obtener todos los doctores"
       tags:
         - Doctors
+      security:
+        - cookieAuth: []
       responses:
         "200":
           description: "Los doctores se obtuvieron exitosamente"
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Doctor"
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  doctors:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/DoctorResponse"
         "404":
           description: "Error en la obtención de los doctores"
+        "500":
+          description: "Error en el servidor"
+
     post:
-      summary: "Agregar un nuevo doctor a la Base de Datos"
+      summary: "Crear un nuevo doctor"
       tags:
         - Doctors
+      security:
+        - cookieAuth: []
       requestBody:
-        description: "Escriba los datos del doctor en formato JSON"
+        description: "Datos del doctor en formato JSON"
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Doctor"
+              $ref: "#/components/schemas/DoctorCreate"
       responses:
         "201":
           description: "El doctor se creó exitosamente"
-        "400":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  patients:
+                    $ref: "#/components/schemas/DoctorResponse"
+        "409":
+          description: "Conflicto - DNI o matrícula profesional duplicados"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ERROR"
+                  code:
+                    type: integer
+                    example: 11000
+        "500":
           description: "Error en la creación del doctor"
+
+  /api/doctors/paginate:
+    get:
+      summary: "Obtener doctores con paginación"
+      tags:
+        - Doctors
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: search
+          in: query
+          required: false
+          description: "Búsqueda por apellido"
+          schema:
+            type: string
+        - name: query
+          in: query
+          required: false
+          description: "Filtro adicional por apellido"
+          schema:
+            type: string
+        - name: sort
+          in: query
+          required: false
+          description: "Ordenamiento por apellido (1=ASC, -1=DESC)"
+          schema:
+            type: integer
+            enum: [1, -1]
+        - name: page
+          in: query
+          required: false
+          description: "Número de página"
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          description: "Límite de resultados por página"
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: "Doctores paginados obtenidos exitosamente"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  doctors:
+                    type: object
+                    properties:
+                      docs:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/DoctorResponse"
+                      totalDocs:
+                        type: integer
+                      limit:
+                        type: integer
+                      page:
+                        type: integer
+                      totalPages:
+                        type: integer
+                      hasNextPage:
+                        type: boolean
+                      hasPrevPage:
+                        type: boolean
+        "500":
+          description: "Error en el servidor"
+
+  /api/doctors/search:
+    get:
+      summary: "Búsqueda avanzada de doctores"
+      description: "Busca doctores por nombre, apellido, DNI o matrícula profesional"
+      tags:
+        - Doctors
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: query
+          in: query
+          required: true
+          description: "Texto de búsqueda (nombre, apellido, DNI, matrícula)"
+          schema:
+            type: string
+            example: "Pérez"
+      responses:
+        "200":
+          description: "Doctores encontrados"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/DoctorResponse"
+        "500":
+          description: "Error en el servidor"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: "Error en el Servidor. Intentar más tarde"
+
+  /api/doctors/filter:
+    get:
+      summary: "Obtener doctores por filtro específico"
+      description: "Filtra doctores por email, DNI, nombre, apellido o matrícula"
+      tags:
+        - Doctors
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: name
+          in: query
+          required: false
+          description: "Filtrar por nombre"
+          schema:
+            type: string
+        - name: lastName
+          in: query
+          required: false
+          description: "Filtrar por apellido"
+          schema:
+            type: string
+        - name: email
+          in: query
+          required: false
+          description: "Filtrar por email"
+          schema:
+            type: string
+            format: email
+        - name: dni
+          in: query
+          required: false
+          description: "Filtrar por DNI"
+          schema:
+            type: string
+        - name: professionalLicense
+          in: query
+          required: false
+          description: "Filtrar por matrícula profesional"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Doctores encontrados exitosamente"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  doctors:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/DoctorResponse"
+        "404":
+          description: "No se encontraron doctores con los criterios especificados"
+        "500":
+          description: "Error en el servidor"
 
   /api/doctors/{id}:
     get:
       summary: "Obtener un doctor por ID"
       tags:
         - Doctors
+      security:
+        - cookieAuth: []
       parameters:
-      - name: id
-        in: path
-        required: true
-        description: "ID del doctor"
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          description: "ID del doctor"
+          schema:
+            type: string
       responses:
         "200":
           description: "El doctor se obtuvo exitosamente"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  doctors:
+                    $ref: "#/components/schemas/DoctorResponse"
         "404":
-          description: "Error en la obtención del doctor"
+          description: "Doctor no encontrado"
+        "500":
+          description: "Error en el servidor"
+
     put:
       summary: "Actualizar un doctor"
       tags:
         - Doctors
+      security:
+        - cookieAuth: []
       parameters:
-      - name: id
-        in: path
-        required: true
-        description: "ID del doctor"
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          description: "ID del doctor"
+          schema:
+            type: string
       requestBody:
         description: "Datos a actualizar del doctor"
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                  description: "Nombre del doctor"
-                lastName:
-                  type: string
-                  description: "Apellido del doctor"
-                professionalLicense:
-                  type: string
-                  description: "Licencia profesional del doctor"
-                patients:
-                  type: array
-                  items:
-                    type: string
-                  description: "Lista de IDs de pacientes"
+              $ref: "#/components/schemas/DoctorUpdate"
             example:
-              name: "Juan"
-              lastName: "Pérez"
-              professionalLicense: "ABC1234"
-              patients: ["623f6b10f1d2d35c47d8f324", "623f6b10f1d2d35c47d8f325"]
+              phone: "+5492612345678"
+              email: "nuevo.email@example.com"
       responses:
-        "200":
+        "201":
           description: "El doctor se actualizó exitosamente"
-        "400":
-          description: "Error en la actualización del doctor"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  doctors:
+                    $ref: "#/components/schemas/DoctorResponse"
+        "404":
+          description: "Doctor no encontrado"
+        "500":
+          description: "Error en el servidor"
+
     delete:
       summary: "Eliminar un doctor"
       tags:
         - Doctors
+      security:
+        - cookieAuth: []
       parameters:
-      - name: id
-        in: path
-        required: true
-        description: "ID del doctor"
-        schema:
-          type: string
-      responses:
-        "200":
-          description: "El doctor se eliminó exitosamente"
-        "404":
-          description: "Error en la eliminación del doctor"
-
-  /api/doctors/filter:
-    get:
-      summary: "Obtener doctores por filtro (nombre, apellido, número de licencia)"
-      tags:
-        - Doctors
-      parameters:
-        - name: name
-          in: query
-          required: false
-          description: "Filtrar doctores por nombre"
-          schema:
-            type: string
-        - name: lastName
-          in: query
-          required: false
-          description: "Filtrar doctores por apellido"
-          schema:
-            type: string
-        - name: professionalLicense
-          in: query
-          required: false
-          description: "Filtrar doctores por número de licencia"
+        - name: id
+          in: path
+          required: true
+          description: "ID del doctor"
           schema:
             type: string
       responses:
         "200":
-          description: "Los doctores se obtuvieron exitosamente"
+          description: "El doctor se eliminó exitosamente"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  doctors:
+                    $ref: "#/components/schemas/DoctorResponse"
         "404":
-          description: "No se encontraron doctores con los criterios especificados"
+          description: "Doctor no encontrado"
+        "500":
+          description: "Error en el servidor"
 
 components:
   schemas:
-    Doctor:
+    DoctorCreate:
+      type: object
+      required:
+        - name
+        - lastName
+        - dni
+        - phone
+        - email
+        - professionalLicense
+      properties:
+        name:
+          type: string
+          description: "Nombre del doctor"
+          example: "Juan"
+        lastName:
+          type: string
+          description: "Apellido del doctor"
+          example: "Pérez"
+        dni:
+          type: string
+          description: "Número de DNI del doctor (debe ser único)"
+          example: "12345678"
+        phone:
+          type: string
+          description: "Teléfono del doctor"
+          example: "+5492612345678"
+        email:
+          type: string
+          format: email
+          description: "Email del doctor"
+          example: "juan.perez@clinica.com"
+        professionalLicense:
+          type: string
+          description: "Matrícula profesional del doctor (debe ser única)"
+          example: "MP12345"
+
+    DoctorUpdate:
       type: object
       properties:
         name:
@@ -153,22 +401,56 @@ components:
         dni:
           type: string
           description: "Número de DNI del doctor"
+        phone:
+          type: string
+          description: "Teléfono del doctor"
+        email:
+          type: string
+          format: email
+          description: "Email del doctor"
         professionalLicense:
           type: string
-          description: "Licencia profesional del doctor"
-        patients:
-          type: array
-          items:
-            type: object
-            properties:
-              IDPatient:
-                type: string
-                description: "ID del paciente asociado"
-      example:
-        name: "Juan"
-        lastName: "Pérez"
-        dni: "12345678"
-        professionalLicense: "ABC1234"
-        patients:
-          - IDPatient: "623f6b10f1d2d35c47d8f324"
-          - IDPatient: "623f6b10f1d2d35c47d8f325"
+          description: "Matrícula profesional del doctor"
+
+    DoctorResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          description: "ID único del doctor"
+          example: "676491db50d8d925d49439cc"
+        name:
+          type: string
+          description: "Nombre del doctor"
+          example: "Juan"
+        lastName:
+          type: string
+          description: "Apellido del doctor"
+          example: "Pérez"
+        dni:
+          type: string
+          description: "Número de DNI del doctor"
+          example: "12345678"
+        phone:
+          type: string
+          description: "Teléfono del doctor"
+          example: "+5492612345678"
+        email:
+          type: string
+          format: email
+          description: "Email del doctor"
+          example: "juan.perez@clinica.com"
+        professionalLicense:
+          type: string
+          description: "Matrícula profesional del doctor"
+          example: "MP12345"
+
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: token
+      description: "JWT token almacenado en cookie HttpOnly"
+
+security:
+  - cookieAuth: []

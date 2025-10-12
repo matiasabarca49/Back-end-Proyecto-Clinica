@@ -2,230 +2,628 @@ paths:
   /api/patients/:
     get:
       summary: "Obtener todos los pacientes"
+      description: "Si el usuario es Doctor, solo obtiene sus pacientes asignados. Si es Admin o Employee, obtiene todos"
       tags:
         - Patients
+      security:
+        - cookieAuth: []
       responses:
         "200":
           description: "Los pacientes se obtuvieron exitosamente"
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Patient"
-        "500":
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  patients:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PatientResponse"
+        "404":
           description: "Error en la obtención de los pacientes"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ERROR"
+                  reason:
+                    type: string
+                    example: "Los Pacientes no se pudieron obtener"
+        "500":
+          description: "Error en el servidor"
+
     post:
-      summary: "Agregar un paciente a la Base de Datos"
+      summary: "Crear un nuevo paciente"
       tags:
         - Patients
+      security:
+        - cookieAuth: []
       requestBody:
-        description: "Escriba el paciente en formato JSON"
+        description: "Datos del paciente en formato JSON"
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Patient"
+              $ref: "#/components/schemas/PatientCreate"
       responses:
         "201":
           description: "El paciente se creó exitosamente"
-        "404":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  patients:
+                    $ref: "#/components/schemas/PatientResponse"
+        "409":
+          description: "Conflicto - DNI duplicado"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ERROR"
+                  code:
+                    type: integer
+                    example: 11000
+        "500":
           description: "Error en la creación del paciente"
+
+  /api/patients/paginate:
+    get:
+      summary: "Obtener pacientes con paginación"
+      tags:
+        - Patients
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: search
+          in: query
+          required: false
+          description: "Búsqueda por apellido"
+          schema:
+            type: string
+        - name: query
+          in: query
+          required: false
+          description: "Filtro por sexo"
+          schema:
+            type: string
+            enum: ["Male", "Female", "Other"]
+        - name: sort
+          in: query
+          required: false
+          description: "Ordenamiento por apellido (1=ASC, -1=DESC)"
+          schema:
+            type: integer
+            enum: [1, -1]
+        - name: page
+          in: query
+          required: false
+          description: "Número de página"
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          description: "Límite de resultados por página"
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: "Pacientes paginados obtenidos exitosamente"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  patients:
+                    type: object
+                    properties:
+                      docs:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/PatientResponse"
+                      totalDocs:
+                        type: integer
+                      limit:
+                        type: integer
+                      page:
+                        type: integer
+                      totalPages:
+                        type: integer
+                      hasNextPage:
+                        type: boolean
+                      hasPrevPage:
+                        type: boolean
+        "404":
+          description: "No se encontraron pacientes"
+        "500":
+          description: "Error en el servidor"
+
+  /api/patients/search:
+    get:
+      summary: "Búsqueda avanzada de pacientes"
+      description: "Busca pacientes por nombre, apellido, DNI o email"
+      tags:
+        - Patients
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: query
+          in: query
+          required: true
+          description: "Texto de búsqueda (nombre, apellido, DNI, email)"
+          schema:
+            type: string
+            example: "García"
+      responses:
+        "200":
+          description: "Pacientes encontrados"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PatientResponse"
+        "404":
+          description: "No se encontraron pacientes"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    example: "No se encontraron pacientes que coincidan"
+        "500":
+          description: "Error en el servidor"
+
+  /api/patients/filter:
+    get:
+      summary: "Obtener pacientes por filtro específico"
+      description: "Filtra pacientes por DNI, email, sexo u otros atributos"
+      tags:
+        - Patients
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: DNI
+          in: query
+          required: false
+          description: "Filtrar por DNI"
+          schema:
+            type: string
+        - name: email
+          in: query
+          required: false
+          description: "Filtrar por email"
+          schema:
+            type: string
+            format: email
+        - name: sex
+          in: query
+          required: false
+          description: "Filtrar por sexo"
+          schema:
+            type: string
+            enum: ["Male", "Female", "Other"]
+        - name: name
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: lastName
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Pacientes encontrados exitosamente"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  patients:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PatientResponse"
+        "404":
+          description: "No se encontraron pacientes con el filtro aplicado"
+        "500":
+          description: "Error en el servidor"
 
   /api/patients/{id}:
     get:
       summary: "Obtener un paciente por ID"
       tags:
         - Patients
+      security:
+        - cookieAuth: []
       parameters:
-      - name: id
-        in: path
-        required: true
-        description: "ID del paciente"
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          description: "ID del paciente"
+          schema:
+            type: string
       responses:
         "200":
           description: "El paciente se obtuvo exitosamente"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  patients:
+                    $ref: "#/components/schemas/PatientResponse"
         "404":
-          description: "Error en la obtención del paciente"
+          description: "Paciente no encontrado"
+        "500":
+          description: "Error en el servidor"
+
     put:
       summary: "Actualizar un paciente"
       tags:
         - Patients
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: "ID del paciente"
+          schema:
+            type: string
       requestBody:
-        description: "Se envía el ID en la URL y la información a actualizar en el body"
+        description: "Datos a actualizar del paciente"
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Patient"
-      parameters:
-      - name: id
-        in: path
-        required: true
-        description: "ID del paciente"
-        schema:
-          type: string
+              $ref: "#/components/schemas/PatientUpdate"
+            example:
+              phone: "+5492612345678"
+              address: "Nueva Dirección 456"
+              medicalCoverage: "OSDE"
       responses:
         "201":
           description: "El paciente se actualizó exitosamente"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  patients:
+                    $ref: "#/components/schemas/PatientResponse"
         "404":
-          description: "Error en la actualización del paciente"
+          description: "Paciente no encontrado"
+        "500":
+          description: "Error en el servidor"
+
     delete:
       summary: "Eliminar un paciente"
       tags:
         - Patients
+      security:
+        - cookieAuth: []
       parameters:
-      - name: id
-        in: path
-        required: true
-        description: "ID del paciente"
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          description: "ID del paciente"
+          schema:
+            type: string
       responses:
         "200":
           description: "El paciente se eliminó exitosamente"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  patients:
+                    $ref: "#/components/schemas/PatientResponse"
         "404":
-          description: "Error en la eliminación del paciente"
-
-  /api/patients/filter:
-    get:
-      summary: "Obtener pacientes por filtro"
-      tags:
-        - Patients
-      parameters:
-        - name: query
-          in: query
-          required: false
-          description: "Parámetros de filtro como nombre, apellido, DNI, etc."
-          schema:
-            type: object
-      responses:
-        "200":
-          description: "Pacientes obtenidos exitosamente según el filtro"
-        "404":
-          description: "No se encontraron pacientes con el filtro aplicado"
+          description: "Paciente no encontrado"
+        "500":
+          description: "Error en el servidor"
 
 components:
   schemas:
-    Patient:
+    PatientCreate:
       type: object
+      required:
+        - name
+        - lastName
+        - birth
+        - DNI
+        - sex
+        - address
+        - phone
+        - email
+        - medicalCoverage
+        - nAffiliate
+        - idDoctor
       properties:
         name:
           type: string
           description: "Nombre del paciente"
+          example: "Juan"
         lastName:
           type: string
           description: "Apellido del paciente"
+          example: "García"
         birth:
           type: string
-          description: "Fecha de nacimiento del paciente"
+          format: date
+          description: "Fecha de nacimiento (YYYY-MM-DD)"
+          example: "1990-05-15"
         DNI:
           type: string
-          description: "Documento de identidad del paciente"
+          description: "Documento de identidad del paciente (debe ser único)"
+          example: "12345678"
         sex:
           type: string
           description: "Sexo del paciente"
+          enum: ["Male", "Female", "Other"]
+          example: "Male"
         address:
           type: string
           description: "Dirección del paciente"
+          example: "Av. Siempre Viva 123"
         phone:
           type: string
           description: "Teléfono del paciente"
+          example: "+5492612345678"
         email:
           type: string
+          format: email
           description: "Correo electrónico del paciente"
+          example: "juan.garcia@example.com"
         medicalCoverage:
           type: string
           description: "Cobertura médica del paciente"
+          example: "OSDE"
         nAffiliate:
           type: string
           description: "Número de afiliado"
-        appointments:
-          type: array
-          description: "Citas médicas del paciente"
-          items:
-            type: object
-            properties:
-              date:
-                type: string
-                format: date
-                description: "Fecha de la cita"
-              doctorID:
-                type: string
-                description: "ID del doctor asignado"
-              status:
-                type: string
-                enum: ["Pending", "Finalized", "Canceled"]
-                description: "Estado de la cita"
+          example: "987654321"
+        idDoctor:
+          type: string
+          description: "ID del doctor asignado al paciente"
+          example: "676491db50d8d925d49439cc"
         treatments:
           type: array
-          description: "Tratamientos del paciente"
+          description: "Tratamientos del paciente (opcional)"
           items:
             type: object
             properties:
               name:
                 type: string
-                description: "Nombre del tratamiento"
               dateStart:
                 type: string
-                description: "Fecha de inicio"
               dateEnd:
                 type: string
-                description: "Fecha de finalización"
               status:
                 type: string
                 enum: ["Pending", "Finalized", "Canceled"]
-                description: "Estado del tratamiento"
-              idPatient:
+              IDPatient:
                 type: string
-                description: "ID del paciente"
-              doctorID:
+              IDdoctor:
                 type: string
-                description: "ID del doctor asignado"
         observations:
           type: array
-          description: "Observaciones del paciente"
+          description: "Observaciones del paciente (opcional)"
           items:
             type: object
             properties:
               name:
                 type: string
-                description: "Nombre de la observación"
               date:
                 type: string
-                description: "Fecha de la observación"
               status:
                 type: string
                 enum: ["Pending", "Finalized", "Canceled"]
-                description: "Estado de la observación"
+        dentalStatus:
+          type: object
+          description: "Estado dental del paciente (opcional)"
+          properties:
+            dientesSupLeft:
+              type: array
+              items:
+                type: string
+            dientesSupRight:
+              type: array
+              items:
+                type: string
+            dientesInfLeft:
+              type: array
+              items:
+                type: string
+            dientesInfRight:
+              type: array
+              items:
+                type: string
+
+    PatientUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        lastName:
+          type: string
+        birth:
+          type: string
+          format: date
+        DNI:
+          type: string
+        sex:
+          type: string
+          enum: ["Male", "Female", "Other"]
+        address:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+          format: email
+        medicalCoverage:
+          type: string
+        nAffiliate:
+          type: string
+        treatments:
+          type: array
+          items:
+            type: object
+        observations:
+          type: array
+          items:
+            type: object
+        dentalStatus:
+          type: object
+
+    PatientResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          description: "ID único del paciente"
+          example: "6797d8bda81e0d869ae05572"
+        name:
+          type: string
+          example: "Juan"
+        lastName:
+          type: string
+          example: "García"
+        birth:
+          type: string
+          format: date
+          example: "1990-05-15"
+        DNI:
+          type: string
+          example: "12345678"
+        sex:
+          type: string
+          enum: ["Male", "Female", "Other"]
+          example: "Male"
+        address:
+          type: string
+          example: "Av. Siempre Viva 123"
+        phone:
+          type: string
+          example: "+5492612345678"
+        email:
+          type: string
+          format: email
+          example: "juan.garcia@example.com"
+        medicalCoverage:
+          type: string
+          example: "OSDE"
+        nAffiliate:
+          type: string
+          example: "987654321"
+        idDoctor:
+          type: string
+          example: "676491db50d8d925d49439cc"
+        treatments:
+          type: array
+          description: "Array de tratamientos del paciente"
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              dateStart:
+                type: string
+              dateEnd:
+                type: string
+              status:
+                type: string
+                enum: ["Pending", "Finalized", "Canceled"]
+              IDPatient:
+                type: string
+              IDdoctor:
+                type: string
+        observations:
+          type: array
+          description: "Array de observaciones del paciente"
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              date:
+                type: string
+              status:
+                type: string
+                enum: ["Pending", "Finalized", "Canceled"]
         dentalStatus:
           type: object
           description: "Estado dental del paciente"
           properties:
             dientesSupLeft:
               type: array
-              description: "Dientes superiores izquierdos"
+              items:
+                type: string
             dientesSupRight:
               type: array
-              description: "Dientes superiores derechos"
+              items:
+                type: string
             dientesInfLeft:
               type: array
-              description: "Dientes inferiores izquierdos"
+              items:
+                type: string
             dientesInfRight:
               type: array
-              description: "Dientes inferiores derechos"
-      example:
-        name: "Juan"
-        lastName: "Pérez"
-        birth: "1990-05-15"
-        DNI: "12345678"
-        sex: "Male"
-        address: "Av. Siempre Viva 123"
-        phone: "555-1234"
-        email: "juan.perez@example.com"
-        medicalCoverage: "Obra Social X"
-        nAffiliate: "987654"
-        appointments: []
-        treatments: []
-        observations: []
-        dentalStatus: {}
+              items:
+                type: string
+
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: token
+      description: "JWT token almacenado en cookie HttpOnly"
+
+security:
+  - cookieAuth: []

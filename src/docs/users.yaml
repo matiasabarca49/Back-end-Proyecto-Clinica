@@ -1,11 +1,13 @@
 paths:
+  # ==================== SESSIONS / AUTHORIZATION ====================
   /api/sessions/login:
     post:
-      summary: "Loguear Usuario"
+      summary: "Login de usuario (sin 2FA)"
+      description: "Autenticación tradicional con email y contraseña. Devuelve JWT en cookie HttpOnly"
       tags:
         - Authorization
       requestBody:
-        description: "Escriba las credenciales del usuario en formato JSON"
+        description: "Credenciales del usuario en formato JSON"
         required: true
         content:
           application/json:
@@ -13,184 +15,827 @@ paths:
               $ref: "#/components/schemas/Login"
       responses:
         "200":
-          description: "El usuario ingresó correctamente"
-        "401":
-          description: "Credenciales Incorrectas"
-  /api/sessions/current:
-    get:
-      summary: "Obtener Usuario Logueado"
-      tags:
-        - Authorization
-      responses:
-        "200":
-          description: "El usuario se obtuvo exitosamente"
-        "400":
-          description: "No hay sesion activa"
-  /api/sessions/disconnect:
-    get:
-      summary: "Desconectar Usuario"
-      tags:
-        - Authorization
-      responses:
-        "200":
-          description: "El usuario se desconectó exitosamente"
-        "400":
-          description: "No hay sesion activa"
-  /api/users/:
-    get:
-      summary: "Obtiene todos los usuarios de la Base de Datos"
-      tags:
-        - Users
-      responses:
-        "200":
-          description: "Los usuarios se obtuvieron exitosamente"
+          description: "Login exitoso"
           content:
-              application/json:
-                schema:
-                  $ref: "#/components/schemas/User" 
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  token:
+                    type: string
+                    description: "JWT token (también enviado en cookie)"
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: "token=eyJhbGc...; HttpOnly; SameSite=Strict; Max-Age=3600"
         "401":
-          description: "No autorizado. Necesita permisos de Administrador"
+          description: "Credenciales incorrectas"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ERROR"
+                  reason:
+                    type: string
+                    example: "Credenciales Incorrectas"
         "500":
-          description: "Error en la obtencion de los usuarios."
+          description: "Error en el servidor"
+
+  /api/sessions/login-2fa:
     post:
-      summary: "Agregar un Usuario a la Base de Datos"
+      summary: "Login con 2FA (Paso 1 - Envío de código)"
+      description: "Valida credenciales y envía un código de 6 dígitos al email del usuario. El código expira en 5 minutos"
       tags:
-        - Users
+        - Authorization
       requestBody:
-        description: "Escriba el usuario en formato JSON"
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/User"
+              $ref: "#/components/schemas/Login"
+      responses:
+        "200":
+          description: "Código de verificación enviado al email"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  state:
+                    type: string
+                    example: "PENDING"
+                  message:
+                    type: string
+                    example: "Código enviado al email"
+                  userId:
+                    type: string
+                    description: "ID del usuario para el siguiente paso"
+                    example: "507f1f77bcf86cd799439011"
+        "401":
+          description: "Credenciales incorrectas"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Error"
+                  reason:
+                    type: string
+                    example: "Credenciales Incorrectas"
+        "500":
+          description: "Error en el servidor"
+
+  /api/sessions/verify-2fa:
+    post:
+      summary: "Verificar código 2FA (Paso 2)"
+      description: "Valida el código de 6 dígitos enviado por email y completa el login"
+      tags:
+        - Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - code
+              properties:
+                userId:
+                  type: string
+                  description: "ID del usuario (opcional si se envía email)"
+                  example: "507f1f77bcf86cd799439011"
+                email:
+                  type: string
+                  format: email
+                  description: "Email del usuario (opcional si se envía userId)"
+                  example: "juan@example.com"
+                code:
+                  type: string
+                  description: "Código de 6 dígitos recibido por email"
+                  example: "123456"
+                  minLength: 6
+                  maxLength: 6
+      responses:
+        "200":
+          description: "Código válido - Login exitoso"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  token:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+        "400":
+          description: "Código inválido, expirado o falta información"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Error"
+                  reason:
+                    type: string
+                    example: "Código inválido"
+        "500":
+          description: "Error en el servidor"
+
+  /api/sessions/forgot-password:
+    post:
+      summary: "Solicitar recuperación de contraseña"
+      description: "Envía un email con un token JWT para restablecer la contraseña. El token expira en 15 minutos"
+      tags:
+        - Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "juan@example.com"
+      responses:
+        "200":
+          description: "Instrucciones enviadas (respuesta genérica por seguridad)"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Si el email existe, recibirás instrucciones."
+        "500":
+          description: "Error en el servidor"
+
+  /api/sessions/reset-password:
+    post:
+      summary: "Restablecer contraseña"
+      description: "Actualiza la contraseña usando el token de recuperación recibido por email"
+      tags:
+        - Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+                - password
+              properties:
+                token:
+                  type: string
+                  description: "Token JWT de recuperación recibido por email"
+                  example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                password:
+                  type: string
+                  format: password
+                  description: "Nueva contraseña (mínimo 8 caracteres)"
+                  minLength: 8
+                  example: "newSecurePassword123"
+      responses:
+        "200":
+          description: "Contraseña actualizada correctamente"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Contraseña actualizada correctamente"
+        "400":
+          description: "Token inválido o expirado"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Token inválido o expirado"
+        "404":
+          description: "Usuario no encontrado"
+        "500":
+          description: "Error en el servidor"
+
+  /api/sessions/current:
+    get:
+      summary: "Obtener usuario logueado actual"
+      tags:
+        - Authorization
       security:
-        - bearerAuth: []
+        - cookieAuth: []
+      responses:
+        "200":
+          description: "Usuario actual obtenido exitosamente"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "OK"
+                  userCurrent:
+                    $ref: "#/components/schemas/UserResponse"
+        "400":
+          description: "No hay sesión activa"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Error"
+                  reason:
+                    type: string
+                    example: "User Not Loged"
+        "500":
+          description: "Error en el servidor"
+
+  /api/sessions/disconnect:
+    get:
+      summary: "Cerrar sesión / Desconectar usuario"
+      description: "Elimina la cookie de autenticación y cierra la sesión"
+      tags:
+        - Authorization
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: "Sesión cerrada exitosamente"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  reason:
+                    type: string
+                    example: "User Disconnected"
+        "400":
+          description: "No hay sesión activa"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Error"
+                  reason:
+                    type: string
+                    example: "User Not Loged"
+        "500":
+          description: "Error en el servidor"
+
+  /api/auth/google:
+    get:
+      summary: "Iniciar autenticación con Google OAuth"
+      description: "Redirige al usuario a la página de login de Google"
+      tags:
+        - Authorization
+      responses:
+        "302":
+          description: "Redirección a Google OAuth"
+
+  /api/auth/google/callback:
+    get:
+      summary: "Callback de Google OAuth"
+      description: "Endpoint que recibe la respuesta de Google tras la autenticación"
+      tags:
+        - Authorization
+      responses:
+        "200":
+          description: "Autenticación con Google exitosa"
+        "401":
+          description: "Autenticación fallida"
+
+  # ==================== USERS ====================
+  /api/users/:
+    get:
+      summary: "Obtener todos los usuarios"
+      tags:
+        - Users
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: "Usuarios obtenidos exitosamente"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  users:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/UserResponse"
+        "401":
+          description: "No autorizado - Se requiere estar logueado"
+        "500":
+          description: "Error en el servidor"
+
+    post:
+      summary: "Crear un nuevo usuario"
+      description: "Si el rol es 'Doctor', también crea un registro en la colección Doctors con los campos dni, phone y professionalLicense"
+      tags:
+        - Users
+      security:
+        - cookieAuth: []
+      requestBody:
+        description: "Datos del usuario en formato JSON"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserCreate"
       responses:
         "201":
-          description: "El usuario se creó exitosamente"
+          description: "Usuario creado exitosamente"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  user:
+                    $ref: "#/components/schemas/UserResponse"
+        "400":
+          description: "Faltan campos requeridos para Doctor"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ERROR"
+                  message:
+                    type: string
+                    example: "Faltan campos de Doctor: dni, phone, professionalLicense"
+        "409":
+          description: "Email duplicado"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ERROR"
+                  message:
+                    type: string
+                    example: "El email ya existe"
         "500":
-          description: "Error en la creacion del usuario"
+          description: "Error en la creación"
+
+  /api/users/paginate:
+    get:
+      summary: "Obtener usuarios con paginación"
+      tags:
+        - Users
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: search
+          in: query
+          required: false
+          description: "Búsqueda por apellido"
+          schema:
+            type: string
+        - name: query
+          in: query
+          required: false
+          description: "Filtro por rol"
+          schema:
+            type: string
+            enum: ["Admin", "Doctor", "Employee"]
+        - name: sort
+          in: query
+          required: false
+          description: "Ordenamiento por apellido (1=ASC, -1=DESC)"
+          schema:
+            type: integer
+            enum: [1, -1]
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: "Usuarios paginados obtenidos"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  users:
+                    type: object
+                    properties:
+                      docs:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/UserResponse"
+                      totalDocs:
+                        type: integer
+                      limit:
+                        type: integer
+                      page:
+                        type: integer
+                      totalPages:
+                        type: integer
+                      hasNextPage:
+                        type: boolean
+                      hasPrevPage:
+                        type: boolean
+        "500":
+          description: "Error en el servidor"
+
+  /api/users/filter:
+    get:
+      summary: "Obtener un usuario por filtro"
+      tags:
+        - Users
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: email
+          in: query
+          required: false
+          schema:
+            type: string
+            format: email
+        - name: rol
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: ["Admin", "Doctor", "Employee"]
+      responses:
+        "200":
+          description: "Usuario encontrado"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  users:
+                    $ref: "#/components/schemas/UserResponse"
+        "400":
+          description: "Solicitud mal formada"
+        "500":
+          description: "Error en el servidor"
+
+  /api/users/many/filter:
+    get:
+      summary: "Obtener múltiples usuarios por filtro"
+      tags:
+        - Users
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: rol
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: ["Admin", "Doctor", "Employee"]
+        - name: email
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Usuarios encontrados"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  users:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/UserResponse"
+        "500":
+          description: "Error en el servidor"
+
   /api/users/{id}:
     get:
       summary: "Obtener un usuario por ID"
       tags:
         - Users
-      parameters:
-      - name: id
-        in: path
-        required: true
-        description: "ID del usuario"
-        schema: 
-          $type: String
-      responses:
-        "200":
-          description: "El usuario se obtuvo exitosamente"
-        "404":
-          description: "Error en la obtencion del Usuario"
-    put:
-      summary: "Actualizacion de un usuario"
-      tags:
-        - Users
-      requestBody:
-        description: "Por parametros se envia el ID y por body se envia la informacion a actualizar"
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/User" 
-            example:
-              password: "New_Password"
-      parameters:
-      - name: id
-        in: path
-        required: true
-        description: "ID del usuario"
-        schema: 
-          $type: String
       security:
-        - bearerAuth: []
-      responses:
-        "201":
-          description: "El usuario se actualizó exitosamente"
-        "404":
-          description: "Error en la actualizacion del usuario"
-    delete:
-      summary: "Eliminar un usuario"
-      tags:
-        - Users
+        - cookieAuth: []
       parameters:
-      - name: id
-        in: path
-        required: true
-        description: "ID del usuario"
-        schema: 
-          $type: String
-      security:
-        - bearerAuth: []
-      responses:
-        "200":
-          description: "El usuario se eliminó exitosamente"
-        "404":
-          description: "Error en la eliminacion del Usuario"
-  /api/users/filter:
-    get:
-      summary: "Obtener un usuario por atributo distinto al ID"
-      tags: 
-        - Users
-      parameters:
-        - in: query
-          name: email
+        - name: id
+          in: path
           required: true
+          description: "ID del usuario"
           schema:
             type: string
       responses:
         "200":
-          description: "El usuario se obtuvo exitosamente"
+          description: "Usuario encontrado"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  users:
+                    $ref: "#/components/schemas/UserResponse"
+        "404":
+          description: "Usuario no encontrado"
+        "500":
+          description: "Error en el servidor"
+
+    put:
+      summary: "Actualizar un usuario"
+      description: "Actualiza datos del usuario. Si se promociona a Doctor, sincroniza con la colección Doctors"
+      tags:
+        - Users
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: "ID del usuario"
+          schema:
+            type: string
+      requestBody:
+        description: "Datos a actualizar"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserUpdate"
+            example:
+              password: "newPassword123"
+              rol: "Doctor"
+      responses:
+        "200":
+          description: "Usuario actualizado exitosamente"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  user:
+                    $ref: "#/components/schemas/UserResponse"
         "400":
-          description: "Error en la obtencion del Usuario. Solicitud mal formada"
+          description: "Faltan campos para promoción a Doctor"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ERROR"
+                  message:
+                    type: string
+                    example: "Para promocionar a Doctor se requieren: dni, phone, professionalLicense"
+        "404":
+          description: "Usuario no encontrado"
+        "409":
+          description: "Email duplicado"
+        "500":
+          description: "Error en el servidor"
+
+    delete:
+      summary: "Eliminar un usuario"
+      description: "Elimina el usuario. Si es Doctor, también elimina su registro en la colección Doctors"
+      tags:
+        - Users
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: "ID del usuario"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Usuario eliminado exitosamente"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  user:
+                    $ref: "#/components/schemas/UserResponse"
+        "404":
+          description: "Usuario no encontrado"
+        "500":
+          description: "Error en el servidor"
+
 components:
   schemas:
-    User:
+    # ========== AUTH SCHEMAS ==========
+    Login:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: "Email del usuario"
+          example: "juan@example.com"
+        password:
+          type: string
+          format: password
+          description: "Contraseña del usuario"
+          example: "securePassword123"
+
+    # ========== USER SCHEMAS ==========
+    UserCreate:
+      type: object
+      required:
+        - name
+        - lastName
+        - email
+        - password
+        - rol
+      properties:
+        name:
+          type: string
+          description: "Nombre del usuario"
+          example: "John"
+        lastName:
+          type: string
+          description: "Apellido del usuario"
+          example: "Doe"
+        email:
+          type: string
+          format: email
+          description: "Email del usuario (debe ser único)"
+          example: "john.doe@example.com"
+        password:
+          type: string
+          format: password
+          description: "Contraseña del usuario (se hashea automáticamente)"
+          minLength: 8
+          example: "securePassword123"
+        rol:
+          type: string
+          enum: ["Admin", "Doctor", "Employee"]
+          description: "Rol del usuario en el sistema"
+          example: "Doctor"
+        doctorFields:
+          type: object
+          description: "Campos adicionales REQUERIDOS si rol es 'Doctor'"
+          required:
+            - dni
+            - phone
+            - professionalLicense
+          properties:
+            dni:
+              type: string
+              description: "DNI del doctor"
+              example: "12345678"
+            phone:
+              type: string
+              description: "Teléfono del doctor"
+              example: "+5492612345678"
+            professionalLicense:
+              type: string
+              description: "Matrícula profesional del doctor"
+              example: "MP12345"
+
+    UserUpdate:
       type: object
       properties:
         name:
           type: string
-          description: "Nombre de Usuario"
-        lastName: 
+          description: "Nombre del usuario"
+        lastName:
           type: string
-          decription: "Apellido del usuario"
+          description: "Apellido del usuario"
         email:
           type: string
-          description: "Email de usuario"
-        password: 
+          format: email
+          description: "Email del usuario"
+        password:
           type: string
-          description: "Constraseña del Usuario"
+          format: password
+          description: "Nueva contraseña (se hashea automáticamente)"
+          minLength: 8
         rol:
           type: string
-          description: "Los Roles están definido en un 'enum'. Admin, Doctor, Employee"
-      example:
-        name: "John"
-        lastName: "Dotton"
-        email: "johnd@example.com"
-        password: "securePassword123"
-        rol: "Doctor"
-    Login:
+          enum: ["Admin", "Doctor", "Employee"]
+          description: "Rol del usuario"
+        doctorFields:
+          type: object
+          description: "Campos adicionales requeridos si se promociona a Doctor"
+          properties:
+            dni:
+              type: string
+            phone:
+              type: string
+            professionalLicense:
+              type: string
+
+    UserResponse:
       type: object
       properties:
+        id:
+          type: string
+          description: "ID único del usuario"
+          example: "507f1f77bcf86cd799439011"
+        name:
+          type: string
+          description: "Nombre del usuario"
+          example: "John"
+        lastName:
+          type: string
+          description: "Apellido del usuario"
+          example: "Doe"
         email:
           type: string
-          description: "Email de usuario"
-        password: 
+          format: email
+          description: "Email del usuario"
+          example: "john.doe@example.com"
+        rol:
           type: string
-          description: "Constraseña del Usuario"
-      example:
-        email: "juan@example.com"
-        password: "securePassword123"
+          enum: ["Admin", "Doctor", "Employee"]
+          description: "Rol del usuario en el sistema"
+          example: "Doctor"
+
   securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: token
+      description: "JWT token almacenado en cookie HttpOnly con SameSite=Strict. Expira en 1 hora"
+
 security:
-  - bearerAuth: []     
-    
+  - cookieAuth: []

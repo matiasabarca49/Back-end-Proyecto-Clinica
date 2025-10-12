@@ -4,154 +4,612 @@ paths:
       summary: "Obtener todas las citas"
       tags:
         - Appointments
+      security:
+        - cookieAuth: []
       responses:
         "200":
           description: "Las citas se obtuvieron exitosamente"
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Appointment"
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  appointments:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AppointmentResponse"
         "404":
           description: "Error en la obtención de las citas"
+        "500":
+          description: "Error en el servidor"
     post:
-      summary: "Agregar una cita a la Base de Datos"
+      summary: "Crear una nueva cita"
       tags:
         - Appointments
+      security:
+        - cookieAuth: []
       requestBody:
-        description: "Escriba la cita en formato JSON"
+        description: "Datos de la cita en formato JSON"
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/Appointment"
+              $ref: "#/components/schemas/AppointmentCreate"
       responses:
         "201":
           description: "La cita se creó exitosamente"
-        "400":
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  patients:
+                    $ref: "#/components/schemas/AppointmentResponse"
+        "409":
+          description: "Conflicto - Cita duplicada"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ERROR"
+                  code:
+                    type: integer
+                    example: 11000
+        "500":
           description: "Error en la creación de la cita"
+
+  /api/appointments/paginate:
+    get:
+      summary: "Obtener citas con paginación"
+      tags:
+        - Appointments
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: search
+          in: query
+          required: false
+          description: "Búsqueda por fecha (YYYY-MM-DD)"
+          schema:
+            type: string
+            format: date
+        - name: query
+          in: query
+          required: false
+          description: "Filtro por ID de doctor"
+          schema:
+            type: string
+        - name: sort
+          in: query
+          required: false
+          description: "Ordenamiento por fecha (1=ASC, -1=DESC)"
+          schema:
+            type: integer
+            enum: [1, -1]
+        - name: page
+          in: query
+          required: false
+          description: "Número de página"
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          description: "Límite de resultados por página"
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: "Citas paginadas obtenidas exitosamente"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  appointments:
+                    type: object
+                    properties:
+                      docs:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/AppointmentResponse"
+                      totalDocs:
+                        type: integer
+                      limit:
+                        type: integer
+                      page:
+                        type: integer
+                      totalPages:
+                        type: integer
+                      hasNextPage:
+                        type: boolean
+                      hasPrevPage:
+                        type: boolean
+        "500":
+          description: "Error en el servidor"
+
+  /api/appointments/search:
+    get:
+      summary: "Búsqueda avanzada de citas"
+      description: "Busca citas por persona (doctor/paciente), query y estado"
+      tags:
+        - Appointments
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: person
+          in: query
+          required: false
+          description: "Tipo de persona a buscar"
+          schema:
+            type: string
+            enum: ["doctor", "patient"]
+        - name: query
+          in: query
+          required: false
+          description: "Texto de búsqueda (nombre, apellido, etc)"
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          description: "Filtro por estado de la cita"
+          schema:
+            type: string
+            enum: ["Pending", "Confirmed", "NoShow", "Rescheduled", "Finalized", "Canceled"]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 10
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: sort
+          in: query
+          schema:
+            type: integer
+            enum: [1, -1]
+      responses:
+        "200":
+          description: "Citas encontradas"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AppointmentResponse"
+        "500":
+          description: "Error en el servidor"
+
+  /api/appointments/available/{id}:
+    get:
+      summary: "Obtener turnos disponibles para un doctor en un día específico"
+      description: "Devuelve los slots disponibles (no ocupados) para un doctor en una fecha determinada"
+      tags:
+        - Appointments
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: "ID del doctor"
+          schema:
+            type: string
+        - name: day
+          in: query
+          required: true
+          description: "Fecha en formato YYYY-MM-DD"
+          schema:
+            type: string
+            format: date
+            example: "2025-10-15"
+      responses:
+        "200":
+          description: "Turnos disponibles obtenidos exitosamente"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: string
+                    example: "Success"
+                  data:
+                    type: object
+                    description: "Objeto con slots disponibles y horarios"
+                    properties:
+                      availableSlots:
+                        type: array
+                        items:
+                          type: integer
+                        example: [0, 1, 2, 5, 6, 10, 15]
+                      availableHours:
+                        type: array
+                        items:
+                          type: string
+                        example: ["09:00 - 09:30", "09:30 - 10:00", "11:30 - 12:00"]
+        "404":
+          description: "No se encontraron turnos disponibles"
+        "500":
+          description: "Error en el servidor"
+
+  /api/appointments/nearest/{id}:
+    get:
+      summary: "Obtener los próximos turnos de un doctor"
+      description: "Devuelve los turnos más cercanos en el tiempo para un doctor específico"
+      tags:
+        - Appointments
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: "ID del doctor"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Próximos turnos obtenidos exitosamente"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: string
+                    example: "Success"
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AppointmentResponse"
+        "404":
+          description: "No se encontraron turnos"
+        "500":
+          description: "Error en el servidor"
+
+  /api/appointments/filter:
+    get:
+      summary: "Obtener citas por filtro específico"
+      description: "Filtra citas por fecha, estado, doctor o paciente"
+      tags:
+        - Appointments
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: date
+          in: query
+          required: false
+          description: "Filtrar por fecha (YYYY-MM-DD)"
+          schema:
+            type: string
+            format: date
+        - name: status
+          in: query
+          required: false
+          description: "Filtrar por estado"
+          schema:
+            type: string
+            enum: ["Pending", "Confirmed", "NoShow", "Rescheduled", "Finalized", "Canceled"]
+        - name: doctorID
+          in: query
+          required: false
+          description: "Filtrar por ID de doctor"
+          schema:
+            type: string
+        - name: patientID
+          in: query
+          required: false
+          description: "Filtrar por ID de paciente"
+          schema:
+            type: string
+        - name: typeAppointment
+          in: query
+          required: false
+          description: "Filtrar por tipo de cita"
+          schema:
+            type: string
+            enum: ["consulta", "cirugia", "control", "tratamiento"]
+        - name: room
+          in: query
+          required: false
+          description: "Filtrar por consultorio"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Citas encontradas exitosamente"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  appointments:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AppointmentResponse"
+        "404":
+          description: "No se encontraron citas con los criterios especificados"
 
   /api/appointments/{id}:
     get:
       summary: "Obtener una cita por ID"
       tags:
         - Appointments
+      security:
+        - cookieAuth: []
       parameters:
-      - name: id
-        in: path
-        required: true
-        description: "ID de la cita"
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          description: "ID de la cita"
+          schema:
+            type: string
       responses:
         "200":
           description: "La cita se obtuvo exitosamente"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  appointment:
+                    $ref: "#/components/schemas/AppointmentResponse"
         "404":
-          description: "Error en la obtención de la cita"
+          description: "Cita no encontrada"
+        "500":
+          description: "Error en el servidor"
+
     put:
       summary: "Actualizar una cita"
       tags:
         - Appointments
+      security:
+        - cookieAuth: []
       parameters:
-      - name: id
-        in: path
-        required: true
-        description: "ID de la cita"
-        schema:
-          type: string
+        - name: id
+          in: path
+          required: true
+          description: "ID de la cita"
+          schema:
+            type: string
       requestBody:
         description: "Datos a actualizar en la cita"
         required: true
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                status:
-                  type: string
-                  enum: ["Pending", "Finalized", "Canceled"]
-                  description: "Estado de la cita"
+              $ref: "#/components/schemas/AppointmentUpdate"
             example:
-              status: "Finalized"
+              status: "Confirmed"
+              observations: "Paciente confirmó asistencia"
       responses:
-        "200":
+        "201":
           description: "La cita se actualizó exitosamente"
-        "400":
-          description: "Error en la actualización de la cita"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  appointment:
+                    $ref: "#/components/schemas/AppointmentResponse"
+        "404":
+          description: "Cita no encontrada"
+        "500":
+          description: "Error en el servidor"
+
     delete:
       summary: "Eliminar una cita"
       tags:
         - Appointments
+      security:
+        - cookieAuth: []
       parameters:
-      - name: id
-        in: path
-        required: true
-        description: "ID de la cita"
-        schema:
-          type: string
-      responses:
-        "200":
-          description: "La cita se eliminó exitosamente"
-        "404":
-          description: "Error en la eliminación de la cita"
-
-  /api/appointments/filter:
-    get:
-      summary: "Obtener citas por filtro (fecha, doctor o paciente)"
-      tags:
-        - Appointments
-      parameters:
-        - name: date
-          in: query
-          required: false
-          description: "Filtrar citas por fecha"
-          schema:
-            type: string
-            format: date
-        - name: doctorID
-          in: query
-          required: false
-          description: "Filtrar citas por ID de doctor"
-          schema:
-            type: string
-        - name: patientID
-          in: query
-          required: false
-          description: "Filtrar citas por ID de paciente"
+        - name: id
+          in: path
+          required: true
+          description: "ID de la cita"
           schema:
             type: string
       responses:
         "200":
-          description: "Las citas se obtuvieron exitosamente"
+          description: "La cita se eliminó exitosamente"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  appointment:
+                    $ref: "#/components/schemas/AppointmentResponse"
         "404":
-          description: "No se encontraron citas con los criterios especificados"
+          description: "Cita no encontrada"
+        "500":
+          description: "Error en el servidor"
 
 components:
   schemas:
-    Appointment:
+    AppointmentCreate:
+      type: object
+      required:
+        - date
+        - slots
+        - typeAppointment
+        - doctorID
+        - patientID
+        - status
+      properties:
+        date:
+          type: string
+          format: date
+          description: "Fecha de la cita en formato YYYY-MM-DD"
+          example: "2025-10-15"
+        slots:
+          type: array
+          items:
+            type: integer
+            minimum: 0
+            maximum: 17
+          description: "Array de slots numéricos (0-17). Cada slot representa 30 minutos desde las 09:00"
+          example: [4, 5]
+        typeAppointment:
+          type: string
+          enum: ["consulta", "cirugia", "control", "tratamiento"]
+          description: "Tipo de cita médica"
+          example: "consulta"
+        room:
+          type: string
+          description: "Número de consultorio o sala"
+          example: "5"
+        doctorID:
+          type: string
+          description: "ID del doctor asignado (referencia a colección doctors)"
+          example: "676491db50d8d925d49439cc"
+        patientID:
+          type: string
+          description: "ID del paciente (referencia a colección patients)"
+          example: "6797d8bda81e0d869ae05572"
+        status:
+          type: string
+          enum: ["Pending", "Confirmed", "NoShow", "Rescheduled", "Finalized", "Canceled"]
+          description: "Estado actual de la cita"
+          example: "Pending"
+        observations:
+          type: string
+          maxLength: 500
+          description: "Observaciones adicionales sobre la cita"
+          example: "Paciente debe traer exámenes previos"
+
+    AppointmentUpdate:
       type: object
       properties:
         date:
           type: string
-          format: date-time
-          description: "Fecha y hora de la cita"
-        doctorID:
+          format: date
+        slots:
+          type: array
+          items:
+            type: integer
+        typeAppointment:
           type: string
-          description: "ID del doctor asignado (referencia a la colección doctors)"
-        patientID:
+          enum: ["consulta", "cirugia", "control", "tratamiento"]
+        room:
           type: string
-          description: "ID del paciente asociado (referencia a la colección patients)"
         status:
           type: string
-          enum: ["Pending", "Finalized", "Canceled"]
-          description: "Estado de la cita"
+          enum: ["Pending", "Confirmed", "NoShow", "Rescheduled", "Finalized", "Canceled"]
         observations:
           type: string
-          description: "Observaciones sobre la cita"
-      example:
-        date: "2024-06-01T10:30:00Z"
-        doctorID: "676491db50d8d925d49439cc"
-        patientID: "6797d8bda81e0d869ae05572"
-        status: "Pending"
-        observations: "El paciente debe traer exámenes previos"
+          maxLength: 500
+
+    AppointmentResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          description: "ID único de la cita"
+          example: "67a1b2c3d4e5f6g7h8i9j0k1"
+        date:
+          type: string
+          format: date
+          description: "Fecha de la cita"
+          example: "2025-10-15"
+        slots:
+          type: array
+          items:
+            type: integer
+          description: "Slots numéricos asignados"
+          example: [4, 5]
+        slotsText:
+          type: array
+          items:
+            type: string
+          description: "Horarios en formato legible (generados automáticamente)"
+          example: ["11:00 - 12:00"]
+        typeAppointment:
+          type: string
+          enum: ["consulta", "cirugia", "control", "tratamiento"]
+          example: "consulta"
+        room:
+          type: string
+          example: "5"
+        doctorID:
+          type: object
+          description: "Información completa del doctor (populada)"
+          properties:
+            _id:
+              type: string
+            name:
+              type: string
+            lastName:
+              type: string
+            email:
+              type: string
+            professionalLicense:
+              type: string
+        patientID:
+          type: object
+          description: "Información completa del paciente (populada)"
+          properties:
+            _id:
+              type: string
+            name:
+              type: string
+            lastName:
+              type: string
+            DNI:
+              type: string
+            email:
+              type: string
+        status:
+          type: string
+          enum: ["Pending", "Confirmed", "NoShow", "Rescheduled", "Finalized", "Canceled"]
+          example: "Pending"
+        observations:
+          type: string
+          example: "Paciente debe traer exámenes previos"
+
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: token
+      description: "JWT token almacenado en cookie HttpOnly"
+
+security:
+  - cookieAuth: []
