@@ -145,7 +145,7 @@ export const deleteAppointment = async (req, res) => {
         const appointmentID = req.params.id;
         const appointmentDeleted = await appointmentsService.deleteAppointment(appointmentID);
         appointmentDeleted
-            ? res.status(200).send({ status: "Succes", appointment: appointmentDeleted })
+            ? res.status(200).send({ status: "Success", appointment: appointmentDeleted })
             : res.status(404).send({ status: "ERROR" });
     } catch (error) {
         console.error("Error en deleteAppointment:", error);
@@ -167,7 +167,7 @@ export const updateAppointment = async (req, res) => {
         const appointmentID = req.params.id;
         const appointmentUpdated = await appointmentsService.updateAppointment(appointmentID, appointmentData);
         appointmentUpdated
-            ? res.status(201).send({ status: "Succes", appointment: appointmentUpdated })
+            ? res.status(201).send({ status: "Success", appointment: appointmentUpdated })
             : res.status(404).send({ status: "ERROR" });
     } catch (error) {
         console.error("Error en updateAppointment:", error);
