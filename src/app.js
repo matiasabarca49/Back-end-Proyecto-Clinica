@@ -58,6 +58,7 @@ import routeAppointments from './routes/appointment.router.js';
 import routeSession from './routes/session.router.js';
 import routeFailure from './routes/failure.router.js';
 import routeTreatments from './routes/treatments.router.js';
+import routeNotices from './routes/notice.router.js';
 app.use("/api/users", routeUser);
 app.use("/api/patients", routePatient);
 app.use("/api/doctors", routeDoctor);
@@ -65,6 +66,7 @@ app.use("/api/appointments", routeAppointments);
 app.use("/api/sessions", routeSession);
 app.use("/api/fails", routeFailure);
 app.use("/api/treatments", routeTreatments);
+app.use("/api/notices", routeNotices);
 
 //Autenticación Google
 import routeAuth from './routes/passports/google.passport.router.js';

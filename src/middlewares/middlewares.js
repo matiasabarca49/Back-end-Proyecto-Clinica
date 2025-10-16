@@ -48,3 +48,12 @@ export const checkAuth = (req, res, next) => {
         res.status(401).send({ status: "Error", reason: "No Autenticado" });
     }
 };
+
+export const authorizeRoles = (...roles) => {
+  return (req, res, next) => {
+    if (!roles.includes(req.user.rol)) {
+      return res.status(403).send({ status: "ERROR", reason: "No autorizado" });
+    }
+    next();
+  };
+};
