@@ -171,6 +171,7 @@ export default class AppointmentsService {
     }
 
     updateAppointment(appointmentID, toUpdate) {
+        toUpdate.lastChange = new Date()
         return persistController.updateDocument(Appointment, appointmentID, toUpdate);
     }
 

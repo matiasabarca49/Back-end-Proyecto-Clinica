@@ -43,6 +43,12 @@ const appointmentSchema = new mongoose.Schema({
     observations: {
         type: String,
         maxlength: 500
+    },
+    created: {
+        type: Date
+    },
+    lastChange: {
+        type: Date
     }
 });
 mongoose.plugin(mongoosePaginate)

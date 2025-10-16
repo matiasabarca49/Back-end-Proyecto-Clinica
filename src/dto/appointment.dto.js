@@ -19,6 +19,8 @@ export class AppointmentFormated {
         this.patientID = appointment.patientID;  
         this.status = appointment.status;
         this.observations = appointment.observations;
+        this.created = appointment.created ||new Date();
+        this.lastChange = new Date();
     }
 
     /**
@@ -33,7 +35,9 @@ export class AppointmentFormated {
             doctorID: this.doctorID,  
             patientID: this.patientID,  
             status: this.status,
-            observations: this.observations
+            observations: this.observations,
+            created: this.created,
+            lastChange: this.lastChange
         };
     }
 }
@@ -55,7 +59,9 @@ export const sendAppointmentFormated = (appointment) => {
         doctorID: appointment.doctorID,  
         patientID: appointment.patientID,  
         status: appointment.status,
-        observations: appointment.observations
+        observations: appointment.observations,
+        created: appointment.created,
+        lastChange: appointment.lastChange
     };
 };
 
@@ -77,7 +83,9 @@ export const sendAppointmentsFormated = (arrayAppointments) => {
             doctorID: appointment.doctorID,
             patientID: appointment.patientID,
             status: appointment.status,
-            observations: appointment.observations
+            observations: appointment.observations,
+            created: appointment.created,
+            lastChange: appointment.lastChange
         }
     })
     return arrayMaped;
