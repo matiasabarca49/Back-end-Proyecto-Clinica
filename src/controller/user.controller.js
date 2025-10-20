@@ -39,7 +39,7 @@ export const getUserByID = async (req, res) => {
         const userID = req.params.id;
         const userGetted = await usersService.getUserById(userID);
         userGetted
-            ? res.status(200).send({ status: "Success", users: userGetted })
+            ? res.status(200).send({ status: "Success", user: userGetted })
             : res.status(404).send({ status: "ERROR" });
     } catch (error) {
         res.status(500).send({ status: "ERROR", message: error.message });

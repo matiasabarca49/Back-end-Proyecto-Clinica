@@ -21,14 +21,15 @@ export const loginUser = async (req,res)=>{
             }
             else{
                 const token = generateToken(userFounded);
+                const {_id, email, rol} = userFounded;
                 // Configurar la cookie
                 res.cookie('token', token, {
                     httpOnly: true, // Asegura que solo sea accesible por el servidor
                     sameSite: 'strict', // Protección CSRF
                     maxAge: 3600000, // Tiempo de expiración en milisegundos (1 hora)
                 });
-                req.user = userFounded;
-                res.status(200).send({ status: "Success" , token});
+                //req.user = userFounded;
+                res.status(200).send({ status: "Success" , userData: { token, id: _id, email: email, rol: rol}});
             }
         }  
     } catch (error) {
