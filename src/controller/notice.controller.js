@@ -153,16 +153,23 @@ export const createNotice = async (req, res) => {
 export const deleteNotice = async (req, res) => {
     try {
         const noticeID = req.params.id;
-        const noticeDeleted = await noticesService.deleteNotice(noticeID);
-        noticeDeleted
-            ? res.status(200).send({ status: "Success", notices: noticeDeleted })
-            : res.status(404).send({ status: "ERROR", reason: "Aviso no encontrado" });
+        const noticeDeleted = await noticesService.deleteNotice(noticeID, req.user);
+
+        // Si el servicio devuelve un objeto con status false, lo tratamos como error
+        if (!noticeDeleted || noticeDeleted.status === false) {
+            return res.status(403).send({ 
+                status: "ERROR", 
+                reason: noticeDeleted?.error || "No autorizado o aviso no encontrado" 
+            });
+        }
+
+        // Si llegó acá, se borró correctamente
+        res.status(200).send({ status: "Success", notices: noticeDeleted });
     } catch (error) {
         console.error("Error en deleteNotice:", error);
         res.status(500).send({ status: "ERROR", reason: "Error en el servidor" });
     }
 };
-
 /**
  * Endpoint que actualiza un aviso mediante su ID
  * Params: ID del aviso
