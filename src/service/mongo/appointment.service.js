@@ -132,10 +132,10 @@ export default class AppointmentsService {
 
         switch(parseInt(sort)){
             case -1:
-                sort = "-date"
+                sort = {date : -1 , slots: -1}
                 break;
             default: 
-                sort = "date"
+                sort = {date : 1 , slots: 1}
                 break;
         }
         
@@ -150,12 +150,31 @@ export default class AppointmentsService {
 
     async createAppointment(newAppointment) {
 
-        const { date , doctorID, slots } = newAppointment
+        const { date , doctorID, patientID, slots } = newAppointment
         //Verificar si el turno existe
-        const turnoFounded = await persistController.getDocumentByFilter(Appointment, 
+        /* const turnoFounded = await persistController.getDocumentByFilter(Appointment, 
             {date: date, doctorID: doctorID, slots: { $in: slots }})
         if (turnoFounded){
             throw new Error(`El slot ya está reservado para ese día`);
+        } */
+
+        const turnoFounded = await persistController.getDocumentByFilter(Appointment, {
+            date: date,
+            slots: { $in: slots },
+            $or: [
+                { doctorID: doctorID },      // El doctor ya tiene turno
+                { patientID: patientID }      // El paciente ya tiene turno
+            ]
+            });
+
+        if (turnoFounded) {
+            // Determinar qué conflicto existe
+            if (turnoFounded.doctorID._id.toString() === doctorID) {
+                return {status: false, error: {code: "a1b2c3d4e5f6", message: "El doctor ya tiene un turno reservado en ese horario" }};
+            }
+            if (turnoFounded.patientID._id.toString() === patientID) {
+                return {status: false, error: {code: "a1b2c3d4e5f6", message: "El paciente ya tiene un turno reservado en ese horario" }};
+            }
         }
         
 

@@ -121,7 +121,10 @@ export const createAppointment = async (req, res) => {
         if (!appointmentCreated.status)
             if (appointmentCreated.error.code === 11000) {
                 res.status(409).send({ status: "ERROR", code: 11000 });
-            } else {
+            } else if (appointmentCreated.error.code === "a1b2c3d4e5f6"){
+                res.status(400).send({ status: "ERROR", message: appointmentCreated.error.message });
+            }
+            else {
                 res.status(500).send({ status: "ERROR" });
             }
         else {
