@@ -21,6 +21,8 @@ app.use(express.static(__dirname + '/public'))
 import passport from 'passport';
 import "./config/passport.config.js";
 app.use(passport.initialize());
+import { initCronJobs } from './jobs/cronScheduler.js';
+initCronJobs();
 
 //Inicio y Conexion DB
 import MongoManager from './config/dbMongoDB.js';

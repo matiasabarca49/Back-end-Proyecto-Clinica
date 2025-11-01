@@ -1,63 +1,90 @@
+// ============================================
 // controller/password.controller.js
+// ============================================
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import transporter from "../config/mailer.config.js";
 import { User } from "../model/mongo/user.model.js";
+import { 
+  sendPasswordResetEmail, 
+  sendPasswordUpdatedEmail 
+} from "../utils/email.helpers.js";
 
 const RESET_SECRET = process.env.RESET_SECRET || process.env.JWT_SECRET || "resetFallback";
 const RESET_EXPIRES = process.env.RESET_EXPIRES || "15m";
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
+// =======================
+// SOLICITAR RECUPERACIÓN DE CONTRASEÑA
+// =======================
 export const forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
-    if (!email) return res.status(400).json({ message: "Email requerido" });
+    
+    if (!email) {
+      return res.status(400).json({ message: "Email requerido" });
+    }
 
     const user = await User.findOne({ email: email.toLowerCase() });
+    
     // RESPUESTA GENÉRICA para no filtrar existencia del email
-    if (!user) return res.json({ message: "Si el email existe, recibirás instrucciones." });
+    if (!user) {
+      return res.json({ 
+        message: "Si el email existe, recibirás instrucciones." 
+      });
+    }
 
     // Generar token JWT corto
-    const token = jwt.sign({ id: user._id }, RESET_SECRET, { expiresIn: RESET_EXPIRES });
+    const token = jwt.sign({ id: user._id }, RESET_SECRET, { 
+      expiresIn: RESET_EXPIRES 
+    });
 
-    const resetUrl = `${FRONTEND_URL}/reset-password?token=${token}&email=${encodeURIComponent(user.email)}`;
+    // Enviar mail con Nodemailer usando helper
+    const sent = await sendPasswordResetEmail(
+      user.email,
+      user.name,
+      token,
+      RESET_EXPIRES
+    );
 
-  // Enviar mail con Nodemailer (Gmail)
-await transporter.sendMail({
-  from: `"Clínica" <${process.env.EMAIL_USER}>`,
-  to: user.email,
-  subject: "Recuperación de contraseña",
-  html: `
-    <p>Hola ${user.name || user.email},</p>
-    <p>Recibimos una solicitud para restablecer tu contraseña. El enlace es válido por ${RESET_EXPIRES}.</p>
-    <p><a href="${resetUrl}">Hacé clic aquí para restablecer tu contraseña</a></p>
-    <p><strong>Token para testing:</strong></p>
-    <pre>${token}</pre>
-    <p>Si no solicitaste esto, ignorá este correo.</p>
-  `,
-});
+    if (!sent) {
+      console.error("No se pudo enviar el email de recuperación");
+      // No revelar el error al usuario por seguridad
+    }
 
-    return res.json({ message: "Si el email existe, recibirás instrucciones." });
+    return res.json({ 
+      message: "Si el email existe, recibirás instrucciones." 
+    });
+    
   } catch (err) {
     console.error("forgotPassword error:", err);
     return res.status(500).json({ message: "Error interno" });
   }
 };
 
+// =======================
+// RESETEAR CONTRASEÑA CON TOKEN
+// =======================
 export const resetPassword = async (req, res) => {
   try {
     const { token, password } = req.body;
-    if (!token || !password) return res.status(400).json({ message: "Faltan datos" });
+    
+    if (!token || !password) {
+      return res.status(400).json({ message: "Faltan datos" });
+    }
 
+    // Verificar token JWT
     let payload;
     try {
       payload = jwt.verify(token, RESET_SECRET);
     } catch (err) {
-      return res.status(400).json({ message: "Token inválido o expirado" });
+      return res.status(400).json({ 
+        message: "Token inválido o expirado" 
+      });
     }
 
     const user = await User.findById(payload.id);
-    if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
+    if (!user) {
+      return res.status(404).json({ message: "Usuario no encontrado" });
+    }
 
     // Validar y corregir rol si es inválido
     const rolesPermitidos = ["Admin", "Doctor", "Employee"];
@@ -70,15 +97,15 @@ export const resetPassword = async (req, res) => {
     user.password = await bcrypt.hash(password, salt);
     await user.save();
 
-    // (Opcional) enviar confirmación
-    await transporter.sendMail({
-      from: `"Clínica" <${process.env.EMAIL_USER}>`,
-      to: user.email,
-      subject: "Contraseña actualizada",
-      html: `<p>Tu contraseña fue actualizada correctamente. Si no fuiste vos, contactanos.</p>`,
-    });
+    // Enviar confirmación usando helper
+    // No romper el flujo si falla el email
+    sendPasswordUpdatedEmail(user.email, user.name)
+      .catch(err => console.warn("Email de confirmación falló:", err.message || err));
 
-    return res.json({ message: "Contraseña actualizada correctamente" });
+    return res.json({ 
+      message: "Contraseña actualizada correctamente" 
+    });
+    
   } catch (err) {
     console.error("resetPassword error:", err);
     return res.status(500).json({ message: "Error interno" });

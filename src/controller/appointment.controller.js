@@ -1,5 +1,8 @@
 import { get } from "mongoose";
 import AppointmentsService from "../service/mongo/appointment.service.js";
+import { sendAppointmentConfirmation } from "../utils/email.helpers.js";
+import { slotsToRanges } from "../utils/slots.helper.js";
+
 const appointmentsService = new AppointmentsService();
 
 /**
@@ -96,8 +99,8 @@ export const getAppointmentsPaginate = async (req, res) => {
 
 export const getAppointmentByQuery = async (req, res) => {
     try {
-        const { person, query, status,limit, page, sort } = req.query;
-        const appointmetsFounded = await appointmentsService.getAppointmentByQuery(person, query, status,limit, page, sort);
+        const { person, query, status, limit, page, sort } = req.query;
+        const appointmetsFounded = await appointmentsService.getAppointmentByQuery(person, query, status, limit, page, sort);
         appointmetsFounded
             ? res.status(200).json({ success: true, data: appointmetsFounded })
             : res.status(500).json({ success: false, error: "No se encontró turnos que coincidan" });
@@ -118,7 +121,8 @@ export const createAppointment = async (req, res) => {
     try {
         const appointment = req.body;
         const appointmentCreated = await appointmentsService.createAppointment(appointment);
-        if (!appointmentCreated.status)
+        
+        if (!appointmentCreated.status) {
             if (appointmentCreated.error.code === 11000) {
                 res.status(409).send({ status: "ERROR", code: 11000 });
             } else if (appointmentCreated.error.code === "a1b2c3d4e5f6"){
@@ -127,7 +131,47 @@ export const createAppointment = async (req, res) => {
             else {
                 res.status(500).send({ status: "ERROR" });
             }
-        else {
+        } else {
+            // 🆕 Enviar email de confirmación al paciente
+            try {
+                const appointmentData = appointmentCreated.dt;
+                const patient = appointmentData.patientID;
+                
+                // Verificar que tengamos los datos necesarios y que el populate haya funcionado
+                if (!patient) {
+                    console.warn("⚠️ No se pudo enviar email: patientID es null");
+                } else if (typeof patient === 'string' || patient.constructor?.name === 'ObjectId') {
+                    console.warn("⚠️ No se pudo enviar email: patientID no está populado");
+                } else if (!patient.email) {
+                    console.warn("⚠️ No se pudo enviar email: el paciente no tiene email");
+                } else if (!appointmentData.slots || appointmentData.slots.length === 0) {
+                    console.warn("⚠️ No se pudo enviar email: no hay slots");
+                } else {
+                    // ✅ Todo OK, enviar email
+                    const patientFullName = `${patient.name} ${patient.lastName}`;
+                    
+                    // Usar el helper de slots existente para formatear el horario
+                    const timeRanges = slotsToRanges(appointmentData.slots, "09:00", 30);
+                    const appointmentTime = timeRanges.join(", ") || "Horario no especificado";
+                    
+                    const emailSent = await sendAppointmentConfirmation(
+                        patient.email,
+                        patientFullName,
+                        appointmentData.date,
+                        appointmentTime
+                    );
+                    
+                    if (emailSent) {
+                        console.log(`✉️ Email de confirmación enviado a ${patient.email}`);
+                    } else {
+                        console.warn(`⚠️ Error al enviar email a ${patient.email} (problema con el transporter)`);
+                    }
+                }
+            } catch (emailError) {
+                // No romper el flujo si falla el email
+                console.error("⚠️ Error al enviar email de confirmación:", emailError.message || emailError);
+            }
+            
             res.status(201).send({ status: "Success", patients: appointmentCreated.dt });
         }
     } catch (error) {
@@ -178,7 +222,6 @@ export const updateAppointment = async (req, res) => {
     }
 };
 
-
 export const getAvailableAppointments = async (req, res) => {
     try {
         const { id } = req.params;
@@ -204,5 +247,4 @@ export const getNearestAppointments = async (req, res) => {
         console.error("Error en getNearestAppointments:", error);
         res.status(500).json({ success: "ERROR", error: "Error en el Servidor. Intente mas tarde" });
     }
-}
-
+};

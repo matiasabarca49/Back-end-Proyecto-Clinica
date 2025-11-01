@@ -180,6 +180,18 @@ export default class AppointmentsService {
 
         const newAppointmentFormated = new AppointmentFormated(newAppointment);
         const appointmentAdded = await persistController.createDocument(Appointment, newAppointmentFormated);
+        
+        // 🆕 POPULATE: Obtener el appointment con datos completos de paciente y doctor
+        if (appointmentAdded.status && appointmentAdded.dt && appointmentAdded.dt._id) {
+            const appointmentWithPopulate = await Appointment.findById(appointmentAdded.dt._id)
+                .populate('patientID')
+                .populate('doctorID');
+            
+            return appointmentAdded.status
+                ? { ...appointmentAdded, dt: sendAppointmentFormated(appointmentWithPopulate) }
+                : appointmentAdded;
+        }
+        
         return appointmentAdded.status
             ? { ...appointmentAdded, dt: sendAppointmentFormated(appointmentAdded.dt) }
             : appointmentAdded;
