@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import { getRedisClient } from '../config/redis.config.js';
 const secretKey = "yourSecretKey1234"; // Debe coincidir con el que usás para firmar el token
 
 // Generar token
@@ -18,7 +19,7 @@ export const authToken = (req, res, next) => {
         return res.status(401).send({ status: "ERROR", reason: "Not Authenticated" });
     }
 
-    jwt.verify(token, secretKey, (error, credentials) => {
+    jwt.verify(token, secretKey, async (error, credentials) => {
         if (error) {
             return res.status(403).send({ error: "Not authorized" });
         }
@@ -27,6 +28,12 @@ export const authToken = (req, res, next) => {
             email: credentials.email,
             rol: credentials.rol
         };
+        //Verificar si el usuario sigue activo en redis
+        const redisClient = await getRedisClient()
+        const isActive = await redisClient.get(`session:${req.user.id}`);
+        if(!isActive){
+            return res.status(401).json({ message: 'Inactive or expired session' });
+        }
         next();
     });
 };

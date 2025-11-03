@@ -1,6 +1,7 @@
+import { getRedisClient } from "../../config/redis.config.js";
 import { generateToken } from "../../middlewares/middlewares.js";
 
-export const authGoogle = (req, res) => {
+export const authGoogle = async (req, res) => {
 
     //Formatear para cambiar el ID por _ID
     const userFormated = {
@@ -19,6 +20,10 @@ export const authGoogle = (req, res) => {
         sameSite: 'strict', // Protección CSRF
         maxAge: 3600000, // Tiempo de expiración en milisegundos (1 hora)
     })
+
+    //Guardar usuario en redis que expira en 1h
+    const redisClient = await getRedisClient()
+    await redisClient.set(`session:${userFormated._id}`, 'true', { EX: 3600 });
 
    // Redirige al frontend con el token como query param
     const redirectUrl = "http://localhost:5173";
