@@ -1,3 +1,4 @@
+import { getRedisClient } from "../config/redis.config.js";
 import UsersService from "../service/mongo/user.service.js";
 const usersService = new UsersService();
 
@@ -223,6 +224,15 @@ export const deleteUser = async (req, res) => {
     try {
         const userID = req.params.id;
         const userSession = req.user;
+
+        //Verificando que el usuario a eliminar no tenga una sesión activa
+        const redisClient = await getRedisClient()
+        const isActive = await redisClient.get(`session:${userID}`)
+
+        if(isActive){
+            console.log(`El usuario ${userID} no se puede eliminar porque tiene una sesión activa`)
+            return res.status(403).send({ status: "ERROR", message: "El usuario tiene una sesión activa" });
+        } 
 
         const userDeleted = await usersService.deleteUser(userID, userSession);
 

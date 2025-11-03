@@ -1,6 +1,9 @@
 import express from 'express';
-
 console.time("Servidor levantado en");
+
+//Conexión a Redis
+import {getRedisClient} from './config/redis.config.js';
+getRedisClient()
 
 const app = express();
 //variables de entorno
@@ -24,9 +27,8 @@ app.use(passport.initialize());
 import { initCronJobs } from './jobs/cronScheduler.js';
 initCronJobs();
 
-//Inicio y Conexion DB
-import MongoManager from './config/dbMongoDB.js';
-const mongoManager = new MongoManager("mongodb://localhost:27017/clinica_odontologica");
+//Importar configuración DB
+import MongoManager from './config/mongoDB.config.js';
 
 
 //Cors
@@ -73,7 +75,7 @@ app.use("/api/notices", routeNotices);
 //Autenticación Google
 import routeAuth from './routes/passports/google.passport.router.js';
 let googleAuth = false;
-if(process.env.GOOGLE_CLIENT_ID || process.env.GOOGLE_CLIENT_SECRET || process.env.GOOGLE_CALLBACK_URL){
+if(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_CALLBACK_URL){
     app.use("/api/auth",routeAuth);
     googleAuth = true;
 }
@@ -94,19 +96,25 @@ app.use("*", (req, res) =>{
 const portSelected = process.env.PORT || "8080";
 
 app.listen(portSelected, () => {
-    mongoManager.connect()
-    console.log("==========================================");
-    console.log("🟢 [STATUS] Servidor Backend Clínica UP");
-    console.log("==========================================");
-    console.log(`✅ [OK] Servidor corriendo en el puerto ${portSelected} 🚀`);
-
-    setTimeout(()=>{
+    //Info de configuración email
+    if(process.env.EMAIL_USER && process.env.EMAIL_PASS){
+        console.log("✅ [OK] Envio de Emails Activado.");
+    }else{
+        console.log("⚠️ [Info] Configuración de email NO encontrada - Emails no se enviarán")
+    }
+    //Info de configuración Google Auth
+    setTimeout(async ()=>{
         if(googleAuth){
             console.log("✅ [OK] Autenticacion con Google Activada -")
         }else{
             console.log("⚠️ [Info] Autenticacion con Google NO Activada -")
         }
+
+        
+        //Conectar a la base de datos
+        console.log(`Conectando a la base de datos de MongoDB...`);
+        await MongoManager.connect()
         console.timeEnd("Servidor levantado en");
-        console.log("==========================================")
+        console.log("==========================================");
     }, 1000)
 })

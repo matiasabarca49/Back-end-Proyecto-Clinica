@@ -4,11 +4,50 @@
 import UsersService from "../service/mongo/user.service.js";
 import { isValidPassword } from "../utils/utils.js";
 import { generateToken } from "../middlewares/middlewares.js";
+import transporter from "../config/mailer.config.js"; 
+import { getRedisClient } from "../config/redis.config.js";
+
 import { send2FACode, sendLoginSuccessNotification } from "../utils/email.helpers.js";
 
 const usersService = new UsersService();
 const pendingCodes = new Map();
 
+// Metodo Original uwu
+export const loginUser = async (req,res)=>{
+    const {email, password } = req.body;
+    try {  
+        const userFounded = await usersService.getAllUserByFilter({email: email});
+        if(!userFounded){
+            res.clearCookie('token'); // Borrar la cookie
+            res.status(401).send({status: "ERROR", reason: "Credenciales Incorrectas"})
+        }else{
+            if(!isValidPassword(userFounded, password)){
+                res.clearCookie('token'); // Borrar la cookie
+                res.status(401).send({status: "ERROR", reason: "Credenciales Incorrectas"})
+            }
+            else{
+                const token = generateToken(userFounded);
+                const {_id, email, rol} = userFounded;
+                // Configurar la cookie
+                res.cookie('token', token, {
+                    httpOnly: true, // Asegura que solo sea accesible por el servidor
+                    sameSite: 'strict', // Protección CSRF
+                    maxAge: 3600000, // Tiempo de expiración en milisegundos (1 hora)
+                });
+
+                //Guardar usuario en redis que expira en 1h
+                const redisClient = await getRedisClient()
+                await redisClient.set(`session:${_id}`, 'true', { EX: 3600 });
+
+                //req.user = userFounded;
+                res.status(200).send({ status: "Success" , userData: { token, id: _id, email: email, rol: rol}});
+            }
+        }  
+    } catch (error) {
+        console.log(error)
+        res.status(500).send({status:"Error", reason: "Error en el servidor. Intente más tarde"})
+    }
+}
 // =======================
 // LOGIN ORIGINAL (SIN 2FA)
 // =======================
@@ -190,6 +229,10 @@ export const verify2FA = async (req, res) => {
       maxAge: 3600000, // 1 hora
     });
 
+    //Guardar usuario en redis que expira en 1h
+    const redisClient = await getRedisClient()
+    await redisClient.set(`session:${userId}`, 'true', { EX: 3600 });
+
     // Enviar correo de login exitoso usando helper
     // No romper flujo si falla
     sendLoginSuccessNotification(userFounded.email, userFounded.name)
@@ -216,6 +259,14 @@ export const verify2FA = async (req, res) => {
 // =======================
 export const currentUser = async (req, res) => {
   try {
+      req.user 
+          ? res.status(200).send({ status: "OK", userCurrent: req.user })
+          : res.status(400).send({ status:"Error", reason: "User Not Loged" });
+    } catch (error) {
+        console.log(error);
+        res.status(500).send({ status:"Error", reason: "Error en el servidor. Intente más tarde" });
+    }
+  try {
     req.user
       ? res.status(200).send({ 
           status: "OK", 
@@ -237,6 +288,19 @@ export const currentUser = async (req, res) => {
 // =======================
 // LOGOUT
 // =======================
+export const disconnectUser = async (req, res) =>{
+    try {
+      const redisClient = await getRedisClient()
+      const deletedSession = await redisClient.del(`session:${req.user.id}`);
+      const cookieFounded = req.cookies.token;
+      res.clearCookie('token'); 
+      cookieFounded
+          ? res.status(200).send({ status:"Success", reason: "User Disconnected" })
+          : res.status(400).send({ status:"Error", reason: "User Not Loged" });
+    } catch (error) {
+        console.log(error);
+        res.status(500).send({status:"Error", reason: "Error en el servidor. Intente más tarde"});
+    }
 export const disconnectUser = (req, res) => {
   try {
     const cookieFounded = req.cookies.token;
