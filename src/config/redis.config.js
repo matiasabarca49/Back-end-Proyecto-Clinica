@@ -20,9 +20,9 @@ export async function getRedisClient() {
     //Usamos la función importada 'createClient'
     const client = createClient({
         socket: {
-            host: '127.0.0.1',
-            port: 6379,
-            connectTimeout: 5000 
+            host: process.env.HOST_REDIS || '127.0.0.1',
+            port: process.env.PORT_REDIS || 6379,
+            connectTimeout: 5000
         }
     });
 
