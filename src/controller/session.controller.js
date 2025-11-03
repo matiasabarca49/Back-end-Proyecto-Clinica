@@ -12,7 +12,9 @@ import { send2FACode, sendLoginSuccessNotification } from "../utils/email.helper
 const usersService = new UsersService();
 const pendingCodes = new Map();
 
-// Metodo Original uwu
+// =======================
+// LOGIN ORIGINAL (SIN 2FA)
+// =======================
 export const loginUser = async (req,res)=>{
     const {email, password } = req.body;
     try {  
@@ -48,56 +50,6 @@ export const loginUser = async (req,res)=>{
         res.status(500).send({status:"Error", reason: "Error en el servidor. Intente más tarde"})
     }
 }
-// =======================
-// LOGIN ORIGINAL (SIN 2FA)
-// =======================
-export const loginUser = async (req, res) => {
-  const { email, password } = req.body;
-  try {
-    const userFounded = await usersService.getAllUserByFilter({ email: email });
-    if (!userFounded) {
-      res.clearCookie('token');
-      res.status(401).send({ 
-        status: "ERROR", 
-        reason: "Credenciales Incorrectas" 
-      });
-    } else {
-      if (!isValidPassword(userFounded, password)) {
-        res.clearCookie('token');
-        res.status(401).send({ 
-          status: "ERROR", 
-          reason: "Credenciales Incorrectas" 
-        });
-      } else {
-        const token = generateToken(userFounded);
-        const { _id, email, rol } = userFounded;
-        
-        // Configurar la cookie
-        res.cookie('token', token, {
-          httpOnly: true,
-          sameSite: 'strict',
-          maxAge: 3600000, // 1 hora
-        });
-        
-        res.status(200).send({ 
-          status: "Success", 
-          userData: { 
-            token, 
-            id: _id, 
-            email: email, 
-            rol: rol 
-          } 
-        });
-      }
-    }
-  } catch (error) {
-    console.log(error);
-    res.status(500).send({ 
-      status: "Error", 
-      reason: "Error en el servidor. Intente más tarde" 
-    });
-  }
-};
 
 // =======================
 // LOGIN CON 2FA (PRIMER PASO - ENVÍO DEL CÓDIGO)
@@ -301,24 +253,4 @@ export const disconnectUser = async (req, res) =>{
         console.log(error);
         res.status(500).send({status:"Error", reason: "Error en el servidor. Intente más tarde"});
     }
-export const disconnectUser = (req, res) => {
-  try {
-    const cookieFounded = req.cookies.token;
-    res.clearCookie('token');
-    cookieFounded
-      ? res.status(200).send({ 
-          status: "Success", 
-          reason: "User Disconnected" 
-        })
-      : res.status(400).send({ 
-          status: "Error", 
-          reason: "User Not Loged" 
-        });
-  } catch (error) {
-    console.log(error);
-    res.status(500).send({ 
-      status: "Error", 
-      reason: "Error en el servidor. Intente más tarde" 
-    });
-  }
 };
