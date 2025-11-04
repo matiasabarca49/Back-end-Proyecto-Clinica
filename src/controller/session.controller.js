@@ -218,23 +218,6 @@ export const currentUser = async (req, res) => {
         console.log(error);
         res.status(500).send({ status:"Error", reason: "Error en el servidor. Intente más tarde" });
     }
-  try {
-    req.user
-      ? res.status(200).send({ 
-          status: "OK", 
-          userCurrent: req.user 
-        })
-      : res.status(400).send({ 
-          status: "Error", 
-          reason: "User Not Loged" 
-        });
-  } catch (error) {
-    console.log(error);
-    res.status(500).send({ 
-      status: "Error", 
-      reason: "Error en el servidor. Intente más tarde" 
-    });
-  }
 };
 
 // =======================
