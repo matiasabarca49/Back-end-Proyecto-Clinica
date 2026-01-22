@@ -1,5 +1,5 @@
 import { getRedisClient } from "../config/redis.config.js";
-import UsersService from "../service/mongo/user.service.js";
+import UsersService from "../service/user.service.js";
 const usersService = new UsersService();
 
 /**
@@ -7,11 +7,12 @@ const usersService = new UsersService();
  */
 export const getUsers = async (req, res) => {
     try {
-        const usersGetted = await usersService.getUsers();
+        const usersGetted = await usersService.findAll();
         usersGetted
             ? res.status(200).send({ status: "Success", users: usersGetted })
             : res.status(500).send({ status: "ERROR" });
     } catch (error) {
+        console.log(error);
         res.status(500).send({ status: "ERROR", message: error.message });
     }
 };
@@ -22,7 +23,7 @@ export const getUsers = async (req, res) => {
 export const getManyUsersByFilter = async (req, res) => {
     try {
         const filter = req.query;
-        const usersGetted = await usersService.getManyUsersByFilter(filter);
+        const usersGetted = await usersService.findManyByFilter(filter);
         usersGetted
             ? res.status(200).send({ status: "Success", users: usersGetted })
             : res.status(400).send({ status: "ERROR" });
@@ -38,10 +39,10 @@ export const getManyUsersByFilter = async (req, res) => {
 export const getUserByID = async (req, res) => {
     try {
         const userID = req.params.id;
-        const userGetted = await usersService.getUserById(userID);
+        const userGetted = await usersService.findById(userID);
         userGetted
             ? res.status(200).send({ status: "Success", user: userGetted })
-            : res.status(404).send({ status: "ERROR" });
+            : res.status(404).send({ status: "ERROR", message: "No se encontró el usuario con ID proporcionado" });
     } catch (error) {
         res.status(500).send({ status: "ERROR", message: error.message });
     }
@@ -53,11 +54,12 @@ export const getUserByID = async (req, res) => {
 export const getUserByFilter = async (req, res) => {
     try {
         const filter = req.query;
-        const userGetted = await usersService.getUserByFilter(filter);
+        const userGetted = await usersService.findByFilter(filter);
         userGetted
             ? res.status(200).send({ status: "Success", users: userGetted })
-            : res.status(400).send({ status: "ERROR" });
+            : res.status(400).send({ status: "ERROR", message: "No se encontró el usuario" });
     } catch (error) {
+        console.log(error);
         res.status(500).send({ status: "ERROR", message: error.message });
     }
 };
@@ -78,7 +80,7 @@ export const getsUsersPaginate = async (req, res) => {
             ? defaultQuery = { lastName: search }
             : query !== "0" && (defaultQuery = { rol: query });
 
-        const usersGetted = await usersService.getUserPaginate(defaultQuery, defaultLimit, defaultPage, defaultSort);
+        const usersGetted = await usersService.findPaginate(defaultQuery, defaultLimit, defaultPage, defaultSort);
         usersGetted
             ? res.status(200).send({ status: "Success", users: usersGetted })
             : res.status(500).send({ status: "ERROR" });
@@ -116,9 +118,8 @@ export const createUser = async (req, res) => {
 
         // Llamar al service
         const userCreated = await usersService.createUser(user, userSession);
-
         // Manejo de errores del service
-        if (!userCreated.status) {
+        /* if (!userCreated.status) {
             // Email duplicado
             if (userCreated.error?.code === 11000) {
                 return res.status(409).send({
@@ -137,12 +138,12 @@ export const createUser = async (req, res) => {
 
             // Error genérico
             return res.status(500).send({ status: "ERROR" });
-        }
+        } */
 
         // Éxito
         return res.status(201).send({
             status: "Success",
-            user: userCreated.dt
+            user: userCreated
         });
 
     } catch (error) {
@@ -172,7 +173,7 @@ export const updateUser = async (req, res) => {
 
             if (missingFields.length) {
                 // Obtener el usuario actual para verificar si ya era Doctor
-                const currentUser = await usersService.getAllUserById(userID);
+                const currentUser = await usersService.findRawByFilter(userID);
                 const wasDoctor = currentUser && String(currentUser.rol).toLowerCase() === "doctor";
 
                 // Solo validar si NO era Doctor antes (promoción)

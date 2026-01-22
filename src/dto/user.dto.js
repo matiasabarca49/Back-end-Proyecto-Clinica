@@ -21,6 +21,30 @@ export class UserFormated {
             rol: this.rol
         };
     }
+
+}
+
+export class UserDTO{
+    constructor(user){
+        this.name = user.name;
+        this.lastName = user.lastName || " - ";
+        this.email = user.email;
+
+        
+        this.password =createhash(user.password)
+
+        this.rol = user.rol || 'Employee';
+    }   
+
+   static toResponse(user) {
+        return {
+            id: user._id || user.id,
+            name: user.name,
+            lastName: user.lastName,
+            email: user.email,
+            rol: user.rol
+        };
+    }
 }
 
 export const sendUserFormated = (user) => {
