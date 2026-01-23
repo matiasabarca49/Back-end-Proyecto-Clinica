@@ -8,6 +8,7 @@ export class DoctorFormated {
      * @param {Object} doctor Objeto doctor con los datos a formatear.
      */
     constructor(doctor) {
+        this._id = doctor.id || doctor._id
         this.name = doctor.name;
         this.lastName = doctor.lastName;
         this.dni = doctor.dni;
@@ -23,7 +24,7 @@ export class DoctorFormated {
 
     sendDoctor() {
         return {
-            id: this._id,
+            id: this._id || this.id,
             name: this.name,
             lastName: this.lastName,
             dni: this.dni,
@@ -42,7 +43,7 @@ export class DoctorFormated {
 
 export const sendDoctorFormated = (doctor) => {
     return {
-        id: doctor._id,
+        id: doctor._id || doctor.id,
         name: doctor.name,
         lastName: doctor.lastName,
         dni: doctor.dni,

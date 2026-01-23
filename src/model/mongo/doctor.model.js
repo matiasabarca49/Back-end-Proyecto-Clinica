@@ -1,6 +1,11 @@
 import mongoose from "mongoose";
 import mongoosePaginate from 'mongoose-paginate-v2'
 const doctorSchema = new mongoose.Schema({
+    _id: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'users',
+        required: true
+    },
     name: {
         type: String,
         required: true

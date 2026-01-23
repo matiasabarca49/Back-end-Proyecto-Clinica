@@ -1,9 +1,10 @@
 // service/mongo/user.service.js
 /* import PersistController from "../../DAO/persistController.js"; */
 import { sendUserFormated, UserFormated, sendUsersFormated, UserDTO } from "../dto/user.dto.js";
+import { DoctorFormated } from "../dto/doctor.dto.js";
 import { User } from "../model/mongo/user.model.js";
 import { Doctor } from "../model/mongo/doctor.model.js";
-import { normalizeText } from "../utils/utils.js";
+import { createhash, normalizeText } from "../utils/utils.js";
 import BaseService from "./base.service.js";
 import DoctorService from "./mongo/doctor.service.js";
 import MongoRepository from "../repositories/implementations/mongo.repository.js";
@@ -15,43 +16,46 @@ class UsersService extends BaseService{
         super(repository);
     }
 
-    /* async getUsers() {
-        const arrayUser = await persistController.getDocuments(User);
-        return sendUsersFormated(arrayUser);
+    async findAll(){
+        const users = await super.findAll()
+        if(!users) throw new Error('Error interno del servidor')
+        return this.toManyDTO(users)
     }
 
-    async getUserById(id) {
-        const userFounded = await persistController.getDocumentByID(User, id);
-        if (userFounded) return sendUserFormated(userFounded);
-        else return false;
-    } */
-
-    /* async getAllUserById(id) {
-        const userFounded = await persistController.getDocumentByID(User, id);
-        return userFounded ? userFounded : false;
-    } */
-
-    /* async getUserPaginate(dQuery, dLimit, dPage, dSort) {
-        const usersGetted = await persistController.getDocumentsPaginate(User, dQuery, dLimit, dPage, dSort);
-        usersGetted && (usersGetted.docs = sendUsersFormated(usersGetted.docs));
-        return usersGetted ? usersGetted : false;
-    } */
-
-    /* async getManyUsersByFilter(filter) {
-        const usersFounded = await persistController.getDocumentsByFilter(User, filter);
-        return usersFounded ? sendUsersFormated(usersFounded) : false;
+    async findByFilter(filter){
+        //Repository
+        const user = await super.findByFilter(filter)
+        return user ? this.toDTO(user) : undefined
+        
     }
 
-    async getAllUserByFilter(filter) {
-        const userFounded = await persistController.getDocumentByFilter(User, filter);
-        return userFounded ? userFounded : false;
-    } */
-
-   /*  async getUserByFilter(filter) {
-        const userFounded = await persistController.getDocumentByFilter(User, filter);
-        return userFounded ? sendUserFormated(userFounded) : false;
+    async findManyByFilter(filter){
+        const users = await super.findManyByFilter(filter) 
+        return this.toManyDTO(users)
     }
- */
+
+    async findByFilterOrFail(filter){
+        const user =  await super.findByFilter(filter)
+        if(!user) throw new Error('Usuario no encontrado')
+        return this.toDTO(user)
+    }
+
+    async findById(id){
+        const user = await super.findById(id)
+        if(!user) throw new Error('Usuario no encontrado')
+        return this.toDTO(user)
+    }
+
+    async findPaginate(dftQuery, dftLimit, dftPage, dftSort){
+        const resultPaginate = await super.findPaginate(dftQuery, dftLimit, dftPage, dftSort)
+        resultPaginate.docs = this.toManyDTO(resultPaginate.docs)
+        return resultPaginate
+    }
+
+    async findByQuery(opAgregations){
+        const users = await super.findByQuery(opAgregations) 
+        return this.toManyDTO(users) 
+    }
 
     /**
      * Crea un usuario y opcionalmente su registro en la colección Doctor
@@ -59,48 +63,39 @@ class UsersService extends BaseService{
      * @param {Object} userSession - Usuario autenticado (req.user)
      * @returns {Object} { status, dt?, error? }
      */
-    async createUser(newUser, userSession) {
+    async create(newUser) {
     
-        // Normalizar datos
-        const userNormalized = {
-            ...newUser,
-            name: normalizeText(newUser.name),
-            lastName: normalizeText(newUser.lastName),
-            rol: normalizeText(newUser.rol)
-        };
+        const isDoctor = String(newUser.rol || "").toLowerCase() === "doctor";
 
-        const newUserFormated = new UserDTO(userNormalized);
-
-        //Crear el usuario principal
-        const userAdded = await this.repository.create(newUserFormated);
-        /* if (!userAdded.status) {
-            return userAdded; // Devuelve el error (incluye code 11000)
-        } */
-
-        //Si es Doctor, crear registro en colección Doctor
-        const isDoctor = String(userNormalized.rol || "").toLowerCase() === "doctor";
+        //Boleano que indica si crear registro en colección Doctor
+        let createDoctor;
+        // Validar datos de Doctor si corresponde
         if (isDoctor) {
-            const doctorData = this._extractDoctorData(newUser, userAdded);
-            
-            // Validar campos requeridos
-            const validation = this._validateDoctorFields(doctorData);
-            if (!validation.valid) {
-                // Compensación: eliminar el usuario creado
-                await this._safeDeleteUser(userAdded._id);
-                throw new Error(validation.message);
-            }
-
-            // Crear registro Doctor
-            const doctorService = new DoctorService();
-            const doctorAdded = await doctorService.createDoctor(doctorData); //->> Cambiar con nuevo servicio =======
-            /* if (!doctorAdded.status) {
-                // Compensación: eliminar el usuario creado
-                await this._safeDeleteUser(userAdded._id);
-                return doctorAdded;
-            } */
+            createDoctor = this._validateDoctorData(newUser);
         }
 
-        // 3️⃣ Éxito
+        //Encriptar la contraseña, definir status y formatear datos del usuario
+        newUser.password = createhash(newUser.password);
+        newUser.status = 'ACTIVE';
+        //DTO de dominio
+        const userFormated = new UserDTO(newUser);
+
+        //Crear el usuario principal
+        const userAdded = await super.create(userFormated);
+
+        // Crear registro Doctor, si es necesario
+        if (isDoctor && createDoctor) {
+            //Asignar el ID del usuario creado al doctor para relacion
+            newUser.id = userAdded._id;
+            const formatedDoctor  =  new DoctorFormated(newUser);
+            const doctorService = new DoctorService();
+            const doctorAdded = await doctorService.createDoctor(formatedDoctor); //->> Cambiar con nuevo servicio =======
+            if (!doctorAdded) {
+                throw new Error("Error al crear el Doctor");
+            }
+        }
+        
+        //Éxito
         return this.toDTO(userAdded);
     }
 
@@ -114,7 +109,7 @@ class UsersService extends BaseService{
     async updateUser(userID, toUpdate, userSession) {
         
         //Obtener usuario actual
-        const prevUser = await this.findRawById(userID);
+        const prevUser = await super.findById(userID);
         if (!prevUser) return false;
 
         //Determinar roles
@@ -149,19 +144,20 @@ class UsersService extends BaseService{
      * @param {Object} userSession - Usuario autenticado (req.user)
      * @returns {Object|false} Usuario eliminado formateado o false
      */
-    async deleteUser(userID, userSession) {
+    async deleteUser(userID) {
         //Obtener usuario antes de eliminarlo
-        const user = await this.findRawById(userID);
+        const user = await super.findById(userID);
         if (!user) throw new Error("Usuario no encontrado");
 
         //Si es Doctor, eliminar de la colección Doctor
         const isDoctor = String(user.rol || "").toLowerCase() === "doctor";
         if (isDoctor) {
-            await this._safeDeleteDoctor(user.email);
+            const doctorService = new DoctorService();
+            await doctorService.deleteDoctor(userID) // CAMBIAR CON NUEVO SERVICIO =======
         }
 
         // 3️⃣ Eliminar usuario
-        await User.deleteOne({ _id: userID });
+        await super.delete(userID);
 
         return this.toDTO(user);
     }
@@ -171,38 +167,23 @@ class UsersService extends BaseService{
     /**
      * Extrae los datos necesarios para crear un Doctor
      */
-    _extractDoctorData(newUser, userDoc) {
-        const df = (newUser?.doctorFields && typeof newUser.doctorFields === "object")
-            ? newUser.doctorFields
-            : newUser;
+    _validateDoctorData(newUser) {
+        const fields = ["dni", "phone", "professionalLicense"];
 
-        return {
-            name: userDoc.name,
-            lastName: userDoc.lastName,
-            email: userDoc.email,
-            dni: df?.dni,
-            phone: df?.phone,
-            professionalLicense: df?.professionalLicense
-        };
-    }
+        const emptyField = [];
 
-    /**
-     * Valida que los campos requeridos de Doctor estén presentes
-     */
-    _validateDoctorFields(doctorData) {
-        const requiredFields = ["dni", "phone", "professionalLicense"];
-        const missing = requiredFields.filter(field => !doctorData[field]);
+        fields.forEach(field => {
+            if (!newUser[field]) {
+                emptyField.push(field);
+            }})
 
-        if (missing.length) {
-            return {
-                valid: false,
-                message: `Faltan campos de Doctor: ${missing.join(", ")}`
-            };
+        if (emptyField.length > 0) {
+            throw new Error(`Faltan campos de Doctor: ${emptyField.join(", ")}`);
         }
-
-        return { valid: true };
+        //Retorna 'true' si todo los campos están presentes
+        return true;
     }
-
+    
     /**
      * Gestiona la sincronización con la colección Doctor al actualizar un usuario
      */
@@ -251,29 +232,6 @@ class UsersService extends BaseService{
             await this._safeDeleteDoctor(prevUser.email);
         }
     }
-
-    /**
-     * Elimina un usuario de forma segura (ignora errores)
-     */
-    async _safeDeleteUser(userID) {
-        try {
-            await User.deleteOne({ _id: userID });
-        } catch (error) {
-            console.error("[_safeDeleteUser] Error:", error);
-        }
-    }
-
-    /**
-     * Elimina un Doctor de forma segura (ignora errores)
-     */
-    async _safeDeleteDoctor(email) {
-        try {
-            await Doctor.deleteOne({ email });
-        } catch (error) {
-            console.error("[_safeDeleteDoctor] Error:", error);
-        }
-    }
-
 
     //Métodos de mapeo DTO
     toFormatDTO(userData) {

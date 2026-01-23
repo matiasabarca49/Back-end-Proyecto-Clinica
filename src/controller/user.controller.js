@@ -1,4 +1,5 @@
 import { getRedisClient } from "../config/redis.config.js";
+import { CreateUserRequestDTO } from "../dto/user.dto.js";
 import UsersService from "../service/user.service.js";
 const usersService = new UsersService();
 
@@ -95,51 +96,12 @@ export const getsUsersPaginate = async (req, res) => {
  */
 export const createUser = async (req, res) => {
     try {
-        const user = req.body;
-        const userSession = req.user; // Usuario autenticado
-
-        // Validación de campos de Doctor en el controller
-        const isDoctor = String(user?.rol || "").toLowerCase() === "doctor";
-        if (isDoctor) {
-            const df = (user?.doctorFields && typeof user.doctorFields === "object")
-                ? user.doctorFields
-                : user;
-
-            const missingFields = ["dni", "phone", "professionalLicense"]
-                .filter(field => !df?.[field]);
-
-            if (missingFields.length) {
-                return res.status(400).send({
-                    status: "ERROR",
-                    message: `Faltan campos de Doctor: ${missingFields.join(", ")}`
-                });
-            }
-        }
-
+        //DTO de Request
+        const user = new CreateUserRequestDTO(req.body);
+        
         // Llamar al service
-        const userCreated = await usersService.createUser(user, userSession);
-        // Manejo de errores del service
-        /* if (!userCreated.status) {
-            // Email duplicado
-            if (userCreated.error?.code === 11000) {
-                return res.status(409).send({
-                    status: "ERROR",
-                    message: "El email ya existe"
-                });
-            }
-
-            // Campos de Doctor faltantes (fallback si el service también valida)
-            if (userCreated.error?.code === "MISSING_DOCTOR_FIELDS") {
-                return res.status(400).send({
-                    status: "ERROR",
-                    message: userCreated.error.message
-                });
-            }
-
-            // Error genérico
-            return res.status(500).send({ status: "ERROR" });
-        } */
-
+        const userCreated = await usersService.create(user);
+        
         // Éxito
         return res.status(201).send({
             status: "Success",
@@ -235,7 +197,7 @@ export const deleteUser = async (req, res) => {
             return res.status(403).send({ status: "ERROR", message: "El usuario tiene una sesión activa" });
         } 
 
-        const userDeleted = await usersService.deleteUser(userID, userSession);
+        const userDeleted = await usersService.deleteUser(userID);
 
         userDeleted
             ? res.status(200).send({ status: "Success", user: userDeleted })
