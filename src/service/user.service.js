@@ -1,9 +1,6 @@
-// service/mongo/user.service.js
-/* import PersistController from "../../DAO/persistController.js"; */
-import { sendUserFormated, UserFormated, sendUsersFormated, UserDTO } from "../dto/user.dto.js";
+import { UserDTO } from "../dto/user.dto.js";
 import { DoctorFormated } from "../dto/doctor.dto.js";
 import { User } from "../model/mongo/user.model.js";
-import { Doctor } from "../model/mongo/doctor.model.js";
 import { createhash, normalizeText } from "../utils/utils.js";
 import BaseService from "./base.service.js";
 import DoctorService from "./mongo/doctor.service.js";
@@ -110,31 +107,39 @@ class UsersService extends BaseService{
         
         //Obtener usuario actual
         const prevUser = await super.findById(userID);
-        if (!prevUser) return false;
+        if (!prevUser) throw new Error("Usuario no encontrado");
 
         //Determinar roles
         const newRol = toUpdate.rol ? normalizeText(toUpdate.rol) : prevUser.rol;
-        const wasDoctor = String(prevUser.rol || "").toLowerCase() === "doctor";
-        const willBeDoctor = String(newRol || "").toLowerCase() === "doctor";
+        const prevRol = prevUser.rol ? normalizeText(prevUser.rol) : "";
+        const isDoctor = prevUser.rol === "Doctor" ;
+
+        // No permitir cambio de rol
+        if(prevRol !== newRol){
+            throw new Error("No se permite cambiar el rol del usuario");
+        }
 
         //Actualizar usuario principal
-        const updatedUser = await User.findByIdAndUpdate(
+        const updatedUser = await super.update(
             userID,
-            toUpdate,
-            { new: true, runValidators: true }
+            toUpdate
         );
 
         if (!updatedUser) throw new Error("Error al actualizar el usuario");
 
-        // 4️⃣ Gestionar cambios en la colección Doctor
-        await this._handleDoctorCollectionOnUpdate(
-            prevUser,
-            updatedUser,
-            wasDoctor,
-            willBeDoctor,
-            toUpdate
-        );
-
+        if(isDoctor){
+            let updatedFields = {};
+            if(toUpdate.name) updatedFields.name = toUpdate.name;
+            if(toUpdate.lastName) updatedFields.lastName = toUpdate.lastName;
+            if(toUpdate.email) updatedFields.email = toUpdate.email;
+            if(toUpdate.dni) updatedFields.dni = toUpdate.dni;
+            if(toUpdate.phone) updatedFields.phone = toUpdate.phone;
+            if(toUpdate.professionalLicense) updatedFields.professionalLicense = toUpdate.professionalLicense;
+            const updatedDoctor = new DoctorFormated(updatedFields);//Cambiar con nuevo DTO =======
+            const doctorService = new DoctorService();
+            await doctorService.updateDoctor(userID, updatedDoctor); // CAMBIAR CON NUEVO SERVICIO =======
+        }
+        
         return updatedUser;
     }
 
@@ -184,55 +189,6 @@ class UsersService extends BaseService{
         return true;
     }
     
-    /**
-     * Gestiona la sincronización con la colección Doctor al actualizar un usuario
-     */
-    async _handleDoctorCollectionOnUpdate(prevUser, updatedUser, wasDoctor, willBeDoctor, toUpdate) {
-        // Caso 1: Sigue siendo Doctor → Sincronizar datos
-        if (wasDoctor && willBeDoctor) {
-            const doctorUpdate = {};
-            if (toUpdate.name) doctorUpdate.name = toUpdate.name;
-            if (toUpdate.lastName) doctorUpdate.lastName = toUpdate.lastName;
-            if (toUpdate.email) doctorUpdate.email = toUpdate.email;
-
-            if (Object.keys(doctorUpdate).length) {
-                await Doctor.updateOne(
-                    { email: prevUser.email },
-                    { $set: doctorUpdate }
-                ).catch(err => console.error("[Sync Doctor] Error:", err));
-            }
-        }
-
-        // Caso 2: Promoción a Doctor → Crear registro
-        if (!wasDoctor && willBeDoctor) {
-            const df = (toUpdate?.doctorFields && typeof toUpdate.doctorFields === "object")
-                ? toUpdate.doctorFields
-                : toUpdate;
-
-            const validation = this._validateDoctorFields(df);
-            if (!validation.valid) {
-                throw new Error(validation.message);
-            }
-
-            await Doctor.create({
-                name: updatedUser.name,
-                lastName: updatedUser.lastName,
-                email: updatedUser.email,
-                dni: df.dni,
-                phone: df.phone,
-                professionalLicense: df.professionalLicense
-            }).catch(err => {
-                console.error("[Create Doctor] Error:", err);
-                throw err;
-            });
-        }
-
-        // Caso 3: Degradación de Doctor → Eliminar registro
-        if (wasDoctor && !willBeDoctor) {
-            await this._safeDeleteDoctor(prevUser.email);
-        }
-    }
-
     //Métodos de mapeo DTO
     toFormatDTO(userData) {
         return new UserDTO(userData)

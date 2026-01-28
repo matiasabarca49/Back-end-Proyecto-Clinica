@@ -5,7 +5,7 @@ const secretKey = "yourSecretKey1234"; // Debe coincidir con el que usás para f
 // Generar token
 export const generateToken = (user) => {
     const token = jwt.sign(
-        { id: user._id, email: user.email, rol: user.rol },
+        { id: user._id || user.id, email: user.email, rol: user.rol },
         secretKey,
         { expiresIn: '1h' }
     );

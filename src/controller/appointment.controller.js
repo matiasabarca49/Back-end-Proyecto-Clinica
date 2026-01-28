@@ -1,7 +1,8 @@
 import { get } from "mongoose";
-import AppointmentsService from "../service/mongo/appointment.service.js";
+import AppointmentsService from "../service/appointment.service.js";
 import { sendAppointmentConfirmation } from "../utils/email.helpers.js";
 import { slotsToRanges } from "../utils/slots.helper.js";
+import { CreateAppointmentDTO } from "../dto/appointment.dto.js";
 
 const appointmentsService = new AppointmentsService();
 
@@ -13,7 +14,7 @@ const appointmentsService = new AppointmentsService();
  */
 export const getAppointments = async (req, res) => {
     try {
-        const appointmentsGetted = await appointmentsService.getAppointments();
+        const appointmentsGetted = await appointmentsService.findAll();
         appointmentsGetted
             ? res.status(200).send({ status: "Succes", appointments: appointmentsGetted })
             : res.status(404).send({ status: "ERROR" });
@@ -33,7 +34,7 @@ export const getAppointments = async (req, res) => {
 export const getAppointmentById = async (req, res) => {
     try {
         const appointmentID = req.params.id;
-        const appointmentGetted = await appointmentsService.getAppointmentById(appointmentID);
+        const appointmentGetted = await appointmentsService.findByQuery(appointmentID);
         appointmentGetted
             ? res.status(200).send({ status: "Succes", appointment: appointmentGetted })
             : res.status(404).send({ status: "ERROR" });
@@ -53,7 +54,7 @@ export const getAppointmentById = async (req, res) => {
 export const getAppointmentsByFilter = async (req, res) => {
     try {
         const filter = req.query;
-        const appointmentsGetted = await appointmentsService.getAppointmentsByFilter(filter);
+        const appointmentsGetted = await appointmentsService.findManyByFilter(filter);
         appointmentsGetted
             ? res.status(200).send({ status: "Succes", appointments: appointmentsGetted })
             : res.status(404).send({ status: "ERROR" });
@@ -81,7 +82,7 @@ export const getAppointmentsPaginate = async (req, res) => {
             ? (defaultQuery = { date: search })
             : query !== "0" && (defaultQuery = { doctorId: query });
 
-        const appointmentsGetted = await appointmentsService.getAppointmentsPaginate(
+        const appointmentsGetted = await appointmentsService.findPaginate(
             defaultQuery,
             defaultLimit,
             defaultPage,
@@ -100,7 +101,8 @@ export const getAppointmentsPaginate = async (req, res) => {
 export const getAppointmentByQuery = async (req, res) => {
     try {
         const { person, query, status, limit, page, sort } = req.query;
-        const appointmetsFounded = await appointmentsService.getAppointmentByQuery(person, query, status, limit, page, sort);
+        
+        const appointmetsFounded = await appointmentsService.findByQuery(person, query, status, limit, page, sort);
         appointmetsFounded
             ? res.status(200).json({ success: true, data: appointmetsFounded })
             : res.status(500).json({ success: false, error: "No se encontró turnos que coincidan" });
@@ -119,8 +121,10 @@ export const getAppointmentByQuery = async (req, res) => {
  */
 export const createAppointment = async (req, res) => {
     try {
-        const appointment = req.body;
-        const appointmentCreated = await appointmentsService.createAppointment(appointment);
+        // Crear DTO de Borde de creación de cita
+        const appointment = new CreateAppointmentDTO(req.body);
+
+        const appointmentCreated = await appointmentsService.create(appointment);
         
         if (!appointmentCreated.status) {
             if (appointmentCreated.error.code === 11000) {
@@ -134,7 +138,7 @@ export const createAppointment = async (req, res) => {
         } else {
             // 🆕 Enviar email de confirmación al paciente
             try {
-                const appointmentData = appointmentCreated.dt;
+                const appointmentData = appointmentCreated;
                 const patient = appointmentData.patientID;
                 
                 // Verificar que tengamos los datos necesarios y que el populate haya funcionado
@@ -190,7 +194,7 @@ export const createAppointment = async (req, res) => {
 export const deleteAppointment = async (req, res) => {
     try {
         const appointmentID = req.params.id;
-        const appointmentDeleted = await appointmentsService.deleteAppointment(appointmentID);
+        const appointmentDeleted = await appointmentsService.delete(appointmentID);
         appointmentDeleted
             ? res.status(200).send({ status: "Success", appointment: appointmentDeleted })
             : res.status(404).send({ status: "ERROR" });
@@ -212,7 +216,7 @@ export const updateAppointment = async (req, res) => {
     try {
         const appointmentData = req.body;
         const appointmentID = req.params.id;
-        const appointmentUpdated = await appointmentsService.updateAppointment(appointmentID, appointmentData);
+        const appointmentUpdated = await appointmentsService.update(appointmentID, appointmentData);
         appointmentUpdated
             ? res.status(201).send({ status: "Success", appointment: appointmentUpdated })
             : res.status(404).send({ status: "ERROR" });
