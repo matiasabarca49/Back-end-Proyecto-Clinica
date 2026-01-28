@@ -1,4 +1,6 @@
-import DoctorsService from "../service/mongo/doctor.service.js";
+import DoctorsService from "../service/doctor.service.js";
+import { CreateDoctorDTO } from "../dto/doctor.dto.js";
+
 const doctorsService = new DoctorsService();
 
 /**
@@ -9,7 +11,7 @@ const doctorsService = new DoctorsService();
  */
 export const getDoctors = async (req, res) => {
     try {
-        const doctorsGetted = await doctorsService.getDoctors();
+        const doctorsGetted = await doctorsService.findAll();
         doctorsGetted
             ? res.status(200).send({ status: "Succes", doctors: doctorsGetted })
             : res.status(404).send({ status: "ERROR" });
@@ -29,7 +31,7 @@ export const getDoctors = async (req, res) => {
 export const getDoctorById = async (req, res) => {
     try {
         const doctorID = req.params.id.trim();
-        const doctorGetted = await doctorsService.getDoctorById(doctorID);
+        const doctorGetted = await doctorsService.findById(doctorID);
         doctorGetted
             ? res.status(200).send({ status: "Succes", doctors: doctorGetted })
             : res.status(404).send({ status: "ERROR" });
@@ -49,7 +51,7 @@ export const getDoctorById = async (req, res) => {
 export const getDoctorByFilter = async (req, res) => {
     try {
         const filter = req.query;
-        const doctorGetted = await doctorsService.getDoctorByFilter(filter);
+        const doctorGetted = await doctorsService.findByFilter(filter);
         doctorGetted
             ? res.status(200).send({ status: "Succes", doctors: doctorGetted })
             : res.status(404).send({ status: "ERROR" });
@@ -76,7 +78,7 @@ export const getDoctorsPaginate = async (req, res) => {
         search.length !== 0
             ? (defaultQuery = { lastName: search })
             : query !== "0" && (defaultQuery = { lastName: query });
-        const doctorsGetted = await doctorsService.getDoctorPaginate(
+        const doctorsGetted = await doctorsService.findPaginate(
             defaultQuery,
             defaultLimit,
             defaultPage,
@@ -97,7 +99,7 @@ export const getDoctorByQuery = async (req, res) => {
         const doctorsFounded = await doctorsService.getDoctorByQuery(query);
         doctorsFounded
             ? res.status(200).json({ success: true, data: doctorsFounded })
-            : res.status(500).json({ success: false, error: "No se encontró pacientes que coincidan" });
+            : res.status(500).json({ success: false, error: "No se encontró doctores que coincidan" });
     } catch (error) {
         console.error("Error en getDoctorByQuery:", error);
         res.status(500).json({ success: false, error: "Error en el Servidor. Intentar más tarde" });
@@ -113,16 +115,19 @@ export const getDoctorByQuery = async (req, res) => {
  */
 export const createDoctor = async (req, res) => {
     try {
-        const doctor = req.body;
+        // Crear DTO de Borde de creación de doctor
+        const doctor = new CreateDoctorDTO(req.body);
+
         const doctorCreated = await doctorsService.createDoctor(doctor);
-        if (!doctorCreated.status)
+        
+        if (!doctorCreated.status) {
             if (doctorCreated.error.code === 11000) {
                 res.status(409).send({ status: "ERROR", code: 11000 });
             } else {
                 res.status(500).send({ status: "ERROR" });
             }
-        else {
-            res.status(201).send({ status: "Success", patients: doctorCreated.dt });
+        } else {
+            res.status(201).send({ status: "Success", doctors: doctorCreated.dt });
         }
     } catch (error) {
         console.error("Error en createDoctor:", error);
@@ -140,7 +145,7 @@ export const createDoctor = async (req, res) => {
 export const deleteDoctor = async (req, res) => {
     try {
         const doctorID = req.params.id;
-        const doctorDeleted = await doctorsService.deleteDoctor(doctorID);
+        const doctorDeleted = await doctorsService.delete(doctorID);
         doctorDeleted
             ? res.status(200).send({ status: "Succes", doctors: doctorDeleted })
             : res.status(404).send({ status: "ERROR" });
@@ -162,7 +167,7 @@ export const updateDoctor = async (req, res) => {
     try {
         const doctorData = req.body;
         const idDoctor = req.params.id;
-        const doctorUpdated = await doctorsService.updateDoctor(idDoctor, doctorData);
+        const doctorUpdated = await doctorsService.update(idDoctor, doctorData);
         doctorUpdated
             ? res.status(201).send({ status: "Succes", doctors: doctorUpdated })
             : res.status(404).send({ status: "ERROR" });

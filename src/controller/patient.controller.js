@@ -1,5 +1,6 @@
-import { Query } from "mongoose";
-import PatientsService from "../service/mongo/patient.service.js";
+import PatientsService from "../service/patient.service.js";
+import { CreatePatientDTO } from "../dto/patient.dto.js";
+
 const patientsService = new PatientsService();
 
 /**
@@ -10,7 +11,7 @@ const patientsService = new PatientsService();
  */
 export const getPatients = async (req, res) => {
     try {
-        const patientsGetted = await patientsService.getPatients(req.user);
+        const patientsGetted = await patientsService.findAll(req.user);
         patientsGetted
             ? res.status(200).send({ status: "Success", patients: patientsGetted })
             : res.status(404).send({ status: "ERROR", reason: "Los Pacientes no se pudieron obtener" });
@@ -30,7 +31,7 @@ export const getPatients = async (req, res) => {
 export const getPatientById = async (req, res) => {
     try {
         const patientID = req.params.id.trim();
-        const patientGetted = await patientsService.getPatientById(patientID);
+        const patientGetted = await patientsService.findById(patientID);
         patientGetted
             ? res.status(200).send({ status: "Success", patients: patientGetted })
             : res.status(404).send({ status: "ERROR", reason: "Paciente no encontrado" });
@@ -50,7 +51,7 @@ export const getPatientById = async (req, res) => {
 export const getPatientByFilter = async (req, res) => {
     try {
         const filter = req.query;
-        const patientGetted = await patientsService.getPatientByFilter(filter);
+        const patientGetted = await patientsService.findByFilter(filter);
         patientGetted
             ? res.status(200).send({ status: "Success", patients: patientGetted })
             : res.status(404).send({ status: "ERROR", reason: "No se encontraron pacientes con ese filtro" });
@@ -79,7 +80,7 @@ export const getsPatientsPaginate = async (req, res) => {
         : query !== "0" && (defaultQuery = { sex: query });
 
     try {
-        const patientsGetted = await patientsService.getPatientPaginate(
+        const patientsGetted = await patientsService.findPaginate(
             defaultQuery,
             defaultLimit,
             defaultPage,
@@ -126,8 +127,11 @@ export const getPatientByQuery = async (req, res) => {
  */
 export const createPatient = async (req, res) => {
     try {
-        const patient = req.body;
+        // Crear DTO de Borde de creación de paciente
+        const patient = new CreatePatientDTO(req.body);
+
         const patientCreated = await patientsService.createPatient(patient, req.user);
+        
         if (!patientCreated.status) {
             if (patientCreated.error.code === 11000) {
                 res.status(409).send({ status: "ERROR", code: 11000 });
@@ -154,7 +158,7 @@ export const createPatient = async (req, res) => {
 export const deletePatient = async (req, res) => {
     try {
         const patientID = req.params.id;
-        const patientDeleted = await patientsService.deletePatient(patientID);
+        const patientDeleted = await patientsService.delete(patientID);
         patientDeleted
             ? res.status(200).send({ status: "Success", patients: patientDeleted })
             : res.status(404).send({ status: "ERROR", reason: "Paciente no encontrado" });
@@ -177,7 +181,7 @@ export const updatePatient = async (req, res) => {
     try {
         const patientData = req.body;
         const idPatient = req.params.id.trim();
-        const patientUpdated = await patientsService.updatePatient(idPatient, patientData);
+        const patientUpdated = await patientsService.update(idPatient, patientData);
         patientUpdated
             ? res.status(201).send({ status: "Success", patients: patientUpdated })
             : res.status(404).send({ status: "ERROR", reason: "Paciente no encontrado" });
