@@ -11,13 +11,19 @@ const doctorsService = new DoctorsService();
  */
 export const getDoctors = async (req, res) => {
     try {
-        const doctorsGetted = await doctorsService.findAll();
+        const {search, sort, page, limit } = req.query;
+        let doctorsGetted;
+        if(!page && !limit){
+            doctorsGetted = await doctorsService.findAll();
+        }else{
+            doctorsGetted = await doctorsService.paginateDoctors(search, limit, page, sort);
+        }
         doctorsGetted
             ? res.status(200).send({ status: "Succes", doctors: doctorsGetted })
             : res.status(404).send({ status: "ERROR" });
     } catch (error) {
         console.error("Error en getDoctors:", error);
-        res.status(500).send({ status: "ERROR", message: "Error en el servidor" });
+        return res.status(500).send({ status: "ERROR", message: "Error en el servidor" });
     }
 };
 
@@ -37,72 +43,7 @@ export const getDoctorById = async (req, res) => {
             : res.status(404).send({ status: "ERROR" });
     } catch (error) {
         console.error("Error en getDoctorById:", error);
-        res.status(500).send({ status: "ERROR", message: "Error en el servidor" });
-    }
-};
-
-/**
- * Endpoint que retorna doctores filtrados por un atributo
- * Query: { clave: valor }
- * Respuesta:
- *        200: retorna un JSON con estado y array de doctores
- *        404: Error. El atributo no existe en el modelo o solicitud mal hecha
- */
-export const getDoctorByFilter = async (req, res) => {
-    try {
-        const filter = req.query;
-        const doctorGetted = await doctorsService.findByFilter(filter);
-        doctorGetted
-            ? res.status(200).send({ status: "Succes", doctors: doctorGetted })
-            : res.status(404).send({ status: "ERROR" });
-    } catch (error) {
-        console.error("Error en getDoctorByFilter:", error);
-        res.status(500).send({ status: "ERROR", message: "Error en el servidor" });
-    }
-};
-
-/**
- * Endpoint que retorna la colección de doctores paginada
- * Query: { search, query: lastName, sort, limit, page }
- * Respuesta:
- *        200: retorna un JSON con estado y objeto de doctores paginados
- *        500: Error. El atributo no existe en el modelo o solicitud mal hecha
- */
-export const getDoctorsPaginate = async (req, res) => {
-    try {
-        let defaultQuery, defaultLimit, defaultPage, defaultSort;
-        const { search, query, sort, page, limit } = req.query;
-        limit && (defaultLimit = parseInt(limit));
-        page && (defaultPage = parseInt(page));
-        sort && (defaultSort = { lastName: parseInt(sort) });
-        search.length !== 0
-            ? (defaultQuery = { lastName: search })
-            : query !== "0" && (defaultQuery = { lastName: query });
-        const doctorsGetted = await doctorsService.findPaginate(
-            defaultQuery,
-            defaultLimit,
-            defaultPage,
-            defaultSort
-        );
-        doctorsGetted
-            ? res.status(200).send({ status: "Success", doctors: doctorsGetted })
-            : res.status(500).send({ status: "ERROR" });
-    } catch (error) {
-        console.error("Error en getDoctorsPaginate:", error);
-        res.status(500).send({ status: "ERROR", message: "Error en el servidor" });
-    }
-};
-
-export const getDoctorByQuery = async (req, res) => {
-    try {
-        const { query } = req.query;
-        const doctorsFounded = await doctorsService.getDoctorByQuery(query);
-        doctorsFounded
-            ? res.status(200).json({ success: true, data: doctorsFounded })
-            : res.status(500).json({ success: false, error: "No se encontró doctores que coincidan" });
-    } catch (error) {
-        console.error("Error en getDoctorByQuery:", error);
-        res.status(500).json({ success: false, error: "Error en el Servidor. Intentar más tarde" });
+        return res.status(500).send({ status: "ERROR", message: "Error en el servidor" });
     }
 };
 
@@ -118,7 +59,7 @@ export const createDoctor = async (req, res) => {
         // Crear DTO de Borde de creación de doctor
         const doctor = new CreateDoctorDTO(req.body);
 
-        const doctorCreated = await doctorsService.createDoctor(doctor);
+        const doctorCreated = await doctorsService.create(doctor);
         
         if (!doctorCreated.status) {
             if (doctorCreated.error.code === 11000) {
@@ -131,7 +72,7 @@ export const createDoctor = async (req, res) => {
         }
     } catch (error) {
         console.error("Error en createDoctor:", error);
-        res.status(500).send({ status: "ERROR", message: "Error en el servidor" });
+        return res.status(500).send({ status: "ERROR", message: "Error en el servidor" });
     }
 };
 
@@ -151,7 +92,7 @@ export const deleteDoctor = async (req, res) => {
             : res.status(404).send({ status: "ERROR" });
     } catch (error) {
         console.error("Error en deleteDoctor:", error);
-        res.status(500).send({ status: "ERROR", message: "Error en el servidor" });
+        return res.status(500).send({ status: "ERROR", message: "Error en el servidor" });
     }
 };
 
@@ -173,6 +114,6 @@ export const updateDoctor = async (req, res) => {
             : res.status(404).send({ status: "ERROR" });
     } catch (error) {
         console.error("Error en updateDoctor:", error);
-        res.status(500).send({ status: "ERROR", message: "Error en el servidor" });
+        return res.status(500).send({ status: "ERROR", message: "Error en el servidor" });
     }
 };

@@ -37,20 +37,14 @@ const appointmentSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ["Pending", "Confirmed", "NoShow", "Rescheduled","Finalized", "Canceled"],
+        enum: ["pending", "confirmed", "noshow", "eescheduled","finalized", "canceled"],
         required: true
     },
     observations: {
         type: String,
         maxlength: 500
-    },
-    created: {
-        type: Date
-    },
-    lastChange: {
-        type: Date
     }
-});
+}, {timestamps: {createdAt: 'created', updatedAt: 'lastChange'}});
 mongoose.plugin(mongoosePaginate)
 
 // Population

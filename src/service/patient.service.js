@@ -2,7 +2,6 @@ import BaseService from "./base.service.js";
 import MongoRepository from "../repositories/implementations/mongo.repository.js";
 import { Patient } from "../model/mongo/patient.model.js";
 import { PatientDTO } from "../dto/patient.dto.js";
-import { normalizeText } from "../utils/utils.js";
 
 class PatientsService extends BaseService {
 
@@ -14,7 +13,7 @@ class PatientsService extends BaseService {
     async findAll(userSession) {
         let patients;
 
-        if (userSession?.rol === "Doctor") {
+        if (userSession?.rol === "doctor") {
             patients = await super.findManyByFilter({ idDoctor: userSession.id });
         } else {
             patients = await super.findAll();
@@ -29,60 +28,77 @@ class PatientsService extends BaseService {
         return this.toDTO(patient);
     }
 
-    async findByFilter(filter) {
-        const patients = await super.findManyByFilter(filter);
-        return this.toManyDTO(patients);
-    }
+    async paginatePatients(search, sex, limit, page, sort, userSession) {
 
-    async findPaginate(dftQuery, dftLimit, dftPage, dftSort, userSession) {
-        if (userSession?.rol === "Doctor") {
+        let filter = {};
+        if(search){
+            const regex = new RegExp(search, "i");
+            filter = {
+                $or: [
+                    { name: regex },
+                    { lastName: regex },
+                    { email: regex },
+                    { dni: regex },
+                    { medicalCoverage: regex }
+
+                ]
+            };
+        }
+        if(sex){
+            filter.sex = sex;
+        }
+
+        //Default sort: fecha de creación descendente
+        const defaultSort = sort ? {lastName: parseInt(sort)} : {lastName: -1}
+        
+        if (userSession?.rol === "doctor") {
             dftQuery = { ...dftQuery, idDoctor: userSession.id };
         }
 
-        const result = await super.findPaginate(dftQuery, dftLimit, dftPage, dftSort);
+        const result = await this.repository.findPaginate(filter, limit, page, defaultSort);
         result.docs = this.toManyDTO(result.docs);
         return result;
     }
 
-    async findByQuery(query) {
+    async searchPaginate(query, dftLimit, dftPage, dftSort, userSession) {
         const regex = new RegExp(query, "i");
-        const patients = await super.findByQuery({
+        let dftQuery = {
             $or: [
                 { name: regex },
                 { lastName: regex },
                 { email: regex },
                 { DNI: regex }
             ]
-        });
+        };
 
-        return this.toManyDTO(patients);
+        const result = await this.repository.findPaginate(dftQuery, dftLimit, dftPage, dftSort);
+        result.docs = this.toManyDTO(result.docs);
+        return result;
     }
 
     async create(newPatient, userSession) {
+        console.log(newPatient)
+        // Asignar el doctor si el usuario que crea es un doctor. Para el caso de un admin o Employee, se debe
+        // especificar el idDoctor en el newPatient.
+        newPatient.idDoctor = userSession.rol === "Doctor"
+            ? userSession.id
+            : newPatient.idDoctor;
 
-        const normalizedPatient = {
-            ...newPatient,
-            name: normalizeText(newPatient.name),
-            lastName: normalizeText(newPatient.lastName),
-            sex: normalizeText(newPatient.sex),
-            idDoctor: userSession.rol === "Doctor"
-                ? userSession.id
-                : newPatient.idDoctor
-        };
+        newPatient.status = 'active';
 
-        const patientDTO = new PatientDTO(normalizedPatient);
+        const patientDTO = new PatientDTO(newPatient);
         const created = await super.create(patientDTO);
-
+        if (!created) throw new Error("Error al crear el paciente");
         return this.toDTO(created);
     }
 
-    async updatePatient(id, toUpdate) {
+    async update(id, toUpdate) {
         const updated = await super.update(id, toUpdate);
         if (!updated) throw new Error("Paciente no encontrado");
-        return this.toDTO(updated);
+        return updated;
     }
 
-    async deletePatient(id) {
+    async delete(id) {
         const patient = await super.findById(id);
         if (!patient) throw new Error("Paciente no encontrado");
 

@@ -1,76 +1,7 @@
 paths:
   /api/doctors/:
     get:
-      summary: "Obtener todos los doctores"
-      tags:
-        - Doctors
-      security:
-        - cookieAuth: []
-      responses:
-        "200":
-          description: "Los doctores se obtuvieron exitosamente"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: "Success"
-                  doctors:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/DoctorResponse"
-        "404":
-          description: "Error en la obtención de los doctores"
-        "500":
-          description: "Error en el servidor"
-
-    post:
-      summary: "Crear un nuevo doctor"
-      tags:
-        - Doctors
-      security:
-        - cookieAuth: []
-      requestBody:
-        description: "Datos del doctor en formato JSON"
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/DoctorCreate"
-      responses:
-        "201":
-          description: "El doctor se creó exitosamente"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: "Success"
-                  patients:
-                    $ref: "#/components/schemas/DoctorResponse"
-        "409":
-          description: "Conflicto - DNI o matrícula profesional duplicados"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: "ERROR"
-                  code:
-                    type: integer
-                    example: 11000
-        "500":
-          description: "Error en la creación del doctor"
-
-  /api/doctors/paginate:
-    get:
-      summary: "Obtener doctores con paginación"
+      summary: "Obtener doctores con paginación. Permite obtner páginas si se especifica [limit, page]"
       tags:
         - Doctors
       security:
@@ -79,13 +10,7 @@ paths:
         - name: search
           in: query
           required: false
-          description: "Búsqueda por apellido"
-          schema:
-            type: string
-        - name: query
-          in: query
-          required: false
-          description: "Filtro adicional por apellido"
+          description: "Búsqueda por nombre, apellido, email y DNI"
           schema:
             type: string
         - name: sort
@@ -142,94 +67,22 @@ paths:
         "500":
           description: "Error en el servidor"
 
-  /api/doctors/search:
-    get:
-      summary: "Búsqueda avanzada de doctores"
-      description: "Busca doctores por nombre, apellido, DNI o matrícula profesional"
+    post:
+      summary: "Crear un nuevo doctor"
       tags:
         - Doctors
       security:
         - cookieAuth: []
-      parameters:
-        - name: query
-          in: query
-          required: true
-          description: "Texto de búsqueda (nombre, apellido, DNI, matrícula)"
-          schema:
-            type: string
-            example: "Pérez"
+      requestBody:
+        description: "Datos del doctor en formato JSON"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DoctorCreate"
       responses:
-        "200":
-          description: "Doctores encontrados"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: true
-                  data:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/DoctorResponse"
-        "500":
-          description: "Error en el servidor"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    example: false
-                  error:
-                    type: string
-                    example: "Error en el Servidor. Intentar más tarde"
-
-  /api/doctors/filter:
-    get:
-      summary: "Obtener doctores por filtro específico"
-      description: "Filtra doctores por email, DNI, nombre, apellido o matrícula"
-      tags:
-        - Doctors
-      security:
-        - cookieAuth: []
-      parameters:
-        - name: name
-          in: query
-          required: false
-          description: "Filtrar por nombre"
-          schema:
-            type: string
-        - name: lastName
-          in: query
-          required: false
-          description: "Filtrar por apellido"
-          schema:
-            type: string
-        - name: email
-          in: query
-          required: false
-          description: "Filtrar por email"
-          schema:
-            type: string
-            format: email
-        - name: dni
-          in: query
-          required: false
-          description: "Filtrar por DNI"
-          schema:
-            type: string
-        - name: professionalLicense
-          in: query
-          required: false
-          description: "Filtrar por matrícula profesional"
-          schema:
-            type: string
-      responses:
-        "200":
-          description: "Doctores encontrados exitosamente"
+        "201":
+          description: "El doctor se creó exitosamente"
           content:
             application/json:
               schema:
@@ -238,14 +91,23 @@ paths:
                   status:
                     type: string
                     example: "Success"
-                  doctors:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/DoctorResponse"
-        "404":
-          description: "No se encontraron doctores con los criterios especificados"
+                  patients:
+                    $ref: "#/components/schemas/DoctorResponse"
+        "409":
+          description: "Conflicto - DNI o matrícula profesional duplicados"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ERROR"
+                  code:
+                    type: integer
+                    example: 11000
         "500":
-          description: "Error en el servidor"
+          description: "Error en la creación del doctor"
 
   /api/doctors/{id}:
     get:

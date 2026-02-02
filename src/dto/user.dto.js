@@ -28,8 +28,9 @@ export class UserDTO{
         this.lastName = UserDTO.capitalize(user.lastName) || " - ";
         this.email = user.email;
         this.password =user.password;
-        this.rol = user.rol;;
-        this.status = user.status;
+        this.rol = user.rol;
+        this.status = user.status || 'active';
+        this.lastLogintAt = null
     }  
     
     // Helpers de normalización
@@ -45,9 +46,10 @@ export class UserDTO{
             lastName: user.lastName,
             email: user.email,
             rol: user.rol,
-            createdAt: user.createdAt,
-            updatedAt: user.updatedAt,
-            status: user.status
+            created: user.created,
+            lastChange: user.lastChange,
+            status: user.status,
+            lastLogintAt: user.lastLogintAt
         };
     }
 
@@ -69,6 +71,8 @@ export class CreateUserRequestDTO {
         this.email = this.normalizeEmail(user.email);
         this.password = user.password;
         this.rol = this.normalizeRol(user.rol);
+        this.status = user.status;
+        // Datos adicionales para Doctor
         if(user.dni && user.phone && user.professionalLicense){
             this.dni = user.dni;
             this.phone = user.phone;
@@ -86,16 +90,16 @@ export class CreateUserRequestDTO {
     }
 
     normalizeRol(rol) {
-        if (!rol) return 'Employee';
+        if (!rol) return 'employee';
 
         const rolesMap = {
-            admin: 'Admin',
-            doctor: 'Doctor',
-            employee: 'Employee'
+            admin: 'admin',
+            doctor: 'doctor',
+            employee: 'employee'
         };
 
         const rolNormalized = rol.trim().toLowerCase();
-        return rolesMap[rolNormalized] || 'Employee';
+        return rolesMap[rolNormalized] || 'employee';
     }
 }
 

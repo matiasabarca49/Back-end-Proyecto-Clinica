@@ -1,4 +1,3 @@
-import { get } from "mongoose";
 import AppointmentsService from "../service/appointment.service.js";
 import { sendAppointmentConfirmation } from "../utils/email.helpers.js";
 import { slotsToRanges } from "../utils/slots.helper.js";
@@ -14,13 +13,19 @@ const appointmentsService = new AppointmentsService();
  */
 export const getAppointments = async (req, res) => {
     try {
-        const appointmentsGetted = await appointmentsService.findAll();
+        const { person, query, status, limit, page, sort } = req.query;
+        let appointmentsGetted;
+        if(!limit && !page){
+            appointmentsGetted = await appointmentsService.findAll();
+        }else{
+            appointmentsGetted = await appointmentsService.paginateAppointments(person, query, status, limit, page, sort);
+        }
         appointmentsGetted
             ? res.status(200).send({ status: "Succes", appointments: appointmentsGetted })
             : res.status(404).send({ status: "ERROR" });
     } catch (error) {
         console.error("Error en getAppointments:", error);
-        res.status(500).send({ status: "ERROR", message: "Error en el servidor" });
+        return res.status(500).send({ status: "ERROR", message: "Error en el servidor" });
     }
 };
 
@@ -34,83 +39,16 @@ export const getAppointments = async (req, res) => {
 export const getAppointmentById = async (req, res) => {
     try {
         const appointmentID = req.params.id;
-        const appointmentGetted = await appointmentsService.findByQuery(appointmentID);
+        const appointmentGetted = await appointmentsService.findById(appointmentID);
         appointmentGetted
             ? res.status(200).send({ status: "Succes", appointment: appointmentGetted })
             : res.status(404).send({ status: "ERROR" });
     } catch (error) {
         console.error("Error en getAppointmentById:", error);
-        res.status(500).send({ status: "ERROR", message: "Error en el servidor" });
+        return res.status(500).send({ status: "ERROR", message: "Error en el servidor" });
     }
 };
 
-/**
- * Endpoint que retorna citas filtradas por un atributo
- * Query: { clave: valor }
- * Respuesta:
- *        200: retorna un JSON con estado y array de citas
- *        404: Error. El atributo no existe en el modelo o solicitud mal hecha
- */
-export const getAppointmentsByFilter = async (req, res) => {
-    try {
-        const filter = req.query;
-        const appointmentsGetted = await appointmentsService.findManyByFilter(filter);
-        appointmentsGetted
-            ? res.status(200).send({ status: "Succes", appointments: appointmentsGetted })
-            : res.status(404).send({ status: "ERROR" });
-    } catch (error) {
-        console.error("Error en getAppointmentsByFilter:", error);
-        res.status(500).send({ status: "ERROR", message: "Error en el servidor" });
-    }
-};
-
-/**
- * Endpoint que retorna la colección de citas paginadas
- * Query: { search, query: doctorId, sort, limit, page }
- * Respuesta:
- *        200: retorna un JSON con estado y objeto de citas paginadas
- *        500: Error. El atributo no existe en el modelo o solicitud mal hecha
- */
-export const getAppointmentsPaginate = async (req, res) => {
-    try {
-        let defaultQuery, defaultLimit, defaultPage, defaultSort;
-        const { search, query, sort, page, limit } = req.query;
-        limit && (defaultLimit = parseInt(limit));
-        page && (defaultPage = parseInt(page));
-        sort && (defaultSort = { date: parseInt(sort) });
-        search.length !== 0
-            ? (defaultQuery = { date: search })
-            : query !== "0" && (defaultQuery = { doctorId: query });
-
-        const appointmentsGetted = await appointmentsService.findPaginate(
-            defaultQuery,
-            defaultLimit,
-            defaultPage,
-            defaultSort
-        );
-
-        appointmentsGetted
-            ? res.status(200).send({ status: "Success", appointments: appointmentsGetted })
-            : res.status(500).send({ status: "ERROR" });
-    } catch (error) {
-        console.error("Error en getAppointmentsPaginate:", error);
-        res.status(500).send({ status: "ERROR", message: "Error en el servidor" });
-    }
-};
-
-export const getAppointmentByQuery = async (req, res) => {
-    try {
-        const { person, query, status, limit, page, sort } = req.query;
-        
-        const appointmetsFounded = await appointmentsService.findByQuery(person, query, status, limit, page, sort);
-        appointmetsFounded
-            ? res.status(200).json({ success: true, data: appointmetsFounded })
-            : res.status(500).json({ success: false, error: "No se encontró turnos que coincidan" });
-    } catch (error) {
-        console.error("Error en getAppointmentByQuery:", error);
-        res.status(500).json({ success: false, error: "Error en el Servidor. Intente mas tarde" });
-    }
-};
 
 /**
  * Endpoint que crea una nueva cita en la colección de citas
@@ -180,7 +118,7 @@ export const createAppointment = async (req, res) => {
         }
     } catch (error) {
         console.error("Error en createAppointment:", error);
-        res.status(500).send({ status: "ERROR", message: "Error en el servidor" });
+        return res.status(500).send({ status: "ERROR", message: "Error en el servidor" });
     }
 };
 
@@ -200,7 +138,7 @@ export const deleteAppointment = async (req, res) => {
             : res.status(404).send({ status: "ERROR" });
     } catch (error) {
         console.error("Error en deleteAppointment:", error);
-        res.status(500).send({ status: "ERROR", message: "Error en el servidor" });
+        return res.status(500).send({ status: "ERROR", message: "Error en el servidor" });
     }
 };
 
@@ -222,7 +160,7 @@ export const updateAppointment = async (req, res) => {
             : res.status(404).send({ status: "ERROR" });
     } catch (error) {
         console.error("Error en updateAppointment:", error);
-        res.status(500).send({ status: "ERROR", message: "Error en el servidor" });
+        return res.status(500).send({ status: "ERROR", message: "Error en el servidor" });
     }
 };
 
@@ -236,7 +174,7 @@ export const getAvailableAppointments = async (req, res) => {
             : res.status(404).json({ success: "ERROR", error: "No se encontraron turnos disponibles" });
     } catch (error) {
         console.error("Error en getAvailableAppointments:", error);
-        res.status(500).json({ success: "ERROR", error: "Error en el Servidor. Intente mas tarde" });
+        return res.status(500).json({ success: "ERROR", error: "Error en el Servidor. Intente mas tarde" });
     }
 };
 
@@ -249,6 +187,6 @@ export const getNearestAppointments = async (req, res) => {
             : res.status(404).json({ success: "ERROR", error: "No se encontraron turnos disponibles" });
     } catch (error) {
         console.error("Error en getNearestAppointments:", error);
-        res.status(500).json({ success: "ERROR", error: "Error en el Servidor. Intente mas tarde" });
+        return res.status(500).json({ success: "ERROR", error: "Error en el Servidor. Intente mas tarde" });
     }
 };

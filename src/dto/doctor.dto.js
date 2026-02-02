@@ -78,14 +78,14 @@ export const sendDoctorsFormated = (arrayDoctors) => {
 
 export class DoctorDTO {
     constructor(doctor) {
+        this._id = doctor.id || doctor._id
         this.name = DoctorDTO.capitalize(doctor.name);
         this.lastName = DoctorDTO.capitalize(doctor.lastName);
         this.dni = doctor.dni;
         this.professionalLicense = doctor.professionalLicense;
         this.email = doctor.email?.toLowerCase();
         this.phone = doctor.phone;
-        this.created = doctor.created;
-        this.lastChange = doctor.lastChange;
+        this.status = doctor.status || 'active'
     }
 
     // Helpers de normalización
@@ -123,18 +123,22 @@ export class DoctorDTO {
 
 export class CreateDoctorDTO {
     constructor(doctor) {
-        this.name = this.normalizeName(doctor.name);
-        this.lastName = this.normalizeName(doctor.lastName);
+        this.name = this.normalize(doctor.name);
+        this.lastName = this.normalize(doctor.lastName);
         this.dni = doctor.dni;
         this.professionalLicense = doctor.professionalLicense;
-        this.email = doctor.email?.toLowerCase();
+        this.email = this.normalizeEmail(doctor.email);
         this.phone = doctor.phone;
         this.created = doctor.created;
         this.lastChange = doctor.lastChange;
+        this.status = doctor.status;
     }
 
-    normalizeName(name) {
-        if (!name) return '';
-        return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+    normalize(str){
+        return str?.trim().replace(/\s+/g, ' ') || '';
+    }
+
+    normalizeEmail(email) {
+        return email?.toLowerCase().trim() || ''; 
     }
 }

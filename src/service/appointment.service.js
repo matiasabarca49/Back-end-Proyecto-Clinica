@@ -4,10 +4,10 @@ import { Appointment } from "../model/mongo/appointment.model.js"
 //Base Service
 import BaseService from './base.service.js'
 //Patients Service
-import PatientsService from './mongo/patient.service.js'
+import PatientsService from './patient.service.js'
 const patientsService = new PatientsService();
 //Doctors Service
-import DoctorsService from './mongo/doctor.service.js'
+import DoctorsService from './doctor.service.js'
 const doctorsService = new DoctorsService();
 //Repository
 import MongoRepository from "../repositories/implementations/mongo.repository.js";
@@ -29,37 +29,13 @@ export default class AppointmentsService extends BaseService{
         return this.toManyDTO(appointment)
     }
 
-    async findByFilter(filter){
-        //Repository
-        const appointment = await super.findByFilter(filter)
-        return appointment ? this.toDTO(appointment) : undefined
-        
-    }
-
-    async findManyByFilter(filter){
-        const appointment = await super.findManyByFilter(filter) 
-        return this.toManyDTO(appointment)
-    }
-
-    async findByFilterOrFail(filter){
-        const appointment =  await super.findByFilter(filter)
-        if(!appointment) throw new Error('Turno no encontrado')
-        return this.toDTO(appointment)
-    }
-
     async findById(id){
         const appointment = await super.findById(id)
         if(!appointment) throw new Error('Turno no encontrado')
         return this.toDTO(appointment)
     }
 
-    async findPaginate(dftQuery, dftLimit, dftPage, dftSort){
-        const resultPaginate = await super.findPaginate(dftQuery, dftLimit, dftPage, dftSort)
-        resultPaginate.docs = this.toManyDTO(resultPaginate.docs)
-        return resultPaginate
-    }
-
-    async findByQuery(person, query, status,limit, page, sort){
+    async paginateAppointments(person = "", query = "", status,limit, page, sort){
         const filtersPerson = [];
         const filtersQuery = [];
         let filters = {};
@@ -70,14 +46,14 @@ export default class AppointmentsService extends BaseService{
         }else if( typeof person === "string" && person.length > 1){
             const searchRegex = new RegExp(person, "i");
             //Buscando Pacientes y doctores que coincidan con la persona
-            const patientsFounded = await patientsService.getPatientByQuery(searchRegex); //Cambiar por nuevo servicio
-            const doctorsFounded = await doctorsService.getDoctorByQuery(searchRegex); // Cambiar por nuevo servicio
+            const patientsFounded = await patientsService.searchPaginate(searchRegex);
+            const doctorsFounded = await doctorsService.searchPaginate(searchRegex);
             //Usamos un conjunto de concidencias para un campo. En este caso [_id, _id, _id, _id]
             if (patientsFounded.docs.length > 0) {
-                filtersPerson.push({ patientID: { $in: patientsFounded.docs.map(p => p._id) } });
+                filtersPerson.push({ patientID: { $in: patientsFounded.docs.map(p => p.id) } });
             }
             if (doctorsFounded.docs.length > 0) {
-                filtersPerson.push({ doctorID: { $in: doctorsFounded.docs.map(d => d._id) } });
+                filtersPerson.push({ doctorID: { $in: doctorsFounded.docs.map(d => d.id) } });
             }
         }
         
@@ -147,7 +123,7 @@ export default class AppointmentsService extends BaseService{
                 break;
         }
         
-        const appointmentsFounded = await super.findPaginate(filters, limit, page, sort)
+        const appointmentsFounded = await this.repository.findPaginate(filters, limit, page, sort)
 
         if (appointmentsFounded) {
             appointmentsFounded.docs = this.toManyDTO(appointmentsFounded.docs);
@@ -156,12 +132,12 @@ export default class AppointmentsService extends BaseService{
     
     }
 
-    async createAppointment(newAppointment) {
+    async create(newAppointment) {
 
         const { date , doctorID, patientID, slots } = newAppointment
         
         // Verificar conflictos de horarios para el doctor y el paciente
-        const turnoFounded = await super.findByFilter({
+        const turnoFounded = await this.repository.findByFilter({
             date: date,
             slots: { $in: slots },
             $or: [
@@ -192,9 +168,6 @@ export default class AppointmentsService extends BaseService{
         }
         
         // Crear la nueva cita
-        // Asignar fechas de creación y última modificación
-        newAppointment.created = new Date();
-        newAppointment.lastChange = new Date();
         const newAppointmentFormated = new AppointmentDTO(newAppointment);
         const appointmentAdded = await super.create(newAppointmentFormated);
 
@@ -205,18 +178,19 @@ export default class AppointmentsService extends BaseService{
         return appointmentAdded
     }
 
-    delete(appointmentID) {
-        return super.delete(appointmentID);
+    async delete(appointmentID) {
+        const deletedAppointment = await super.delete(appointmentID)
+        return this.toDTO(deletedAppointment);
     }
 
-    update(appointmentID, toUpdate) {
+    async update(appointmentID, toUpdate) {
         toUpdate.lastChange = new Date()
         return super.update(appointmentID, toUpdate);
     }
 
     async getAvailableAppointments(idDoctor, day){
         // Obtener todos los turnos del doctor en la fecha dada
-        const appointments = await super.findManyByFilter({
+        const appointments = await this.repository.findManyByFilter({
             doctorID: idDoctor,
             date: new Date(day)
         });

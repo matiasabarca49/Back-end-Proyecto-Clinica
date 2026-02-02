@@ -1,3 +1,4 @@
+import { UserDTO } from "../dto/user.dto.js";
 import { generateToken } from "../middlewares/middlewares.js";
 import { User } from "../model/mongo/user.model.js";
 import MongoRepository from "../repositories/implementations/mongo.repository.js";
@@ -17,7 +18,7 @@ class AuthService extends BaseService {
 
     async login(credentials) {
 
-        const user = await super.findByFilter({ email: credentials.email });
+        const user = await this.repository.findByFilter({ email: credentials.email });
         if (!user) throw new Error('credenciales incorrectas');
 
         const isPasswordValid = isValidPassword(user.password, credentials.password);
@@ -26,17 +27,21 @@ class AuthService extends BaseService {
         const token = generateToken(user);
         const { _id, email, rol } = user;
 
+        
         //Guardar usuario en redis que expira en 1h
         this.sessionRepository.create({
             userId: _id.toString(),
             expiration: 3600 // 1 hora en segundos
         });
+        
+        // Actualizar la fecha de última conexión sin modificar timestamps
+        await this.repository.updateWhioutTStamp(_id, { lastLogintAt: new Date() });
 
         return { token, id: _id, email, rol };
     }
 
     async login2factor(credentials) {
-        const user = await super.findByFilter({ email: credentials.email });
+        const user = await this.repository.findByFilter({ email: credentials.email });
         if (!user) throw new Error('credenciales incorrectas');
 
         //
@@ -87,7 +92,7 @@ class AuthService extends BaseService {
         // Generar token JWT
         let user;
         if (emailU) {
-            user = await super.findByFilter({ email: emailU });
+            user = await this.repository.findByFilter({ email: emailU });
         } else {
             user = await super.findById(userId);
         }
@@ -103,11 +108,33 @@ class AuthService extends BaseService {
             expiration: 3600 // 1 hora en segundos
         });
 
+        // Actualizar la fecha de última conexión sin modificar timestamps
+        await this.repository.updateWhioutTStamp(_id, { lastLogintAt: new Date() });
+
         sendLoginSuccessNotification(user.email, user.name)
               .catch(err => console.warn("Aviso de login exitoso falló:", err.message || err));
 
         return { token, id: _id, email, rol };
 
+    }
+
+    async loginGoogle(user) {
+        //Formatear para cambiar el ID por _ID
+   
+        const token = generateToken(user);
+
+        if(!token) throw new Error("Error al crear la sessión")
+
+        //Guardar usuario en redis que expira en 1h
+        this.sessionRepository.create({
+            userId: user.id.toString(),
+            expiration: 3600 // 1 hora en segundos
+        });
+
+        // Actualizar la fecha de última conexión sin modificar timestamps
+        await this.repository.updateWhioutTStamp(user.id, { lastLogintAt: new Date() });
+
+        return { token, id: user.id, email: user.email, rol: user.rol };
     }
 
     async logout(userId) {

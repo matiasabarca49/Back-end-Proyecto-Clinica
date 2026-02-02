@@ -34,8 +34,8 @@ class MongoRepository extends IRepository{
             })
     }
 
-    async findByQuery(query){
-        return await this.model.aggregate(query)
+    async aggregate(pipeline){
+        return await this.model.aggregate(pipeline)
             .catch(error =>{
                 console.log(error)
                 throw error
@@ -80,6 +80,15 @@ class MongoRepository extends IRepository{
 
     async update(ID,toUpdate ){
        return await this.model.updateOne({_id: ID}, toUpdate)
+            .catch( err =>{
+                console.log(err)
+                throw err
+            })
+    }
+
+    // Actualiza un documento sin modificar los timestamps
+    async updateWhioutTStamp(ID,toUpdate ){
+       return await this.model.updateOne({_id: ID}, toUpdate, {timestamps: false})
             .catch( err =>{
                 console.log(err)
                 throw err

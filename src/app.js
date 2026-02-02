@@ -61,7 +61,6 @@ import routeDoctor from './routes/doctor.router.js';
 import routeAppointments from './routes/appointment.router.js';
 import routeSession from './routes/session.router.js';
 import routeFailure from './routes/failure.router.js';
-import routeTreatments from './routes/treatments.router.js';
 import routeNotices from './routes/notice.router.js';
 app.use("/api/users", routeUser);
 app.use("/api/patients", routePatient);
@@ -69,7 +68,6 @@ app.use("/api/doctors", routeDoctor);
 app.use("/api/appointments", routeAppointments);
 app.use("/api/sessions", routeSession);
 app.use("/api/fails", routeFailure);
-app.use("/api/treatments", routeTreatments);
 app.use("/api/notices", routeNotices);
 
 //Autenticación Google
@@ -83,7 +81,7 @@ if(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.e
 //Docs
 import SwaggerJsdoc from 'swagger-jsdoc'
 import SwaggerUIExpress from 'swagger-ui-express'
-import { swaggerOption } from './config/options.js'
+import { swaggerOption } from './config/swagger.config.js'
 const specs = SwaggerJsdoc(swaggerOption)
 app.use('/api/docs', SwaggerUIExpress.serve, SwaggerUIExpress.setup(specs));
 

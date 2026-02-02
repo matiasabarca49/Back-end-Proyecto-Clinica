@@ -118,38 +118,27 @@ export class PatientDTO {
         this.name = PatientDTO.capitalize(patient.name);
         this.lastName = PatientDTO.capitalize(patient.lastName);
         this.birth = patient.birth;
-        this.typeDNI = patient.typeDNI || 'DNI';
-        this.DNI = patient.DNI;
-        this.sex = this.normalizeSex(patient.sex);
+        this.typeDNI = patient.typeDNI;
+        this.dni = patient.dni;
+        this.sex = patient.sex;
         this.address = patient.address;
         this.phone = patient.phone;
         this.email = patient.email?.toLowerCase();
         this.medicalCoverage = patient.medicalCoverage;
         this.nAffiliate = patient.nAffiliate;
-        this.observations = patient.observations || [];
-        this.treatments = patient.treatments || [];
-        this.dentalStatus = patient.dentalStatus || {
-            dientesSupLeft: [],
-            dientesSupRight: [],
-            dientesInfLeft: [],
-            dientesInfRight: []
-        };
+        this.observations = patient.observations;
+        this.treatments = patient.treatments;
+        this.dentalStatus = patient.dentalStatus;
         this.idDoctor = patient.idDoctor;
+        this.status = patient.status || 'active';
         this.created = patient.created;
         this.lastChange = patient.lastChange;
     }
 
-    // Helpers de normalización
+    // Helpers de capitalización
     static capitalize(str) {
         if (!str) return '';
         return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();
-    }
-
-    normalizeSex(sex) {
-        if (!sex) return '';
-        const validSex = ['masculino', 'femenino', 'otro'];
-        const sexLower = sex.toLowerCase();
-        return validSex.includes(sexLower) ? sexLower : '';
     }
 
     // Salida de datos
@@ -160,7 +149,7 @@ export class PatientDTO {
             lastName: patient.lastName,
             birth: patient.birth,
             typeDNI: patient.typeDNI,
-            DNI: patient.DNI,
+            dni: patient.dni,
             sex: patient.sex,
             address: patient.address,
             phone: patient.phone,
@@ -171,6 +160,7 @@ export class PatientDTO {
             treatments: patient.treatments,
             dentalStatus: patient.dentalStatus,
             idDoctor: patient.idDoctor,
+            status: patient.status,
             created: patient.created,
             lastChange: patient.lastChange
         };
@@ -182,7 +172,7 @@ export class PatientDTO {
         if (patient.lastName) updatedPatient.lastName = this.capitalize(patient.lastName);
         if (patient.birth) updatedPatient.birth = patient.birth;
         if (patient.typeDNI) updatedPatient.typeDNI = patient.typeDNI;
-        if (patient.DNI) updatedPatient.DNI = patient.DNI;
+        if (patient.dni) updatedPatient.dni = patient.dni;
         if (patient.sex) updatedPatient.sex = patient.sex.toLowerCase();
         if (patient.address) updatedPatient.address = patient.address;
         if (patient.phone) updatedPatient.phone = patient.phone;
@@ -193,17 +183,18 @@ export class PatientDTO {
         if (patient.treatments) updatedPatient.treatments = patient.treatments;
         if (patient.dentalStatus) updatedPatient.dentalStatus = patient.dentalStatus;
         if (patient.idDoctor) updatedPatient.idDoctor = patient.idDoctor;
+        if (patient.status) updatedPatient.status = patient.status;
         return updatedPatient;
     }
 }
 
 export class CreatePatientDTO {
     constructor(patient) {
-        this.name = this.normalizeName(patient.name);
-        this.lastName = this.normalizeName(patient.lastName);
+        this.name = this.normalize(patient.name);
+        this.lastName = this.normalize(patient.lastName);
         this.birth = patient.birth;
         this.typeDNI = patient.typeDNI || 'DNI';
-        this.DNI = patient.DNI;
+        this.dni = patient.dni;
         this.sex = this.normalizeSex(patient.sex);
         this.address = patient.address;
         this.phone = patient.phone;
@@ -218,20 +209,23 @@ export class CreatePatientDTO {
             dientesInfLeft: [],
             dientesInfRight: []
         };
+        this.status = patient.status;
         this.idDoctor = patient.idDoctor;
-        this.created = patient.created;
-        this.lastChange = patient.lastChange;
     }
 
-    normalizeName(name) {
-        if (!name) return '';
-        return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+    // Helpers de normalización
+    normalize(str){
+        return str?.trim().replace(/\s+/g, ' ') || '';
+    }
+
+    normalizeEmail(email) {
+        return email?.toLowerCase().trim() || ''; 
     }
 
     normalizeSex(sex) {
-        if (!sex) return '';
-        const validSex = ['masculino', 'femenino', 'otro'];
+        if (!sex) return 'unspecified';
+        const validSex = ['male', 'female', 'another', 'unspecified'];
         const sexLower = sex.toLowerCase();
-        return validSex.includes(sexLower) ? sexLower : '';
+        return validSex.includes(sexLower) ? sexLower : 'unspecified';
     }
 }

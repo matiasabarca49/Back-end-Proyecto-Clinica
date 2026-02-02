@@ -1,5 +1,5 @@
 import expres from 'express';
-import {getUsers , getUserByID, getManyUsersByFilter, getUserByFilter, createUser, deleteUser, updateUser, getsUsersPaginate} from '../controller/user.controller.js'
+import {getUsers , getUserByID, createUser, deleteUser, updateUser, searchUsers} from '../controller/user.controller.js'
 import { authToken, checkAuth, checkPermissionsAdmin } from '../middlewares/middlewares.js';
 const { Router } = expres;
 const router = new Router();
@@ -7,10 +7,9 @@ const router = new Router();
 
 
 router.get("/", authToken, getUsers)
-router.get("/paginate/", authToken, getsUsersPaginate)
-router.get("/filter/", authToken,getUserByFilter)
+router.get("/filter/", authToken, searchUsers)
 router.get("/:id", authToken, getUserByID)
-router.get("/many/filter/", authToken,getManyUsersByFilter)
+/* router.get("/many/filter/", authToken,getManyUsersByFilter) */
 //=
 router.post("/", authToken, checkPermissionsAdmin, createUser)
 //=

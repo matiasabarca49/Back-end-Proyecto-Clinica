@@ -10,29 +10,13 @@ class BaseService{
         return await this.repository.findAll()
     }
 
-
-    async findByFilter(filter){
-        //Repository
-        return await this.repository.findByFilter(filter)
-        
-    }
-
-    async findManyByFilter(filter){
-        return await this.repository.findManyByFilter(filter) 
-    }
-
+    
     async findById(id){
+        if(!id) throw new Error("Se debe proporcionar un ID")
         return await this.repository.findByID(id)
     }
 
-    async findPaginate(dftQuery, dftLimit, dftPage, dftSort){
-        return await this.repository.findPaginate(dftQuery, dftLimit, dftPage, dftSort)
-    }
-
-    async findByQuery(opAgregations){
-        return await this.repository.findByQuery(opAgregations) 
-    }
-
+ 
     async create(document){
         //Formateamos el documento si la clase hija definió toFormatDTO
         const documentCreated = await this.repository.create(document)
@@ -57,16 +41,15 @@ class BaseService{
     }
 
     async update(id, updatedDocument){
+        if(!id) throw new Error("Se debe proporcionar un ID")
         return await this.repository.update(id, updatedDocument)
     }
 
     async delete(id){
+        if(!id) throw new Error("Se debe proporcionar un ID")
         return await this.repository.delete(id)
     }
 
-    async deleteManyByFilter(filter){
-        return await this.repository.deleteManyByFilter(filter)
-    }
 }
 
 export default BaseService;

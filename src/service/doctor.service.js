@@ -1,4 +1,3 @@
-import mongoose from "mongoose";
 //Model
 import { Doctor } from "../model/mongo/doctor.model.js"
 //Base Service
@@ -20,38 +19,15 @@ export default class DoctorsService extends BaseService{
         return this.toManyDTO(doctors)
     }
 
-    async findByFilter(filter){
-        //Repository
-        const doctor = await super.findByFilter(filter)
-        return doctor ? this.toDTO(doctor) : undefined
-    }
-
-    async findManyByFilter(filter){
-        const doctors = await super.findManyByFilter(filter) 
-        return this.toManyDTO(doctors)
-    }
-
-    async findByFilterOrFail(filter){
-        const doctor = await super.findByFilter(filter)
-        if(!doctor) throw new Error('Doctor no encontrado')
-        return this.toDTO(doctor)
-    }
-
     async findById(id){
         const doctor = await super.findById(id)
         if(!doctor) throw new Error('Doctor no encontrado')
         return this.toDTO(doctor)
     }
 
-    async findPaginate(dftQuery, dftLimit, dftPage, dftSort){
-        const resultPaginate = await super.findPaginate(dftQuery, dftLimit, dftPage, dftSort)
-        resultPaginate.docs = this.toManyDTO(resultPaginate.docs)
-        return resultPaginate
-    }
-
-    async getDoctorByQuery(query){
+    async searchPaginate(query){
         const searchRegex = new RegExp(query, 'i')
-        const resultPaginate = await super.findPaginate({
+        const resultPaginate = await this.repository.findPaginate({
             $or:[
                 {name: searchRegex},
                 {name_search: searchRegex},
@@ -64,11 +40,29 @@ export default class DoctorsService extends BaseService{
         return resultPaginate
     }
 
-    async createDoctor(newDoctor) {
-        // Asignar fechas de creación y última modificación
-        newDoctor.created = new Date();
-        newDoctor.lastChange = new Date();
+    async paginateDoctors(search, limit, page, sort){
+        //Default query: {}
+        let filter = {};
+        if(search){
+            const regex = new RegExp(search, "i");
+            filter = {
+                $or: [
+                    { name: regex },
+                    { lastName: regex },
+                    { email: regex },
+                    { dni: regex }
+                ]
+            };
+        }
         
+        //Default sort: fecha de creación descendente
+        const defaultSort = sort ? {lastName: parseInt(sort)} : {lastName: -1}
+        const resultPaginate = await this.repository.findPaginate(filter, limit, page, defaultSort)
+        resultPaginate.docs = this.toManyDTO(resultPaginate.docs)
+        return resultPaginate
+    }
+
+    async create(newDoctor) {
         const newDoctorFormated = new DoctorDTO(newDoctor);
         const doctorAdded = await super.create(newDoctorFormated);
 
@@ -79,11 +73,12 @@ export default class DoctorsService extends BaseService{
         return doctorAdded
     }
 
-    delete(doctorID) {
-        return super.delete(doctorID);
+    async delete(doctorID) {
+        const deletedDoctor = await super.delete(doctorID); 
+        return this.toDTO(deletedDoctor);
     }
 
-    update(doctorID, toUpdate) {
+    async update(doctorID, toUpdate) {
         toUpdate.lastChange = new Date()
         return super.update(doctorID, toUpdate);
     }

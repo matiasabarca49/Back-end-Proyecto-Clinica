@@ -1,33 +1,15 @@
 import expres from 'express';
-import { createPatient, getPatients, getPatientById, getPatientByFilter, deletePatient, updatePatient, getsPatientsPaginate, getPatientByQuery } from '../controller/patient.controller.js'
+import { createPatient, getPatients, getPatientById, deletePatient, updatePatient, getPatientByQuery } from '../controller/patient.controller.js'
 import { authToken } from '../middlewares/middlewares.js';
 const { Router } = expres;
 const router = new Router();
 
 /**
- * Ruta para obtener todos los pacientes.
+ * Ruta para obtener todos los pacientes con o sin paginate.
  * @route GET /patients
  * @returns {Array} Lista de pacientes
  */
 router.get("/", authToken, getPatients)
-
-/**
- * Ruta para obtener pacientes con paginación.
- * @route GET /patients/paginate
- * @param {Number} page Página que se desea mostrar.
- * @param {Number} limit Número de pacientes por página.
- * @returns {Object} Resultado con datos de pacientes paginados.
- */
-router.get("/paginate/", authToken, getsPatientsPaginate)
-
-
-/**
- * Ruta para obtener pacientes con filtros específicos.
- * @route GET /patients/filter
- * @param {Object} filter Filtros para la búsqueda de pacientes.
- * @returns {Array} Lista de pacientes que cumplen con los filtros.
- */
-router.get("/filter/", authToken, getPatientByFilter)
 
 /**
  * Ruta para buscar pacientes.

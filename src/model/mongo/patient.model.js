@@ -6,9 +6,9 @@ import mongoose from "mongoose";
 import mongoosePaginate from 'mongoose-paginate-v2'
 
 // Verificamos si el modelo está en la caché para evitar errores
-/* if (mongoose.models["patients"]) {
+if (mongoose.models["patients"]) {
   delete mongoose.models["patients"];
-} */
+}
 
 const patientsSchema = new mongoose.Schema({
     name: {
@@ -23,7 +23,10 @@ const patientsSchema = new mongoose.Schema({
         type: String,
         required: true
     },
-    DNI:{
+    typeDNI:{
+        type: String,
+    },
+    dni:{
         type: String,
         unique: true,
         required: true
@@ -68,7 +71,7 @@ const patientsSchema = new mongoose.Schema({
             },
             status: {
                 type: String,
-                enum:["Pending", "Finalized", "Canceled" ]
+                enum:["progress","pending", "finalized", "canceled" ]
             },
             IDPatient:{
                 type: String,
@@ -90,7 +93,7 @@ const patientsSchema = new mongoose.Schema({
             },
             status: {
                 type: String,
-                enum:["Pending", "Finalized", "Canceled" ]  
+                enum:["pending", "finalized", "canceled" ]  
             }  
         }
     ],
@@ -108,12 +111,16 @@ const patientsSchema = new mongoose.Schema({
             type: Array
         }
     },
+    status:{
+        type: String,
+        enum: ["active", "inactive", "blocked"],
+        default: "active"
+    },
     idDoctor: {
             type: String,
             required: true
         }
-
-});
+}, {timestamps: {createdAt: 'created', updatedAt: 'lastChange'} });
 
 // Plugin para la paginación de documentos en la base de datos.
 mongoose.plugin(mongoosePaginate)

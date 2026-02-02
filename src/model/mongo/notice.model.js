@@ -29,7 +29,7 @@ const noticesSchema = new mongoose.Schema({
         ref: "users", 
         required: function() { return this.visibility === "particular"; } 
     }
-}, { timestamps: true });
+}, { timestamps: {createdAt: 'created', updatedAt: 'lastChange'} });
 
 // Plugin de paginación
 noticesSchema.plugin(mongoosePaginate);

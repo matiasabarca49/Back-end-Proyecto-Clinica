@@ -1,88 +1,7 @@
 paths:
   /api/patients/:
     get:
-      summary: "Obtener todos los pacientes"
-      description: "Si el usuario es Doctor, solo obtiene sus pacientes asignados. Si es Admin o Employee, obtiene todos"
-      tags:
-        - Patients
-      security:
-        - cookieAuth: []
-      responses:
-        "200":
-          description: "Los pacientes se obtuvieron exitosamente"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: "Success"
-                  patients:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/PatientResponse"
-        "404":
-          description: "Error en la obtención de los pacientes"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: "ERROR"
-                  reason:
-                    type: string
-                    example: "Los Pacientes no se pudieron obtener"
-        "500":
-          description: "Error en el servidor"
-
-    post:
-      summary: "Crear un nuevo paciente"
-      tags:
-        - Patients
-      security:
-        - cookieAuth: []
-      requestBody:
-        description: "Datos del paciente en formato JSON"
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/PatientCreate"
-      responses:
-        "201":
-          description: "El paciente se creó exitosamente"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: "Success"
-                  patients:
-                    $ref: "#/components/schemas/PatientResponse"
-        "409":
-          description: "Conflicto - DNI duplicado"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: "ERROR"
-                  code:
-                    type: integer
-                    example: 11000
-        "500":
-          description: "Error en la creación del paciente"
-
-  /api/patients/paginate:
-    get:
-      summary: "Obtener pacientes con paginación"
+      summary: "Obtener pacientes. Permite obtner páginas con las query: 'page' y 'limit'"
       tags:
         - Patients
       security:
@@ -91,16 +10,16 @@ paths:
         - name: search
           in: query
           required: false
-          description: "Búsqueda por apellido"
+          description: "Búsqueda por nombre, apellido, dni y obra social"
           schema:
             type: string
-        - name: query
+        - name: sex
           in: query
           required: false
           description: "Filtro por sexo"
           schema:
             type: string
-            enum: ["Male", "Female", "Other"]
+            enum: ["male", "female", "other"]
         - name: sort
           in: query
           required: false
@@ -157,6 +76,48 @@ paths:
         "500":
           description: "Error en el servidor"
 
+    post:
+      summary: "Crear un nuevo paciente"
+      tags:
+        - Patients
+      security:
+        - cookieAuth: []
+      requestBody:
+        description: "Datos del paciente en formato JSON"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PatientCreate"
+      responses:
+        "201":
+          description: "El paciente se creó exitosamente"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  patients:
+                    $ref: "#/components/schemas/PatientResponse"
+        "409":
+          description: "Conflicto - DNI duplicado"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ERROR"
+                  code:
+                    type: integer
+                    example: 11000
+        "500":
+          description: "Error en la creación del paciente"
+
   /api/patients/search:
     get:
       summary: "Búsqueda avanzada de pacientes"
@@ -169,7 +130,7 @@ paths:
         - name: query
           in: query
           required: true
-          description: "Texto de búsqueda (nombre, apellido, DNI, email)"
+          description: "Texto de búsqueda (nombre, apellido, dni, email)"
           schema:
             type: string
             example: "García"
@@ -203,66 +164,7 @@ paths:
                     example: "No se encontraron pacientes que coincidan"
         "500":
           description: "Error en el servidor"
-
-  /api/patients/filter:
-    get:
-      summary: "Obtener pacientes por filtro específico"
-      description: "Filtra pacientes por DNI, email, sexo u otros atributos"
-      tags:
-        - Patients
-      security:
-        - cookieAuth: []
-      parameters:
-        - name: DNI
-          in: query
-          required: false
-          description: "Filtrar por DNI"
-          schema:
-            type: string
-        - name: email
-          in: query
-          required: false
-          description: "Filtrar por email"
-          schema:
-            type: string
-            format: email
-        - name: sex
-          in: query
-          required: false
-          description: "Filtrar por sexo"
-          schema:
-            type: string
-            enum: ["Male", "Female", "Other"]
-        - name: name
-          in: query
-          required: false
-          schema:
-            type: string
-        - name: lastName
-          in: query
-          required: false
-          schema:
-            type: string
-      responses:
-        "200":
-          description: "Pacientes encontrados exitosamente"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: "Success"
-                  patients:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/PatientResponse"
-        "404":
-          description: "No se encontraron pacientes con el filtro aplicado"
-        "500":
-          description: "Error en el servidor"
-
+  
   /api/patients/{id}:
     get:
       summary: "Obtener un paciente por ID"
@@ -376,7 +278,7 @@ components:
         - name
         - lastName
         - birth
-        - DNI
+        - dni
         - sex
         - address
         - phone
@@ -398,7 +300,7 @@ components:
           format: date
           description: "Fecha de nacimiento (YYYY-MM-DD)"
           example: "1990-05-15"
-        DNI:
+        dni:
           type: string
           description: "Documento de identidad del paciente (debe ser único)"
           example: "12345678"
@@ -495,7 +397,7 @@ components:
         birth:
           type: string
           format: date
-        DNI:
+        dni:
           type: string
         sex:
           type: string
@@ -539,7 +441,7 @@ components:
           type: string
           format: date
           example: "1990-05-15"
-        DNI:
+        dni:
           type: string
           example: "12345678"
         sex:

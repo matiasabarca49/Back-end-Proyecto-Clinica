@@ -31,8 +31,12 @@ const doctorSchema = new mongoose.Schema({
         type: String,
         required: true,
         unique: true
+    },
+    status: {
+        type: String,
+        enum: ['active', 'inactive']
     }
-});
+},{ timestamps: { createdAt: 'created', updatedAt: 'lastChange' }});
 mongoose.plugin(mongoosePaginate)
 
 export const Doctor = mongoose.model("doctors", doctorSchema);

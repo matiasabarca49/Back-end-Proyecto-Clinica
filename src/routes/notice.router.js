@@ -3,11 +3,8 @@ import {
   createNotice, 
   getNotices, 
   getNoticeById, 
-  getNoticeByFilter, 
   deleteNotice, 
   updateNotice, 
-  getNoticesPaginate, 
-  getNoticeByQuery 
 } from '../controller/notice.controller.js';
 
 import { authToken } from '../middlewares/middlewares.js';
@@ -21,23 +18,6 @@ const router = express.Router();
  */
 router.get("/", authToken, getNotices);
 
-/**
- * 🔹 GET /notices/paginate
- * Obtiene avisos paginados
- */
-router.get("/paginate", authToken, getNoticesPaginate);
-
-/**
- * 🔹 GET /notices/filter
- * Obtiene avisos con filtros específicos
- */
-router.get("/filter", authToken, getNoticeByFilter);
-
-/**
- * 🔹 GET /notices/search
- * Búsqueda avanzada por texto
- */
-router.get("/search", authToken, getNoticeByQuery);
 
 /**
  * 🔹 GET /notices/:id
@@ -50,7 +30,7 @@ router.get("/:id", authToken, getNoticeById);
  * Crea un nuevo aviso
  * Solo Admin y Employee
  */
-router.post("/", authToken, authorizeRoles("Admin", "Employee"), createNotice);
+router.post("/", authToken, authorizeRoles("admin", "employee"), createNotice);
 
 /**
  * 🔹 PUT /notices/:id
@@ -64,6 +44,6 @@ router.put("/:id", authToken, authorizeRoles("Admin", "Employee"), updateNotice)
  * Elimina un aviso
  * Solo Admin y Employee
  */
-router.delete("/:id", authToken, authorizeRoles("Admin", "Employee"), deleteNotice);
+router.delete("/:id", authToken, authorizeRoles("admin", "employee"), deleteNotice);
 
 export default router;

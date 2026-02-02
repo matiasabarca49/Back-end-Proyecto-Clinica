@@ -105,10 +105,7 @@ export const disconnectUser = async (req, res) =>{
       res.clearCookie('token'); 
 
       const deletedSession = await  authService.logout(req.user.id);
-
-      console.log("Sesión eliminada:", deletedSession);
       
-
       return res.status(200).send({ status:"Success", reason: "User Disconnected" })
           
       

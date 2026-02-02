@@ -102,13 +102,11 @@ export class AppointmentDTO{
         this.patientID = appointment.patientID;
         this.status = AppointmentDTO.capitalize(appointment.status);
         this.observations = appointment.observations;
-        this.created = appointment.created;
-        this.lastChange = appointment.lastChange;
     }
 
     // Helpers de normalización
     static capitalize(str) {
-        return str.charAt(0).toUpperCase() + str.slice(1).toLowerCase();  
+        return str.toLowerCase();  
     }
 
     //Salida de datos
@@ -147,10 +145,8 @@ export class CreateAppointmentDTO{
         this.room = appointment.room;
         this.doctorID = appointment.doctorID;
         this.patientID = appointment.patientID;
-        this.status = appointment.status || 'Pending';
+        this.status = appointment.status || 'pending';
         this.observations = appointment.observations;
-        this.created = appointment.created;
-        this.lastChange = appointment.lastChange;
     }
 
     normalizeType(typeAppointment){

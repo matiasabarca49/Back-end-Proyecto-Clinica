@@ -1,8 +1,9 @@
 import passport from "passport";
-import UsersService from '../service/mongo/user.service.js';
+import UsersService from '../service/user.service.js';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
-import { UserFormated } from '../dto/user.dto.js';
+import { UserDTO } from '../dto/user.dto.js';
 import crypto from 'crypto';
+import { createhash } from "../utils/utils.js";
 
 const usersService = new UsersService();
 
@@ -20,21 +21,24 @@ if(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.e
             const name = data.given_name || profile.name?.givenName || '';
             const email = data.email || profile.emails?.[0]?.value || '';
             const lastName = data.family_name || '';
-    
-    
-            let userFound = await usersService.getUserByFilter({ email: email });
-    
+
+
+            let userFound = await usersService.findUserByEmail(email);
+
             if (!userFound) {
                 const newUser = {
                     name,
                     lastName,
                     email,
-                    password: crypto.randomUUID(),
+                    rol: 'employee',
+                    password: createhash(crypto.randomUUID())
                 };
-    
-                const formattedUser = new UserFormated(newUser);
-                const userCreated = await usersService.createUser(formattedUser);
-                return done(null, userCreated.dt)
+
+                newUser.status = 'active';
+
+                const formattedUser = new UserDTO(newUser);
+                const userCreated = await usersService.create(formattedUser);
+                return done(null, userCreated);
             }else{
                 return done(null, userFound);
             }

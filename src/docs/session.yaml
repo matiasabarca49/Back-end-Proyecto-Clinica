@@ -1,0 +1,374 @@
+paths:
+  # ==================== SESSIONS / AUTHORIZATION ====================
+  /api/sessions/login:
+    post:
+      summary: "Login de usuario (sin 2FA)"
+      description: "Autenticación tradicional con email y contraseña. Devuelve JWT en cookie HttpOnly"
+      tags:
+        - Authorization
+      requestBody:
+        description: "Credenciales del usuario en formato JSON"
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Login"
+      responses:
+        "200":
+          description: "Login exitoso"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  token:
+                    type: string
+                    description: "JWT token (también enviado en cookie)"
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+                example: "token=eyJhbGc...; HttpOnly; SameSite=Strict; Max-Age=3600"
+        "401":
+          description: "Credenciales incorrectas"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "ERROR"
+                  reason:
+                    type: string
+                    example: "Credenciales Incorrectas"
+        "500":
+          description: "Error en el servidor"
+
+  /api/sessions/login-2fa:
+    post:
+      summary: "Login con 2FA (Paso 1 - Envío de código)"
+      description: "Valida credenciales y envía un código de 6 dígitos al email del usuario. El código expira en 5 minutos"
+      tags:
+        - Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Login"
+      responses:
+        "200":
+          description: "Código de verificación enviado al email"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  state:
+                    type: string
+                    example: "PENDING"
+                  message:
+                    type: string
+                    example: "Código enviado al email"
+                  userId:
+                    type: string
+                    description: "ID del usuario para el siguiente paso"
+                    example: "507f1f77bcf86cd799439011"
+        "401":
+          description: "Credenciales incorrectas"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Error"
+                  reason:
+                    type: string
+                    example: "Credenciales Incorrectas"
+        "500":
+          description: "Error en el servidor"
+
+  /api/sessions/verify-2fa:
+    post:
+      summary: "Verificar código 2FA (Paso 2)"
+      description: "Valida el código de 6 dígitos enviado por email y completa el login"
+      tags:
+        - Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - code
+              properties:
+                userId:
+                  type: string
+                  description: "ID del usuario (opcional si se envía email)"
+                  example: "507f1f77bcf86cd799439011"
+                email:
+                  type: string
+                  format: email
+                  description: "Email del usuario (opcional si se envía userId)"
+                  example: "juan@example.com"
+                code:
+                  type: string
+                  description: "Código de 6 dígitos recibido por email"
+                  example: "123456"
+                  minLength: 6
+                  maxLength: 6
+      responses:
+        "200":
+          description: "Código válido - Login exitoso"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  token:
+                    type: string
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+        "400":
+          description: "Código inválido, expirado o falta información"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Error"
+                  reason:
+                    type: string
+                    example: "Código inválido"
+        "500":
+          description: "Error en el servidor"
+
+  /api/sessions/forgot-password:
+    post:
+      summary: "Solicitar recuperación de contraseña"
+      description: "Envía un email con un token JWT para restablecer la contraseña. El token expira en 15 minutos"
+      tags:
+        - Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: "juan@example.com"
+      responses:
+        "200":
+          description: "Instrucciones enviadas (respuesta genérica por seguridad)"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Si el email existe, recibirás instrucciones."
+        "500":
+          description: "Error en el servidor"
+
+  /api/sessions/reset-password:
+    post:
+      summary: "Restablecer contraseña"
+      description: "Actualiza la contraseña usando el token de recuperación recibido por email"
+      tags:
+        - Authorization
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - token
+                - password
+              properties:
+                token:
+                  type: string
+                  description: "Token JWT de recuperación recibido por email"
+                  example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                password:
+                  type: string
+                  format: password
+                  description: "Nueva contraseña (mínimo 8 caracteres)"
+                  minLength: 8
+                  example: "newSecurePassword123"
+      responses:
+        "200":
+          description: "Contraseña actualizada correctamente"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Contraseña actualizada correctamente"
+        "400":
+          description: "Token inválido o expirado"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Token inválido o expirado"
+        "404":
+          description: "Usuario no encontrado"
+        "500":
+          description: "Error en el servidor"
+
+  /api/sessions/current:
+    get:
+      summary: "Obtener usuario logueado actual"
+      tags:
+        - Authorization
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: "Usuario actual obtenido exitosamente"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "OK"
+                  userCurrent:
+                    $ref: "#/components/schemas/UserResponse"
+        "400":
+          description: "No hay sesión activa"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Error"
+                  reason:
+                    type: string
+                    example: "User Not Loged"
+        "500":
+          description: "Error en el servidor"
+
+  /api/sessions/disconnect:
+    get:
+      summary: "Cerrar sesión / Desconectar usuario"
+      description: "Elimina la cookie de autenticación y cierra la sesión"
+      tags:
+        - Authorization
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: "Sesión cerrada exitosamente"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Success"
+                  reason:
+                    type: string
+                    example: "User Disconnected"
+        "400":
+          description: "No hay sesión activa"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "Error"
+                  reason:
+                    type: string
+                    example: "User Not Loged"
+        "500":
+          description: "Error en el servidor"
+
+  /api/auth/google:
+    get:
+      summary: "Iniciar autenticación con Google OAuth"
+      description: "Redirige al usuario a la página de login de Google"
+      tags:
+        - Authorization
+      responses:
+        "302":
+          description: "Redirección a Google OAuth"
+
+  /api/auth/google/callback:
+    get:
+      summary: "Callback de Google OAuth"
+      description: "Endpoint que recibe la respuesta de Google tras la autenticación"
+      tags:
+        - Authorization
+      responses:
+        "200":
+          description: "Autenticación con Google exitosa"
+        "401":
+          description: "Autenticación fallida"
+  
+components:
+  schemas:
+    # ========== AUTH SCHEMAS ==========
+    Login:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: "Email del usuario"
+          example: "juan@example.com"
+        password:
+          type: string
+          format: password
+          description: "Contraseña del usuario"
+          example: "securePassword123"
+
+    SecuritySchemes:
+      cookieAuth:
+        type: apiKey
+        in: cookie
+        name: token
+        description: "JWT token almacenado en cookie HttpOnly con SameSite=Strict. Expira en 1 hora"
+
+security:
+  - cookieAuth: []

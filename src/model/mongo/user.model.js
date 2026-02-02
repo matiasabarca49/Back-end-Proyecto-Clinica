@@ -22,15 +22,19 @@ const userSchema = new mongoose.Schema(
     },
     rol: {
       type: String,
-      enum: ["Admin", "Doctor", "Employee"],
+      enum: ["admin", "doctor", "employee"],
       required: true,
     },
     status: {
       type: String,
-      enum: ["ACTIVE", "INACTIVE", "BLOCKED", "SUSPENDED", "DISABLED"],
+      enum: ["active", "inactive", "blocked", "suspended", "disabled"],
+    },
+    lastLogintAt: {
+      type: Date,
+      default: null,
     },
   },
-  { timestamps: true },
+  { timestamps: {createdAt: 'created', updatedAt: 'lastChange'} },
 );
 mongoose.plugin(mongoosePaginate);
 

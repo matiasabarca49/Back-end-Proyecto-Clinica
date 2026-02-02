@@ -8,29 +8,37 @@ const usersService = new UsersService();
  */
 export const getUsers = async (req, res) => {
     try {
-        const usersGetted = await usersService.findAll();
+        const {search, rol, sort, page, limit } = req.query;
+        let usersGetted;
+        if(!page && !limit){
+            usersGetted = await usersService.findAll();
+        }else{
+            usersGetted = await usersService.paginateUsers(search, rol, limit, page, sort);
+        }
         usersGetted
             ? res.status(200).send({ status: "Success", users: usersGetted })
             : res.status(500).send({ status: "ERROR" });
     } catch (error) {
         console.log(error);
-        res.status(500).send({ status: "ERROR", message: error.message });
+        return res.status(500).send({ status: "ERROR", message: error.message });
     }
 };
 
 /**
- * Retorna múltiples usuarios por filtro
+ * Retorna múltiples usuarios por filtro status o rol
  */
-export const getManyUsersByFilter = async (req, res) => {
+export const searchUsers = async (req, res) => {
     try {
-        const filter = req.query;
-        const usersGetted = await usersService.findManyByFilter(filter);
+        const { status, rol } = req.query;
+        if(!status && !rol ) throw new Error("Query necesarias [status, role] ")
+
+        const usersGetted = await usersService.searchUsers({ status, rol});
         usersGetted
             ? res.status(200).send({ status: "Success", users: usersGetted })
             : res.status(400).send({ status: "ERROR" });
     } catch (error) {
         console.error(error);
-        res.status(500).send({ status: "ERROR", reason: "Error en el servidor, intentar más tarde" });
+        return res.status(500).send({ status: "ERROR", reason: error.message || "Error en el servidor, intentar más tarde" });
     }
 };
 
@@ -45,50 +53,10 @@ export const getUserByID = async (req, res) => {
             ? res.status(200).send({ status: "Success", user: userGetted })
             : res.status(404).send({ status: "ERROR", message: "No se encontró el usuario con ID proporcionado" });
     } catch (error) {
-        res.status(500).send({ status: "ERROR", message: error.message });
+        return res.status(500).send({ status: "ERROR", message: error.message });
     }
 };
 
-/**
- * Retorna un usuario por filtro
- */
-export const getUserByFilter = async (req, res) => {
-    try {
-        const filter = req.query;
-        const userGetted = await usersService.findByFilter(filter);
-        userGetted
-            ? res.status(200).send({ status: "Success", users: userGetted })
-            : res.status(400).send({ status: "ERROR", message: "No se encontró el usuario" });
-    } catch (error) {
-        console.log(error);
-        res.status(500).send({ status: "ERROR", message: error.message });
-    }
-};
-
-/**
- * Retorna usuarios con paginación
- */
-export const getsUsersPaginate = async (req, res) => {
-    try {
-        let defaultQuery, defaultLimit, defaultPage, defaultSort;
-        const { search, query, sort, page, limit } = req.query;
-
-        limit && (defaultLimit = parseInt(limit));
-        page && (defaultPage = parseInt(page));
-        sort && (defaultSort = { lastName: parseInt(sort) });
-
-        search.length !== 0
-            ? defaultQuery = { lastName: search }
-            : query !== "0" && (defaultQuery = { rol: query });
-
-        const usersGetted = await usersService.findPaginate(defaultQuery, defaultLimit, defaultPage, defaultSort);
-        usersGetted
-            ? res.status(200).send({ status: "Success", users: usersGetted })
-            : res.status(500).send({ status: "ERROR" });
-    } catch (error) {
-        res.status(500).send({ status: "ERROR", message: error.message });
-    }
-};
 
 /**
  * Crea un nuevo usuario
@@ -135,7 +103,7 @@ export const updateUser = async (req, res) => {
 
             if (missingFields.length) {
                 // Obtener el usuario actual para verificar si ya era Doctor
-                const currentUser = await usersService.findRawByFilter(userID);
+                const currentUser = await usersService.findById(userID);
                 const wasDoctor = currentUser && String(currentUser.rol).toLowerCase() === "doctor";
 
                 // Solo validar si NO era Doctor antes (promoción)
@@ -149,7 +117,7 @@ export const updateUser = async (req, res) => {
         }
 
         // Llamar al service
-        const userUpdated = await usersService.updateUser(userID, userData, userSession);
+        const userUpdated = await usersService.update(userID, userData, userSession);
 
         // Manejo de respuestas
         if (!userUpdated) {
@@ -197,7 +165,7 @@ export const deleteUser = async (req, res) => {
             return res.status(403).send({ status: "ERROR", message: "El usuario tiene una sesión activa" });
         } 
 
-        const userDeleted = await usersService.deleteUser(userID);
+        const userDeleted = await usersService.delete(userID);
 
         userDeleted
             ? res.status(200).send({ status: "Success", user: userDeleted })
@@ -205,6 +173,6 @@ export const deleteUser = async (req, res) => {
 
     } catch (error) {
         console.error("[deleteUser] Error:", error);
-        res.status(500).send({ status: "ERROR", message: error.message });
+        return res.status(500).send({ status: "ERROR", message: error.message });
     }
 };

@@ -40,7 +40,7 @@ export const authToken = (req, res, next) => {
 
 // Verifica si es admin
 export const checkPermissionsAdmin = (req, res, next) => {
-    if (req.user.rol === "Admin") {
+    if (req.user.rol === "admin") {
         next();
     } else {
         res.status(401).send({ status: "Error", reason: "No Autorizado" });
