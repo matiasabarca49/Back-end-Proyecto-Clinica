@@ -1,6 +1,6 @@
 import expres from 'express';
-import { createPatient, getPatients, getPatientById, deletePatient, updatePatient, getPatientByQuery } from '../controller/patient.controller.js'
-import { authToken } from '../middlewares/middlewares.js';
+import { createPatient, getPatients, getPatientById, deletePatient, updatePatient, getPatientByQuery, getOdontogram, updateTooth, resetOdontogram } from '../controller/patient.controller.js'
+import { authToken, checkPermissionsAdmin } from '../middlewares/middlewares.js';
 const { Router } = expres;
 const router = new Router();
 
@@ -27,6 +27,16 @@ router.get("/search", authToken, getPatientByQuery)
  */
 router.get("/:id", authToken, getPatientById)
 
+/**
+ * Ruta para obtener odontrograma de un paciente por su ID.
+ * @route GET /patients/:patientId/odontogram
+ * @param {String} patientId ID del paciente a obtener.
+ * @returns {Object} Paciente con el ID especificado.
+ */
+router.get("/:patientId/odontogram", authToken, getOdontogram)
+
+
+
 
 /**
  * Ruta para crear un nuevo paciente.
@@ -45,6 +55,13 @@ router.post("/", authToken, createPatient)
 router.delete("/:id", authToken, deletePatient)
 
 /**
+ * Ruta para resetear el odotograma de un paciente por su ID.
+ * @route PUT /patients/:patientId/odontogram/:toothId
+ * @param {String} patientId ID del paciente a actualizar.
+ */
+router.delete("/:patientId/odontogram", authToken, checkPermissionsAdmin, resetOdontogram)
+
+/**
  * Ruta para actualizar los datos de un paciente por su ID.
  * @route PUT /patients/:id
  * @param {String} id ID del paciente a actualizar.
@@ -52,6 +69,17 @@ router.delete("/:id", authToken, deletePatient)
  * @returns {Object} Paciente actualizado.
  */
 router.put("/:id", authToken, updatePatient)
+
+/**
+ * Ruta para actualizar el odotograma de un paciente por su ID.
+ * @route PUT /patients/:patientId/odontogram/:toothId
+ * @param {String} patientId ID del paciente a actualizar.
+ * @param {String} toothId ID o numero de diente del paciente a actualizar.
+ * @query {Object} toothData Datos a actualizar en el paciente.
+ * @returns {Object} Paciente actualizado.
+ */
+router.put("/:patientId/odontogram/:toothId", authToken, updateTooth)
+
 
 export default router
 

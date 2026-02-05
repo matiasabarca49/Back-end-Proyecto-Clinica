@@ -69,6 +69,31 @@ export const getPatientByQuery = async (req, res) => {
 };
 
 /**
+ * Obtener el odontograma completo de un paciente
+ * GET /api/patients/:patientId/odontogram
+ */
+export const getOdontogram = async (req, res) => {
+  try {
+    const { patientId } = req.params;
+
+    const odontogram = await patientsService.getOdontogram(patientId)
+
+    return res.status(200).json({
+      success: true,
+      data: odontogram || []
+    });
+
+  } catch (error) {
+      console.error('Error al obtener odontograma:', error);
+      return res.status(500).json({ 
+        success: false,
+        message: 'Error al obtener el odontograma',
+        error: error.message 
+      });
+  }
+};
+
+/**
  * Endpoint que crea un nuevo paciente en la colección
  * Body: Objeto Patient
  * Respuesta:
@@ -132,4 +157,58 @@ export const updatePatient = async (req, res) => {
         console.error("Error en updatePatient:", error);
         return res.status(500).send({ status: "ERROR", reason: "Error en el servidor" });
     }
+};
+
+/**
+ * Actualizar un diente específico
+ * PUT /api/patients/:patientId/odontogram/:toothId
+ * Body: { caries: {...}, corona: true, ... }
+ */
+export const updateTooth = async (req, res) => {
+  try {
+    const { patientId, toothId } = req.params;
+    const toothData = req.body;
+
+    const patientUpdated = await patientsService.updateTooth(patientId, toothId, toothData)
+
+    return res.status(200).json({
+      success: true,
+      message: 'Diente actualizado correctamente',
+      data: patientUpdated.dentalStatus
+    });
+
+  } catch (error) {
+    console.error('Error al actualizar diente:', error);
+    return res.status(500).json({ 
+      success: false,
+      message: 'Error al actualizar el diente',
+      error: error.message 
+    });
+  }
+};
+
+/**
+ * Resetear odontograma (limpiar todos los dientes)
+ * DELETE /api/patients/:patientId/odontogram
+ */
+export const resetOdontogram = async (req, res) => {
+  try {
+    const { patientId } = req.params;
+
+    await patientsService.resetOdontogram(patientId);
+    
+    return res.status(200).json({
+      success: true,
+      message: 'Odontograma reseteado correctamente',
+      data: []
+    });
+
+  } catch (error) {
+    console.error('Error al resetear odontograma:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Error al resetear el odontograma',
+      error: error.message 
+    });
+  }
 };

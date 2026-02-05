@@ -22,12 +22,7 @@ export class PatientFormated {
         this.nAffiliate = patient.nAffiliate;
         this.observations = [];
         this.treatments = [];
-        this.dentalStatus = {
-            dientesSupLeft: [],
-            dientesSupRight: [],
-            dientesInfLeft: [],
-            dientesInfRight: []
-        },
+        this.dentalStatus = [],
         this.idDoctor = patient.idDoctor
     }
 
@@ -158,7 +153,6 @@ export class PatientDTO {
             nAffiliate: patient.nAffiliate,
             observations: patient.observations,
             treatments: patient.treatments,
-            dentalStatus: patient.dentalStatus,
             idDoctor: patient.idDoctor,
             status: patient.status,
             created: patient.created,
@@ -203,12 +197,7 @@ export class CreatePatientDTO {
         this.nAffiliate = patient.nAffiliate;
         this.observations = patient.observations || [];
         this.treatments = patient.treatments || [];
-        this.dentalStatus = patient.dentalStatus || {
-            dientesSupLeft: [],
-            dientesSupRight: [],
-            dientesInfLeft: [],
-            dientesInfRight: []
-        };
+        this.dentalStatus = patient.dentalStatus || [];
         this.status = patient.status;
         this.idDoctor = patient.idDoctor;
     }

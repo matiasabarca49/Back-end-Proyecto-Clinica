@@ -28,6 +28,12 @@ class PatientsService extends BaseService {
         return this.toDTO(patient);
     }
 
+    async getOdontogram(patientID){
+        const patient = await super.findById(patientID)
+        if(!patient) throw new Error("Paciente no encontrado")
+        return patient.dentalStatus 
+    }
+
     async paginatePatients(search, sex, limit, page, sort, userSession) {
 
         let filter = {};
@@ -77,7 +83,6 @@ class PatientsService extends BaseService {
     }
 
     async create(newPatient, userSession) {
-        console.log(newPatient)
         // Asignar el doctor si el usuario que crea es un doctor. Para el caso de un admin o Employee, se debe
         // especificar el idDoctor en el newPatient.
         newPatient.idDoctor = userSession.rol === "Doctor"
@@ -98,12 +103,55 @@ class PatientsService extends BaseService {
         return updated;
     }
 
+    async updateTooth(patientId, toothId, toothData){
+        const patient = await super.findById(patientId)
+        if(!patient) throw new Error("Paciente no encontrado")
+
+        const toothNumber = parseInt(toothId);
+        
+        const dentalStatus = patient.dentalStatus
+
+        // Buscar si el diente ya existe en el array
+        const toothIndex = dentalStatus.findIndex(
+            tooth => tooth.tooth === toothNumber
+        );
+
+        if (toothIndex !== -1) {
+            // El diente existe → Actualizar
+            dentalStatus[toothIndex] = {
+                ...dentalStatus[toothIndex].toObject(),
+                ...toothData,
+                   tooth: toothNumber // Asegurar que el número no cambie
+            };
+        } else {
+            // El diente NO existe → Agregar (push)
+            dentalStatus.push({
+                tooth: toothNumber,
+                ...toothData
+            });
+        }
+
+        const updatedPatient = await super.update(patientId, {dentalStatus: dentalStatus});
+
+        return updatedPatient;
+    }
+
     async delete(id) {
         const patient = await super.findById(id);
         if (!patient) throw new Error("Paciente no encontrado");
 
         await super.delete(id);
         return this.toDTO(patient);
+    }
+
+    async resetOdontogram(patientId){
+        const patient = await super.findById(patientId);
+        if(!patient) throw new Error("Paciente no encontrado");
+        
+        await super.update(patientId, {dentalStatus: []})
+
+        return true
+        
     }
 
     // ================= DTO mappers =================

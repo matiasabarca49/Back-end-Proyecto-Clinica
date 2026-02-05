@@ -6,9 +6,28 @@ import mongoose from "mongoose";
 import mongoosePaginate from 'mongoose-paginate-v2'
 
 // Verificamos si el modelo está en la caché para evitar errores
-if (mongoose.models["patients"]) {
+/* if (mongoose.models["patients"]) {
   delete mongoose.models["patients"];
-}
+} */
+
+//Esquema de dientes
+const toothSchema = new mongoose.Schema({
+  tooth: { type: Number, required: true },
+  caries: {
+    vestibular: { type: String, default: "0" },
+    mesial: { type: String, default: "0" },
+    oclusal: { type: String, default: "0" },
+    distal: { type: String, default: "0" },
+    lingual: { type: String, default: "0" }
+  },
+  corona: { type: Boolean, default: false },
+  extracted: { type: Boolean, default: false },
+  allcaries: { type: Boolean, default: false },
+  incurable: { type: Boolean, default: false },
+  malposition: { type: Boolean, default: false },
+  periodontal: { type: Boolean, default: false },
+  inscrustration: { type: Boolean, default: false }
+}, { _id: false }); // _id: false evita que cada diente tenga su propio _id
 
 const patientsSchema = new mongoose.Schema({
     name: {
@@ -97,20 +116,7 @@ const patientsSchema = new mongoose.Schema({
             }  
         }
     ],
-    dentalStatus: {
-        dientesSupLeft: {
-            type: Array
-        },
-        dientesSupRight:{
-            type: Array
-        },
-        dientesInfLeft:{
-            type: Array
-        },
-        dientesInfRight:{
-            type: Array
-        }
-    },
+    dentalStatus: [toothSchema],
     status:{
         type: String,
         enum: ["active", "inactive", "blocked"],
@@ -128,6 +134,10 @@ mongoose.plugin(mongoosePaginate)
 
 // Exportación del modelo Patient
 export const Patient = mongoose.model("patients", patientsSchema);
+
+
+
+
 
 
 
