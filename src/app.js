@@ -113,6 +113,6 @@ app.listen(portSelected, () => {
         console.log(`Conectando a la base de datos de MongoDB...`);
         await MongoManager.connect()
         console.timeEnd("Servidor levantado en");
-        console.log("==========================================");
+        console.log('━'.repeat(50));
     }, 1000)
 })

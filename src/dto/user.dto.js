@@ -24,8 +24,8 @@ export class UserFormated {
 
 export class UserDTO{
     constructor(user){
-        this.name = UserDTO.capitalize(user.name);
-        this.lastName = UserDTO.capitalize(user.lastName) || " - ";
+        this.name = user.name? UserDTO.capitalize(user.name) : "Usuario";
+        this.lastName = user.lastName ? UserDTO.capitalize(user.lastName) : " - ";
         this.email = user.email;
         this.password =user.password;
         this.rol = user.rol;
