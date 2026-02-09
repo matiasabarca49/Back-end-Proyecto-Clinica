@@ -14,10 +14,17 @@ export const authGoogle = async (req, res) => {
              maxAge: 3600000, // Tiempo de expiración en milisegundos (1 hora)
          })
      
-        // Redirige al frontend con el token como query param
+        /* // Redirige al frontend con el token como query param
          const redirectUrl = "http://localhost:5173";
      
-         return res.redirect(redirectUrl);
+         return res.redirect(redirectUrl); */
+
+         // Reemplazamos la entrada del backend por el Home
+         return res.send(`
+                <script>
+                    window.location.replace("http://localhost:5173");
+                </script>
+            `);
     }catch(error){
         console.log(error)
         return res.redirect("http://localhost:5173/login")

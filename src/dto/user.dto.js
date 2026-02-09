@@ -29,7 +29,8 @@ export class UserDTO{
             created: user.created,
             lastChange: user.lastChange,
             status: user.status,
-            lastLogintAt: user.lastLogintAt
+            lastLogintAt: user.lastLogintAt,
+            mustChangePassword: user.mustChangePassword
         };
     }
 
