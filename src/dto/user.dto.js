@@ -6,7 +6,11 @@ export class UserDTO{
         this.password =user.password;
         this.rol = user.rol;
         this.status = user.status || 'active';
-        this.lastLogintAt = null
+        this.lastLogintAt = null;
+        //Atributos de Seguridad
+        this.mustChangePassword = user.mustChangePassword | true;
+        this.passwordHistory = user.passwordHistory || []
+        this.passwordChangedAt = null
     }  
     
     // Helpers de normalización

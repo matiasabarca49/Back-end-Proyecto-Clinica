@@ -96,9 +96,10 @@ class UsersService extends BaseService{
         newUser.password = securePassword;
         //Para que el usuario cambie la contraseña puesta por el administrador
         newUser.mustChangePassword = true;
-        newUser.passwordChangedAt = null;
-        newUser.passwordHistory = [];
-        newUser.passwordHistory.push(securePassword)
+        //Hisotrial de Contraseña
+        const arrayPass = [];
+        arrayPass.push(securePassword)
+        newUser.passwordHistory = arrayPass;
         //Estado del usuario
         newUser.status = 'active';
         //DTO de dominio

@@ -24,13 +24,13 @@ program
       console.log('✓ Conectado a la base de datos');
 
       // Verificar que no existan otros admins (opcional)
-      const existingAdmins = await userService.searchUser({rol: 'admin'});
+      /* const existingAdmins = await usersService.searchUsers({rol: 'admin'});
       if (existingAdmins.length > 0) {
         console.error('⚠️  Ya existe un administrador en el sistema');
         console.log('Usa la interfaz web para crear más administradores\n');
         await mongoose.connection.close();
         process.exit(1);
-      }
+      } */
 
      let admin = {
         email: options.email,
@@ -41,6 +41,7 @@ program
 
       // Crear el admin usando el servicio
       admin = await usersService.create(admin);
+      
 
       console.log('\n✓ Usuario administrador creado exitosamente');
       console.log('━'.repeat(50));
