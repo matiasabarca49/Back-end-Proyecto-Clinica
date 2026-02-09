@@ -77,6 +77,18 @@ export const verify2FA = async (req, res) => {
   }
 };
 
+export const changePassword = async (req, res) =>{
+  try {
+    const {currentPassword, newPassword} = req.body
+    const updatedPassoword = await authService.changePassword(currentPassword, newPassword, req.user);
+    return res.status(200).json({status: true, data: updatedPassoword})
+  } catch (error) {
+    console.log(error)
+    return res.status(500).json({status: false, message: error.message})
+  }
+
+}
+
 // =======================
 // CURRENT USER
 // =======================

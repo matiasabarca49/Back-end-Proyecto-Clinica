@@ -3,6 +3,7 @@ import mongoosePaginate from "mongoose-paginate-v2";
 
 const userSchema = new mongoose.Schema(
   {
+    //Datos Básicos
     name: {
       type: String,
       required: true,
@@ -29,12 +30,25 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: ["active", "inactive", "blocked", "suspended", "disabled"],
     },
+    //Actividad
     lastLogintAt: {
       type: Date,
       default: null,
     },
+    //Seguridad contraseña
+    // Seguridad de contraseña
+    mustChangePassword: { 
+      type: Boolean, 
+      default: true },
+    passwordChangedAt: { 
+      type: Date, 
+      default: null },
+    passwordHistory: {
+      type: Array,
+      default: []
+    }
   },
-  { timestamps: {createdAt: 'created', updatedAt: 'lastChange'} },
+  { timestamps: { createdAt: "created", updatedAt: "lastChange" } },
 );
 mongoose.plugin(mongoosePaginate);
 

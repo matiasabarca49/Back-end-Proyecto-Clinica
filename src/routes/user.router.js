@@ -16,4 +16,5 @@ router.post("/", authToken, checkPermissionsAdmin, createUser)
 router.delete("/:id", authToken, checkPermissionsAdmin, deleteUser)
 //=
 router.put("/:id", authToken, checkPermissionsAdmin, updateUser)
+
 export default router

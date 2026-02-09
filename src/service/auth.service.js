@@ -4,7 +4,7 @@ import { User } from "../model/mongo/user.model.js";
 import MongoRepository from "../repositories/implementations/mongo.repository.js";
 import RedisRepository from "../repositories/implementations/redis.repository.js";
 import { send2FACode, sendLoginSuccessNotification } from "../utils/email.helpers.js";
-import { isValidPassword } from "../utils/utils.js";
+import { createhash, isValidPassword} from "../utils/utils.js";
 import BaseService from "./base.service.js";
 
 class AuthService extends BaseService {
@@ -143,6 +143,40 @@ class AuthService extends BaseService {
             throw new Error('No se pudo eliminar la sesión o no existía');
         }
         return deleted;
+    }
+
+    async changePassword(currentPassword, newPassword, userSession){
+        //Verificar que la password actual sea correcta
+        const user = await super.findById(userSession.id)
+        const checkPassoword = isValidPassword(user.password, currentPassword)
+        if(!checkPassoword) throw new Error("Las contraseña actual, no es correcta")
+        //verificar que la password nueva no sea igual a la anterior
+        if(currentPassword === newPassword ) throw new Error("La contraseña debe ser distinta a la anterior")
+        
+        //verificar que la nueva contraseña no se haya usado antes    
+        let arrayPassword = user.passwordHistory
+        const isReused = user.passwordHistory.some(oldPassword => 
+            isValidPassword(oldPassword, newPassword)
+        );
+        if(isReused) throw new Error("La contraseña ya se usó antes")
+        //Limpiar array para que solo se guarden 5
+        if(arrayPassword.length >= 5){
+            arrayPassword = arrayPassword.slice(1)
+        }
+        //Creamos hash de la contraseña
+        const hashPassword = createhash(newPassword)
+        arrayPassword.push(hashPassword)
+        //Actualizamos los atributos de contraseñas
+        user.passwordHistory = arrayPassword
+        user.mustChangePassword = false;
+        user.passwordChangedAt = new Date();
+        //Aplicamos la contraseña nueva
+        user.password = hashPassword
+
+        const userUpdated = await super.update(userSession.id, user)
+
+        return userUpdated
+
     }
 
 }

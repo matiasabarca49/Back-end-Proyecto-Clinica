@@ -91,7 +91,15 @@ class UsersService extends BaseService{
         }
 
         //Encriptar la contraseña, definir status y formatear datos del usuario
-        newUser.password = createhash(newUser.password);
+        const securePassword = createhash(newUser.password);
+        //Contraseña
+        newUser.password = securePassword;
+        //Para que el usuario cambie la contraseña puesta por el administrador
+        newUser.mustChangePassword = true;
+        newUser.passwordChangedAt = null;
+        newUser.passwordHistory = [];
+        newUser.passwordHistory.push(securePassword)
+        //Estado del usuario
         newUser.status = 'active';
         //DTO de dominio
         const userFormated = new UserDTO(newUser);
