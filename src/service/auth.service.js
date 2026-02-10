@@ -40,13 +40,13 @@ class AuthService extends BaseService {
         return { token, id: _id, email, rol };
     }
 
-    async login2factor(credentials) {
-        const user = await this.repository.findByFilter({ email: credentials.email });
+    async login2factor(email) {
+        const user = await this.repository.findByFilter({ email: email });
         if (!user) throw new Error('credenciales incorrectas');
 
         //
-        const isPasswordValid = isValidPassword(user.password, credentials.password);
-        if (!isPasswordValid) throw new Error('Credenciales incorrectas');
+        /* const isPasswordValid = isValidPassword(user.password, credentials.password);
+        if (!isPasswordValid) throw new Error('Credenciales incorrectas'); */
 
         // Generar y guardar código (siempre como string) con vencimiento
         const code = String(Math.floor(100000 + Math.random() * 900000)); // 6 dígitos string

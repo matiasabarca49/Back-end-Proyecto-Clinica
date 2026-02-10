@@ -30,8 +30,8 @@ export const loginUser = async (req,res)=>{
 // =======================
 export const loginUser2fa = async (req, res) => {
   try {
-    const { email, password } = req.body;
-    const login2factor = await authService.login2factor({email: email, password: password});
+    const { email} = req.body;
+    const login2factor = await authService.login2factor(email);
 
     // Respuesta en el mismo patrón (Success/Error)
     // Devolvemos estado de flujo "PENDING" + userId para verificar en el siguiente paso
