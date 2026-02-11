@@ -1,10 +1,11 @@
 import express from 'express'
-import { getDoctors, createDoctor, deleteDoctor, updateDoctor, getDoctorById} from '../controller/doctor.controller.js';
+import { getDoctors, createDoctor, deleteDoctor, updateDoctor, getDoctorById, getSchedules} from '../controller/doctor.controller.js';
 import { authToken } from '../middlewares/middlewares.js';
 const {Router} = express
 const router = new Router();
 //Gets por ID, Filtro y todas las entidades
 router.get("/", authToken, getDoctors);
+router.get("/schedules", authToken, getSchedules)
 router.get("/:id",authToken, getDoctorById);
 //Crear
 router.post("/", authToken, createDoctor);

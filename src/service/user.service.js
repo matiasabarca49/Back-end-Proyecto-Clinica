@@ -146,8 +146,6 @@ class UsersService extends BaseService{
         const prevRol = prevUser.rol ? normalizeText(prevUser.rol) : "";
         const isDoctor = prevUser.rol === "doctor" ;
 
-        console.log("Es Doctor: ", isDoctor)
-
         // No permitir cambio de rol
         if(prevRol !== newRol){
             throw new Error("No se permite cambiar el rol del usuario");
@@ -169,6 +167,8 @@ class UsersService extends BaseService{
             if(toUpdate.dni) updatedFields.dni = toUpdate.dni;
             if(toUpdate.phone) updatedFields.phone = toUpdate.phone;
             if(toUpdate.professionalLicense) updatedFields.professionalLicense = toUpdate.professionalLicense;
+            if(toUpdate.color) updatedFields.color = toUpdate.color;
+            if(toUpdate.schedules) updatedFields.schedules = toUpdate.schedules;
             const updatedDoctor = new DoctorDTO(updatedFields);
             const doctorService = new DoctorService();
             await doctorService.update(userID, updatedDoctor);

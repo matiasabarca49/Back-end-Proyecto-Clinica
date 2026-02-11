@@ -6,8 +6,8 @@ export class UserDTO{
         this.password =user.password;
         this.rol = user.rol;
         this.status = user.status || 'active';
-        this.lastLogintAt = null;
         //Atributos de Seguridad
+        this.lastLogintAt = null;
         this.mustChangePassword = user.mustChangePassword | true;
         this.passwordHistory = user.passwordHistory || []
         this.passwordChangedAt = null
@@ -54,10 +54,12 @@ export class CreateUserRequestDTO {
         this.rol = this.normalizeRol(user.rol);
         this.status = user.status;
         // Datos adicionales para Doctor
-        if(user.dni && user.phone && user.professionalLicense){
-            this.dni = user.dni;
-            this.phone = user.phone;
-            this.professionalLicense = user.professionalLicense;
+        if(user.rol === "doctor"){
+            if(user.dni) this.dni = user.dni;
+            if(user.phone) this.phone = user.phone;
+            if(user.professionalLicense) this.professionalLicense = user.professionalLicense;
+            if(user.schedules) this.schedules = user.schedules
+            if(user.color) this.color = user.color
         }
     }
 

@@ -5,7 +5,7 @@ import BaseService from './base.service.js'
 //Repository
 import MongoRepository from "../repositories/implementations/mongo.repository.js";
 //DTO
-import { DoctorDTO } from "../dto/doctor.dto.js";
+import { DoctorDTO, DoctorScheduleResponseDTO } from "../dto/doctor.dto.js";
 
 export default class DoctorsService extends BaseService{
     constructor() {
@@ -62,6 +62,13 @@ export default class DoctorsService extends BaseService{
         return resultPaginate
     }
 
+    async getSchedules(){
+        const doctors = await super.findAll()
+        if(!doctors) throw new Error('Error interno del servidor')
+        return this.toManyScheduleDTO(doctors)
+
+    }
+
     async create(newDoctor) {
         const newDoctorFormated = new DoctorDTO(newDoctor);
         const doctorAdded = await super.create(newDoctorFormated);
@@ -94,5 +101,9 @@ export default class DoctorsService extends BaseService{
 
     toManyDTO(doctors) {
         return doctors.map(doctor => DoctorDTO.toResponse(doctor));
+    }
+
+    toManyScheduleDTO(doctors){
+        return doctors.map(doctor => new DoctorScheduleResponseDTO(doctor))
     }
 }

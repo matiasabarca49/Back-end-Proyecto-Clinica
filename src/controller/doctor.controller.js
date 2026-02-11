@@ -28,6 +28,25 @@ export const getDoctors = async (req, res) => {
 };
 
 /**
+ * Endpoint que retorna los horarios de todos los doctores de la DB
+ * Respuesta:
+ *        200: retorna un JSON con estado y array de doctores
+ *        404: Error. Problema al obtener la colección de la DB
+ */
+export const getSchedules = async (req, res) => {
+    try {
+        const doctorsGetted = await doctorsService.getSchedules();
+        
+        return doctorsGetted
+            ? res.status(200).send({ status: true , doctors: doctorsGetted })
+            : res.status(404).send({ status: false });
+    } catch (error) {
+        console.error("Error en getDoctors:", error);
+        return res.status(500).send({ status: "ERROR", message: "Error en el servidor" });
+    }
+};
+
+/**
  * Endpoint que retorna un doctor de la colección mediante su ID
  * Param: ID del doctor
  * Respuesta:

@@ -12,6 +12,16 @@ export class DoctorDTO {
         this.email = doctor.email?.toLowerCase();
         this.phone = doctor.phone;
         this.status = doctor.status || 'active'
+        this.schedules = doctor.schedules || {
+            monday: { start: "09:00", end: "18:00" },
+            tuesday: { start: "09:00", end: "18:00" },
+            wednesday: { start: "14:00", end: "18:00" },
+            thursday: { start: "09:00", end: "18:00" },
+            friday: { start: "09:00", end: "18:00" },
+            saturday: { start: "09:00", end: "18:00" },
+        },
+        this.color = doctor.color || "#8f897fff"
+
     }
 
     // Helpers de normalización
@@ -30,6 +40,8 @@ export class DoctorDTO {
             professionalLicense: doctor.professionalLicense,
             email: doctor.email,
             phone: doctor.phone,
+            schedules: doctor.schedules,
+            color: doctor.color,
             created: doctor.created,
             lastChange: doctor.lastChange
         };
@@ -47,6 +59,7 @@ export class DoctorDTO {
     }
 }
 
+//Para entrada de Datos
 export class CreateDoctorDTO {
     constructor(doctor) {
         this.name = this.normalize(doctor.name);
@@ -58,6 +71,8 @@ export class CreateDoctorDTO {
         this.created = doctor.created;
         this.lastChange = doctor.lastChange;
         this.status = doctor.status;
+        this.schedules = doctor.schedules;
+        this.color = doctor.color;
     }
 
     normalize(str){
@@ -66,5 +81,15 @@ export class CreateDoctorDTO {
 
     normalizeEmail(email) {
         return email?.toLowerCase().trim() || ''; 
+    }
+}
+
+// Para endpoint GET /doctors/:id/schedules
+export class DoctorScheduleResponseDTO {
+    constructor(doctor) {
+        this.id = doctor._id || doctor.id;
+        this.name = `${doctor.name} ${doctor.lastName}`;
+        this.schedules = doctor.schedules;
+        this.color = doctor.color
     }
 }
