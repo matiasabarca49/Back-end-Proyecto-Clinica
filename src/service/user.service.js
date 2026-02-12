@@ -10,6 +10,7 @@ import BaseService from "./base.service.js";
 import DoctorService from "./doctor.service.js";
 //Repository
 import MongoRepository from "../repositories/implementations/mongo.repository.js";
+import { NotFoundError, ValidationError } from "../exceptions/validations.exception.js";
 
 class UsersService extends BaseService{
 
@@ -20,7 +21,6 @@ class UsersService extends BaseService{
 
     async findAll(){
         const users = await super.findAll()
-        if(!users) throw new Error('Error interno del servidor')
         return this.toManyDTO(users)
     }
 
@@ -44,7 +44,7 @@ class UsersService extends BaseService{
 
     async findById(id){
         const user = await super.findById(id)
-        if(!user) throw new Error('Usuario no encontrado')
+        if(!user) throw new NotFoundError("User", id);
         return this.toDTO(user)
     }
 
@@ -139,7 +139,7 @@ class UsersService extends BaseService{
         
         //Obtener usuario actual
         const prevUser = await super.findById(userID);
-        if (!prevUser) throw new Error("Usuario no encontrado");
+        if (!prevUser) throw new NotFoundError("User", id);
 
         //Determinar roles
         const newRol = toUpdate.rol ? normalizeText(toUpdate.rol) : prevUser.rol;
@@ -148,7 +148,7 @@ class UsersService extends BaseService{
 
         // No permitir cambio de rol
         if(prevRol !== newRol){
-            throw new Error("No se permite cambiar el rol del usuario");
+            throw new ValidationError("No se permite cambiar el rol del usuario");
         }
 
         //Actualizar usuario principal
@@ -186,7 +186,7 @@ class UsersService extends BaseService{
     async delete(userID) {
         //Obtener usuario antes de eliminarlo
         const user = await super.findById(userID);
-        if (!user) throw new Error("Usuario no encontrado");
+        if (!user) throw new NotFoundError("User", id);
 
         //Si es Doctor, eliminar de la colección Doctor
         const isDoctor = String(user.rol || "").toLowerCase() === "doctor";
