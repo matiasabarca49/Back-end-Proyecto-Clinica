@@ -3,6 +3,9 @@ import MongoRepository from "../repositories/implementations/mongo.repository.js
 import { Patient } from "../model/mongo/patient.model.js";
 import { PatientDTO } from "../dto/patient.dto.js";
 
+//Exception
+import {NotFoundError} from '../exceptions/index.js'
+
 class PatientsService extends BaseService {
 
     constructor() {
@@ -24,13 +27,13 @@ class PatientsService extends BaseService {
 
     async findById(id) {
         const patient = await super.findById(id);
-        if (!patient) throw new Error("Paciente no encontrado");
+        if (!patient) throw new NotFoundError("Paciente", id);
         return this.toDTO(patient);
     }
 
     async getOdontogram(patientID){
         const patient = await super.findById(patientID)
-        if(!patient) throw new Error("Paciente no encontrado")
+        if (!patient) throw new NotFoundError("Paciente", id);
         return patient.dentalStatus 
     }
 
@@ -93,19 +96,19 @@ class PatientsService extends BaseService {
 
         const patientDTO = new PatientDTO(newPatient);
         const created = await super.create(patientDTO);
-        if (!created) throw new Error("Error al crear el paciente");
+        
         return this.toDTO(created);
     }
 
     async update(id, toUpdate) {
         const updated = await super.update(id, toUpdate);
-        if (!updated) throw new Error("Paciente no encontrado");
+        if (!updated) throw new NotFoundError("Paciente", id);
         return updated;
     }
 
     async updateTooth(patientId, toothId, toothData){
         const patient = await super.findById(patientId)
-        if(!patient) throw new Error("Paciente no encontrado")
+        if(!patient) throw new NotFoundError("Paciente", id)
 
         const toothNumber = parseInt(toothId);
         
@@ -138,7 +141,7 @@ class PatientsService extends BaseService {
 
     async delete(id) {
         const patient = await super.findById(id);
-        if (!patient) throw new Error("Paciente no encontrado");
+        if (!patient) throw new NotFoundError("Paciente", id);
 
         await super.delete(id);
         return this.toDTO(patient);
@@ -146,7 +149,7 @@ class PatientsService extends BaseService {
 
     async resetOdontogram(patientId){
         const patient = await super.findById(patientId);
-        if(!patient) throw new Error("Paciente no encontrado");
+        if(!patient) throw new NotFoundError("Paciente", id);
         
         await super.update(patientId, {dentalStatus: []})
 

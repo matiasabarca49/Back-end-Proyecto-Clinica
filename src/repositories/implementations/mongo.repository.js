@@ -1,4 +1,5 @@
 import IRepository from "../base/IRepository.js";
+import {DuplicateError, ValidationError} from '../../exceptions/index.js'
 
 class MongoRepository extends IRepository{
     constructor(model) {
@@ -20,7 +21,9 @@ class MongoRepository extends IRepository{
     async findByID(ID){
         return await this.model.findOne({_id: ID})
             .catch(error =>{
-                console.log(error)
+                if(error.name === "CastError"){
+                    throw new ValidationError("El ID no corresponde a un ID de Mongo")
+                }
                 throw error
             })
     
@@ -64,7 +67,7 @@ class MongoRepository extends IRepository{
         return await model.save()
             .catch( error => {
                 if (error.code === 11000) {
-                    console.log('Error de duplicación de clave:', error.keyValue);
+                    throw new DuplicateError(Object.keys(error.keyPattern), Object.values(error.keyValue))
                 }
                 throw error
             } )   

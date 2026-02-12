@@ -1,3 +1,17 @@
+/**
+ * PATRÓN A SEGUIR:
+ * 
+ * const miFuncion = async (req, res, next) => {
+ *   try {
+ *     // 1. lógica
+ *     // 2. Si hay error, throw new TipoError(...)
+ *     // 3. Si todo bien, res.json(...)
+ *   } catch (error) {
+ *     next(error); // SIEMPRE pasar el error con next()
+ *   }
+ * };
+ */
+
 import PatientsService from "../service/patient.service.js";
 import { CreatePatientDTO } from "../dto/patient.dto.js";
 
@@ -9,7 +23,7 @@ const patientsService = new PatientsService();
  *        200: retorna un JSON con estado y array de pacientes
  *        404: Error. Problema al obtener la colección de la DB
  */
-export const getPatients = async (req, res) => {
+export const getPatients = async (req, res, next) => {
     try {
         const {search, sex, sort, page, limit } = req.query;
         let patientsGetted;
@@ -18,12 +32,11 @@ export const getPatients = async (req, res) => {
         }else{
             patientsGetted = await patientsService.paginatePatients(search, sex, limit, page, sort);
         }
-        patientsGetted
-            ? res.status(200).send({ status: "Success", patients: patientsGetted })
-            : res.status(404).send({ status: "ERROR", reason: "Los Pacientes no se pudieron obtener" });
+
+        return res.status(200).json({ success: true, message: "Pacientes obtenidos correctamente", data: patientsGetted})
+            
     } catch (error) {
-        console.error("Error en getPatients:", error);
-        return res.status(500).send({ status: "ERROR", reason: "Error en el servidor, intente más tarde" });
+        next(error)
     }
 };
 
@@ -34,16 +47,15 @@ export const getPatients = async (req, res) => {
  *        200: retorna un JSON con estado y objeto paciente
  *        404: Error. ID incorrecto o no existe en la DB
  */
-export const getPatientById = async (req, res) => {
+export const getPatientById = async (req, res, next) => {
     try {
         const patientID = req.params.id.trim();
         const patientGetted = await patientsService.findById(patientID);
-        patientGetted
-            ? res.status(200).send({ status: "Success", patients: patientGetted })
-            : res.status(404).send({ status: "ERROR", reason: "Paciente no encontrado" });
+
+        return res.status(200).json({ success: true, message:"Paciente obtenido correctamente",data: patientGetted })
+            
     } catch (error) {
-        console.error("Error en getPatientById:", error);
-        return res.status(500).send({ status: "ERROR", reason: "Error en el servidor" });
+        next(error)
     }
 };
 
@@ -55,16 +67,15 @@ export const getPatientById = async (req, res) => {
  *        404: Error. No se encontraron pacientes
  *        500: Error en el servidor
  */
-export const getPatientByQuery = async (req, res) => {
+export const getPatientByQuery = async (req, res, next) => {
     try {
         const { query } = req.query;
         const patientFounded = await patientsService.searchPaginate(query);
-        patientFounded
-            ? res.status(200).json({ success: true, data: patientFounded })
-            : res.status(404).json({ success: false, error: "No se encontraron pacientes que coincidan" });
+        
+        return res.status(200).json({ success: true, data: patientFounded })
+            
     } catch (error) {
-        console.error("Error en getPatientByQuery:", error);
-        return res.status(500).json({ success: false, error: "Error en el servidor, intente más tarde" });
+        next(error)
     }
 };
 
@@ -72,7 +83,7 @@ export const getPatientByQuery = async (req, res) => {
  * Obtener el odontograma completo de un paciente
  * GET /api/patients/:patientId/odontogram
  */
-export const getOdontogram = async (req, res) => {
+export const getOdontogram = async (req, res, next) => {
   try {
     const { patientId } = req.params;
 
@@ -80,16 +91,12 @@ export const getOdontogram = async (req, res) => {
 
     return res.status(200).json({
       success: true,
+      message: "Odontograma obtenido correctamente",
       data: odontogram || []
     });
 
   } catch (error) {
-      console.error('Error al obtener odontograma:', error);
-      return res.status(500).json({ 
-        success: false,
-        message: 'Error al obtener el odontograma',
-        error: error.message 
-      });
+      next(error)
   }
 };
 
@@ -101,17 +108,16 @@ export const getOdontogram = async (req, res) => {
  *        409: Error. Paciente duplicado (code 11000)
  *        500: Error en el servidor
  */
-export const createPatient = async (req, res) => {
+export const createPatient = async (req, res, next) => {
     try {
         // Crear DTO de Borde de creación de paciente
         const patient = new CreatePatientDTO(req.body);
 
         const patientCreated = await patientsService.create(patient, req.user);
     
-        return res.status(201).send({ status: "Success", patients: patientCreated.dt });
+        return res.status(201).json({ success: true , message: "Paciente creado exitosamente" ,data: patientCreated });
     } catch (error) {
-        console.error("Error en createPatient:", error);
-        return res.status(500).send({ status: "ERROR", reason: "Error en el servidor, intente más tarde" });
+        next(error)
     }
 };
 
@@ -123,16 +129,15 @@ export const createPatient = async (req, res) => {
  *        404: Error. El ID no existe en la DB
  *        500: Error en el servidor
  */
-export const deletePatient = async (req, res) => {
+export const deletePatient = async (req, res, next) => {
     try {
         const patientID = req.params.id;
         const patientDeleted = await patientsService.delete(patientID);
-        patientDeleted
-            ? res.status(200).send({ status: "Success", patients: patientDeleted })
-            : res.status(404).send({ status: "ERROR", reason: "Paciente no encontrado" });
+        
+        res.status(200).json({ success: true, message: "Paciente eliminado exitosamente", data: patientDeleted })
+  
     } catch (error) {
-        console.error("Error en deletePatient:", error);
-        return res.status(500).send({ status: "ERROR", reason: "Error en el servidor" });
+        next(error)
     }
 };
 
@@ -145,17 +150,15 @@ export const deletePatient = async (req, res) => {
  *        404: Error. El ID no existe en la DB
  *        500: Error en el servidor
  */
-export const updatePatient = async (req, res) => {
+export const updatePatient = async (req, res, next) => {
     try {
         const patientData = req.body;
         const idPatient = req.params.id.trim();
         const patientUpdated = await patientsService.update(idPatient, patientData);
-        patientUpdated
-            ? res.status(201).send({ status: "Success", patients: patientUpdated })
-            : res.status(404).send({ status: "ERROR", reason: "Paciente no encontrado" });
+        
+        return res.status(201).json({ success: true, message: "Paciente actualizado" ,data: patientUpdated })
     } catch (error) {
-        console.error("Error en updatePatient:", error);
-        return res.status(500).send({ status: "ERROR", reason: "Error en el servidor" });
+        next(error)
     }
 };
 
@@ -164,7 +167,7 @@ export const updatePatient = async (req, res) => {
  * PUT /api/patients/:patientId/odontogram/:toothId
  * Body: { caries: {...}, corona: true, ... }
  */
-export const updateTooth = async (req, res) => {
+export const updateTooth = async (req, res, next) => {
   try {
     const { patientId, toothId } = req.params;
     const toothData = req.body;
@@ -178,12 +181,7 @@ export const updateTooth = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error al actualizar diente:', error);
-    return res.status(500).json({ 
-      success: false,
-      message: 'Error al actualizar el diente',
-      error: error.message 
-    });
+    next(error)
   }
 };
 
@@ -191,7 +189,7 @@ export const updateTooth = async (req, res) => {
  * Resetear odontograma (limpiar todos los dientes)
  * DELETE /api/patients/:patientId/odontogram
  */
-export const resetOdontogram = async (req, res) => {
+export const resetOdontogram = async (req, res, next) => {
   try {
     const { patientId } = req.params;
 
@@ -204,11 +202,6 @@ export const resetOdontogram = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error al resetear odontograma:', error);
-    res.status(500).json({ 
-      success: false,
-      message: 'Error al resetear el odontograma',
-      error: error.message 
-    });
+    next(error)
   }
 };

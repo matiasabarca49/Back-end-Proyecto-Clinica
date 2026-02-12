@@ -6,8 +6,7 @@ import {getRedisClient} from './config/redis.config.js';
 getRedisClient()
 
 const app = express();
-//variables de entorno
-import 'dotenv/config'
+
 //Parsear los datos que viene en formato JSON
 app.use(express.json());
 //recibir datos complejos del navegador
@@ -26,10 +25,6 @@ import "./config/passport.config.js";
 app.use(passport.initialize());
 import { initCronJobs } from './jobs/cronScheduler.js';
 initCronJobs();
-
-//Importar configuración DB
-import MongoManager from './config/mongoDB.config.js';
-
 
 //Cors
 import cors from 'cors'
@@ -78,10 +73,15 @@ if(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.e
     googleAuth = true;
 }
 
+//Manejo de Excepciones
+app.use(notFoundHandler);  // Maneja 404
+app.use(errorHandler);     // Maneja todos los errores
+
 //Docs
 import SwaggerJsdoc from 'swagger-jsdoc'
 import SwaggerUIExpress from 'swagger-ui-express'
 import { swaggerOption } from './config/swagger.config.js'
+import { errorHandler, notFoundHandler } from './middlewares/errors.middleware.js';
 const specs = SwaggerJsdoc(swaggerOption)
 app.use('/api/docs', SwaggerUIExpress.serve, SwaggerUIExpress.setup(specs));
 
@@ -91,7 +91,11 @@ app.use("*", (req, res) =>{
     res.status(404).send({status:"Error", reason: "Error 404 NotFound"})
 });
 
-const portSelected = process.env.PORT || "8080";
+export {googleAuth};
+
+export default app;
+
+/* const portSelected = process.env.PORT || "8080";
 
 app.listen(portSelected, () => {
     //Info de configuración email
@@ -115,4 +119,4 @@ app.listen(portSelected, () => {
         console.timeEnd("Servidor levantado en");
         console.log('━'.repeat(50));
     }, 1000)
-})
+}) */
