@@ -7,6 +7,8 @@ import MongoRepository from "../repositories/implementations/mongo.repository.js
 //DTO
 import { DoctorDTO, DoctorScheduleResponseDTO } from "../dto/doctor.dto.js";
 
+import { NotFoundError, ValidationError } from "../exceptions/validations.exception.js";
+
 export default class DoctorsService extends BaseService{
     constructor() {
         const repository = new MongoRepository(Doctor);
@@ -15,13 +17,12 @@ export default class DoctorsService extends BaseService{
 
     async findAll(){
         const doctors = await super.findAll()
-        if(!doctors) throw new Error('Error interno del servidor')
         return this.toManyDTO(doctors)
     }
 
     async findById(id){
         const doctor = await super.findById(id)
-        if(!doctor) throw new Error('Doctor no encontrado')
+        if(!doctor) throw new NotFoundError("Doctor", id)
         return this.toDTO(doctor)
     }
 
@@ -64,7 +65,6 @@ export default class DoctorsService extends BaseService{
 
     async getSchedules(){
         const doctors = await super.findAll()
-        if(!doctors) throw new Error('Error interno del servidor')
         return this.toManyScheduleDTO(doctors)
 
     }
@@ -81,13 +81,20 @@ export default class DoctorsService extends BaseService{
     }
 
     async delete(doctorID) {
-        const deletedDoctor = await super.delete(doctorID); 
+        const deletedDoctor = await super.delete(doctorID);
+        if (!deletedDoctor) {
+            throw new NotFoundError("Doctor", doctorID);
+        }
         return this.toDTO(deletedDoctor);
     }
 
     async update(doctorID, toUpdate) {
-        toUpdate.lastChange = new Date()
-        return super.update(doctorID, toUpdate);
+        toUpdate.lastChange = new Date();
+        const dcotorUpdated = await super.update(doctorID, toUpdate);
+        if (!dcotorUpdated) {
+            throw new NotFoundError("Doctor", doctorID);
+        }
+        return this.toDTO(dcotorUpdated);
     }
 
     //Métodos de mapeo DTO
