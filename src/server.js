@@ -1,29 +1,46 @@
 import 'dotenv/config';
 import app, { googleAuth } from './app.js';
 import MongoManager from './config/mongoDB.config.js';
+import {closeRedis, getRedisClient} from './config/redis.config.js';
+import { initCronJobs } from './jobs/cronScheduler.js';
 
-const portSelected = process.env.PORT || "8080";
+async function startServer() {
+    try {
+        // Redis
+        await getRedisClient();
 
-app.listen(portSelected, () => {
-    //Info de configuración email
-    if(process.env.EMAIL_USER && process.env.EMAIL_PASS){
-        console.log("✅ [OK] Envio de Emails Activado.");
-    }else{
-        console.log("⚠️ [Info] Configuración de email NO encontrada - Emails no se enviarán")
-    }
-    
-    //Info de configuración Google Auth
-    setTimeout(async ()=>{
-        if(googleAuth){
-            console.log("✅ [OK] Autenticacion con Google Activada -")
-        }else{
-            console.log("⚠️ [Info] Autenticacion con Google NO Activada -")
-        }
+        // Cron
+        initCronJobs();
+
+        // Mongo
+        console.log("━ Conectando a MongoDB...");
+        await MongoManager.connect();
+
+        const portSelected = process.env.PORT || 8080;
+
+        app.listen(portSelected, () => {
+            console.log(`✅ Servidor corriendo en puerto ${portSelected}`);
+            console.log('-'.repeat(50));
+            console.log("🟢 [STATUS] Servidor Backend Clínica UP");
+            console.log('-'.repeat(50))
+            console.timeEnd("Servidor levantado en");
+            console.log('━'.repeat(50));
+        });
+
+
+    } catch (error) {
         
-        //Conectar a la base de datos
-        console.log(`Conectando a la base de datos de MongoDB...`);
-        await MongoManager.connect()
-        console.timeEnd("Servidor levantado en");
-        console.log('━'.repeat(50));
-    }, 1000)
-})
+        await closeRedis();
+        await MongoManager.disconnect();
+        
+        console.error("🔴 [Error] Error al iniciar el servidor:", error.message);
+        console.log('-'.repeat(50))
+        console.log("🔴 [Error] Servidor Backend Clínica DOWN");
+        console.log('-'.repeat(50));
+
+        process.exit(1);
+    }
+}
+
+startServer();
+

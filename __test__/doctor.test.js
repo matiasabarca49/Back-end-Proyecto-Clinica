@@ -1,17 +1,12 @@
 import request from 'supertest';
 import app from '../src/app.js';
-import { connectDB, disconnectDB, clearDB, createAdminUser, getAdminToken } from './setup.js';
+import {clearDB, createAdminUser, getAdminToken } from './helpers.tests.js';
 
 let authToken;
 
 beforeAll(async () => {
-  await connectDB();
   await createAdminUser();
   authToken = await getAdminToken(app);
-}, 30000);
-
-afterAll(async () => {
-  await disconnectDB();
 }, 30000);
 
 beforeEach(async () => {

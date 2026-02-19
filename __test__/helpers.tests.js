@@ -30,6 +30,7 @@ export const clearDB = async () => {
   }
 };
 
+
 //Crear usuario admin para tests
 export const createAdminUser = async () => {
   const hashedPassword = await bcrypt.hash('Admin123!', 10);

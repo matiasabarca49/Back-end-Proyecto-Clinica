@@ -26,9 +26,12 @@ export async function getRedisClient() {
         }
     });
 
-    client.on('error', (err) => {
-        console.error('🔴 [Error] En el Cliente Redis:', err.message)
-        process.exit(1); // Salir si hay un error crítico
+    client.on('error', async (err) => {
+        console.error("🔴 [Error] Error en el Cliente Redis: " + err.message);
+
+        await closeRedis(); // Cierra la conexión si hay un error
+        
+        process.exit(1); // Salir del proceso con código de error
     });
 
     try {
@@ -38,41 +41,20 @@ export async function getRedisClient() {
         return redisClientInstance;
 
     } catch (error) {
-        console.error('🔴 [Error] Falló al conectar el cliente Redis.', error.message);
-        throw new Error("No se pudo iniciar el Singleton de Redis.");
+        console.error('🔴 [Error] No se pudo conectar a Redis:');
+        throw new Error("Falló al conectar el cliente Redis");
     }
 }
 
+export const closeRedis = async () => {
+  if (redisClientInstance) {
+    await redisClientInstance.quit();
+    redisClientInstance = null;
+    console.log("🛑 [Error] Redis cerrado");
+  }
+  else{
+    console.log("⚠️ [info] No hay una instancia de Redis para cerrar.");
+  }
+};
 
 
-/* import { createClient } from 'redis';
-
-//Configuración y conexión a Redis
-const redisClient = createClient({
-  url: 'redis://localhost:6379',
-  disableOfflineQueue: false
-});
-
-//Conexión y manejo de errores
-redisClient.on('error', (err) => console.error('Redis error:', err));
-
-
-try {
-    // El método .connect() retorna una Promise. 
-    // Si es exitoso, la ejecución continúa. Si falla, va al bloque catch.
-    await redisClient.connect();
-    
-    console.log('✅ [OK] Conexión a Redis exitosa.');
-    
-    // Opcional: Ejecutar un comando simple para confirmar
-    const pong = await redisClient.ping();
-    console.log(`✅ [OK]Ping de Redis exitoso: ${pong}`);
-
-} catch (err) {
-    console.error('🔴 [Error] No se pudo conectar a Redis. Cerrando aplicación.');
-    // Cierra el proceso si no se pudo conectar a la dependencia crítica
-    process.exit(1);
-}
-
-
-export default redisClient; */

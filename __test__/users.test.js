@@ -1,19 +1,12 @@
 import request from 'supertest';
 import app from '../src/app.js';
-import { connectDB, disconnectDB, clearDB, createAdminUser, getAdminToken } from './setup.js';
+import { clearDB, createAdminUser, getAdminToken } from './helpers.tests.js';
 
 // Conectar BD en memoria antes de todos los tests
 beforeAll(async () => {
-  await connectDB();
-  
   await createAdminUser(); // ← Crear admin en BD
   authToken = await getAdminToken(app); // ← Hacer login y obtener token
 
-}, 30000);
-
-// Desconectar después de todos los tests
-afterAll(async () => {
-  await disconnectDB();
 }, 30000);
 
 // Limpiar BD antes de cada test

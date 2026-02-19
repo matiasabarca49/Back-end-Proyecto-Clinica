@@ -22,7 +22,7 @@ class AuthService extends BaseService {
         if (!user) throw new InvalidCredentialsError('credenciales incorrectas');
 
         const isPasswordValid = isValidPassword(user.password, credentials.password);
-        console.log(isPasswordValid)
+        
         if (!isPasswordValid) throw new InvalidCredentialsError('credenciales incorrectas');
 
         const token = generateToken(user);
