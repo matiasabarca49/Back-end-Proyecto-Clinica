@@ -16,12 +16,12 @@ export const generateToken = (user) => {
 export const authToken = (req, res, next) => {
     const token = req.cookies.token;
     if (!token) {
-        return res.status(401).send({ status: "ERROR", reason: "Not Authenticated" });
+        return res.status(401).json({ success: false, error: { message: "Not Authenticated", statusCode: 401}});
     }
 
     jwt.verify(token, secretKey, async (error, credentials) => {
         if (error) {
-            return res.status(403).send({ error: "Not authorized" });
+            return res.status(403).json({success: false , error: { message: "Not authorized", statusCode: 403 }});
         }
         req.user = {
             id: credentials.id,
@@ -32,7 +32,7 @@ export const authToken = (req, res, next) => {
         const redisClient = await getRedisClient()
         const isActive = await redisClient.get(`session:${req.user.id}`);
         if(!isActive){
-            return res.status(401).json({ message: 'Inactive or expired session' });
+            return res.status(401).json({success: false, error: { message: 'Inactive or expired session', statusCode: 401 }});
         }
         next();
     });
@@ -43,7 +43,7 @@ export const checkPermissionsAdmin = (req, res, next) => {
     if (req.user.rol === "admin") {
         next();
     } else {
-        res.status(401).send({ status: "Error", reason: "No Autorizado" });
+        res.status(403).json({ success: false, error: {message: "No Autorizado", statusCode:403 }});
     }
 };
 
@@ -52,14 +52,14 @@ export const checkAuth = (req, res, next) => {
     if (req.user.rol) {
         next();
     } else {
-        res.status(401).send({ status: "Error", reason: "No Autenticado" });
+        res.status(401).json({ success: false, error: { message: "No Autenticado", statusCode: 401 }});
     }
 };
 
 export const authorizeRoles = (...roles) => {
   return (req, res, next) => {
     if (!roles.includes(req.user.rol)) {
-      return res.status(403).send({ status: "ERROR", reason: "No autorizado" });
+      return res.status(403).json({ success: false, error: { message: "No autorizado", statusCode: 403}});
     }
     next();
   };

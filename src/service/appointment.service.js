@@ -15,7 +15,9 @@ import MongoRepository from "../repositories/implementations/mongo.repository.js
 import { AppointmentDTO } from "../dto/appointment.dto.js";
 //utils and helpers
 import { determineSearchType } from "../utils/utils.js";
-import { getAvailableSlots, slotsToHours } from "../utils/slots.helper.js";
+import { getAvailableSlots, slotsToHours, slotsToRanges } from "../utils/slots.helper.js";
+import { DuplicateError, NotFoundError, ValidationError } from "../exceptions/validations.exception.js";
+import { sendAppointmentConfirmation } from "../utils/email.helpers.js";
 
 export default class AppointmentsService extends BaseService{
     constructor() {
@@ -25,13 +27,12 @@ export default class AppointmentsService extends BaseService{
 
    async findAll(){
         const appointment = await super.findAll()
-        if(!appointment) throw new Error('Error interno del servidor')
         return this.toManyDTO(appointment)
     }
 
     async findById(id){
         const appointment = await super.findById(id)
-        if(!appointment) throw new Error('Turno no encontrado')
+        if(!appointment) throw new NotFoundError("Appointment", id)
         return this.toDTO(appointment)
     }
 
@@ -149,33 +150,64 @@ export default class AppointmentsService extends BaseService{
         if (turnoFounded) {
             // Determinar qué conflicto existe
             if (turnoFounded.doctorID._id.toString() === doctorID) {
-                throw new Error("El doctor ya tiene un turno reservado en ese horario");
+                throw new ValidationError("El doctor ya tiene un turno reservado en ese horario");
             }
             if (turnoFounded.patientID._id.toString() === patientID) {
-                throw new Error("El paciente ya tiene un turno reservado en ese horario");
+                throw new ValidationError("El paciente ya tiene un turno reservado en ese horario");
             }
         }
 
         //Corroborrar que el doctor y paciente existan
         const doctorExists = await doctorsService.findById(doctorID);
         if (!doctorExists) {
-            throw new Error("El doctor especificado no existe");
+            throw new NotFoundError("Doctor", doctorID);
         }
 
         const patientExists = await patientsService.findById(patientID);
         if (!patientExists) {
-            throw new Error("El paciente especificado no existe");
+            throw new NotFoundError("Paciente", patientID);
         }
         
         // Crear la nueva cita
         const newAppointmentFormated = new AppointmentDTO(newAppointment);
         const appointmentAdded = await super.create(newAppointmentFormated);
 
-        if (!appointmentAdded) {
-            throw new Error("Error al crear la cita");
+        //Enviar email de confirmación al paciente
+        const patient = patientExists;
+                        
+        // Verificar que tengamos los datos necesarios y que el populate haya funcionado
+        if (!patient) {
+            console.warn("⚠️ No se pudo enviar email: patientID es null");
+        } else if (typeof patient === 'string' || patient.constructor?.name === 'ObjectId') {
+            console.warn("⚠️ No se pudo enviar email: patientID no está populado");
+        } else if (!patient.email) {
+            console.warn("⚠️ No se pudo enviar email: el paciente no tiene email");
+        } else if (!appointmentAdded.slots || appointmentAdded.slots.length === 0) {
+            console.warn("⚠️ No se pudo enviar email: no hay slots");
+        } else {
+            //enviar email
+            const patientFullName = `${patient.name} ${patient.lastName}`;
+            
+            // Usar el helper de slots existente para formatear el horario
+            const timeRanges = slotsToRanges(appointmentAdded.slots, "09:00", 30);
+            const appointmentTime = timeRanges.join(", ") || "Horario no especificado";
+            
+            const emailSent = await sendAppointmentConfirmation(
+                patient.email,
+                patientFullName,
+                appointmentAdded.date,
+                appointmentTime
+            );
+            
+            if (emailSent) {
+                console.log(`✉️ Email de confirmación enviado a ${patient.email}`);
+            } else {
+                console.warn(`⚠️ Error al enviar email a ${patient.email} (problema con el transporter)`);
+            }
+
         }
 
-        return appointmentAdded
+        return this.toDTO(appointmentAdded)
     }
 
     async delete(appointmentID) {

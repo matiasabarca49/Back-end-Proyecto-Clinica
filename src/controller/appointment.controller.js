@@ -1,6 +1,4 @@
 import AppointmentsService from "../service/appointment.service.js";
-import { sendAppointmentConfirmation } from "../utils/email.helpers.js";
-import { slotsToRanges } from "../utils/slots.helper.js";
 import { CreateAppointmentDTO } from "../dto/appointment.dto.js";
 
 const appointmentsService = new AppointmentsService();
@@ -11,7 +9,7 @@ const appointmentsService = new AppointmentsService();
  *        200: retorna un JSON con estado y array de citas
  *        404: Error. Problema al obtener la colección de la DB
  */
-export const getAppointments = async (req, res) => {
+export const getAppointments = async (req, res, next) => {
     try {
         const { person, query, status, limit, page, sort } = req.query;
         let appointmentsGetted;
@@ -20,12 +18,11 @@ export const getAppointments = async (req, res) => {
         }else{
             appointmentsGetted = await appointmentsService.paginateAppointments(person, query, status, limit, page, sort);
         }
-        appointmentsGetted
-            ? res.status(200).send({ status: "Succes", appointments: appointmentsGetted })
-            : res.status(404).send({ status: "ERROR" });
+        
+        return res.status(200).json({ success: true , data: appointmentsGetted })
+            
     } catch (error) {
-        console.error("Error en getAppointments:", error);
-        return res.status(500).send({ status: "ERROR", message: "Error en el servidor" });
+        next(error)
     }
 };
 
@@ -36,16 +33,15 @@ export const getAppointments = async (req, res) => {
  *        200: retorna un JSON con estado y objeto cita
  *        404: Error. ID incorrecto o no existe en la DB
  */
-export const getAppointmentById = async (req, res) => {
+export const getAppointmentById = async (req, res, next) => {
     try {
         const appointmentID = req.params.id;
         const appointmentGetted = await appointmentsService.findById(appointmentID);
-        appointmentGetted
-            ? res.status(200).send({ status: "Succes", appointment: appointmentGetted })
-            : res.status(404).send({ status: "ERROR" });
+        
+        return res.status(200).json({ success: true, data: appointmentGetted })
+            
     } catch (error) {
-        console.error("Error en getAppointmentById:", error);
-        return res.status(500).send({ status: "ERROR", message: "Error en el servidor" });
+        next(error)
     }
 };
 
@@ -57,68 +53,17 @@ export const getAppointmentById = async (req, res) => {
  *        201: retorna un JSON con estado y objeto cita creada
  *        404: Error. Datos inválidos o solicitud mal hecha
  */
-export const createAppointment = async (req, res) => {
+export const createAppointment = async (req, res, next) => {
     try {
         // Crear DTO de Borde de creación de cita
         const appointment = new CreateAppointmentDTO(req.body);
 
         const appointmentCreated = await appointmentsService.create(appointment);
         
-        if (!appointmentCreated.status) {
-            if (appointmentCreated.error.code === 11000) {
-                res.status(409).send({ status: "ERROR", code: 11000 });
-            } else if (appointmentCreated.error.code === "a1b2c3d4e5f6"){
-                res.status(400).send({ status: "ERROR", message: appointmentCreated.error.message });
-            }
-            else {
-                res.status(500).send({ status: "ERROR" });
-            }
-        } else {
-            // 🆕 Enviar email de confirmación al paciente
-            try {
-                const appointmentData = appointmentCreated;
-                const patient = appointmentData.patientID;
-                
-                // Verificar que tengamos los datos necesarios y que el populate haya funcionado
-                if (!patient) {
-                    console.warn("⚠️ No se pudo enviar email: patientID es null");
-                } else if (typeof patient === 'string' || patient.constructor?.name === 'ObjectId') {
-                    console.warn("⚠️ No se pudo enviar email: patientID no está populado");
-                } else if (!patient.email) {
-                    console.warn("⚠️ No se pudo enviar email: el paciente no tiene email");
-                } else if (!appointmentData.slots || appointmentData.slots.length === 0) {
-                    console.warn("⚠️ No se pudo enviar email: no hay slots");
-                } else {
-                    // ✅ Todo OK, enviar email
-                    const patientFullName = `${patient.name} ${patient.lastName}`;
-                    
-                    // Usar el helper de slots existente para formatear el horario
-                    const timeRanges = slotsToRanges(appointmentData.slots, "09:00", 30);
-                    const appointmentTime = timeRanges.join(", ") || "Horario no especificado";
-                    
-                    const emailSent = await sendAppointmentConfirmation(
-                        patient.email,
-                        patientFullName,
-                        appointmentData.date,
-                        appointmentTime
-                    );
-                    
-                    if (emailSent) {
-                        console.log(`✉️ Email de confirmación enviado a ${patient.email}`);
-                    } else {
-                        console.warn(`⚠️ Error al enviar email a ${patient.email} (problema con el transporter)`);
-                    }
-                }
-            } catch (emailError) {
-                // No romper el flujo si falla el email
-                console.error("⚠️ Error al enviar email de confirmación:", emailError.message || emailError);
-            }
-            
-            res.status(201).send({ status: "Success", patients: appointmentCreated.dt });
-        }
+        return res.status(201).json({ success: true, data: appointmentCreated });
+        
     } catch (error) {
-        console.error("Error en createAppointment:", error);
-        return res.status(500).send({ status: "ERROR", message: "Error en el servidor" });
+        next(error)
     }
 };
 
@@ -129,16 +74,15 @@ export const createAppointment = async (req, res) => {
  *        200: retorna un JSON con estado y objeto de la cita eliminada
  *        404: Error. El ID no existe en la DB o solicitud mal hecha
  */
-export const deleteAppointment = async (req, res) => {
+export const deleteAppointment = async (req, res, next) => {
     try {
         const appointmentID = req.params.id;
         const appointmentDeleted = await appointmentsService.delete(appointmentID);
-        appointmentDeleted
-            ? res.status(200).send({ status: "Success", appointment: appointmentDeleted })
-            : res.status(404).send({ status: "ERROR" });
+        
+        return res.status(200).json({ success: true, data: appointmentDeleted })
+            
     } catch (error) {
-        console.error("Error en deleteAppointment:", error);
-        return res.status(500).send({ status: "ERROR", message: "Error en el servidor" });
+        next(error)
     }
 };
 
@@ -150,43 +94,40 @@ export const deleteAppointment = async (req, res) => {
  *        201: retorna un JSON con estado y objeto cita actualizada
  *        404: Error. El ID no existe en la DB o solicitud mal hecha
  */
-export const updateAppointment = async (req, res) => {
+export const updateAppointment = async (req, res, next) => {
     try {
         const appointmentData = req.body;
         const appointmentID = req.params.id;
         const appointmentUpdated = await appointmentsService.update(appointmentID, appointmentData);
-        appointmentUpdated
-            ? res.status(201).send({ status: "Success", appointment: appointmentUpdated })
-            : res.status(404).send({ status: "ERROR" });
+        
+        return res.status(201).json({ success: true, data: appointmentUpdated })
+            
     } catch (error) {
-        console.error("Error en updateAppointment:", error);
-        return res.status(500).send({ status: "ERROR", message: "Error en el servidor" });
+        next(error)
     }
 };
 
-export const getAvailableAppointments = async (req, res) => {
+export const getAvailableAppointments = async (req, res, next) => {
     try {
         const { id } = req.params;
         const { day } = req.query;
         const availableAppointments = await appointmentsService.getAvailableAppointments(id, day);
-        availableAppointments
-            ? res.status(200).json({ success: "Success", data: availableAppointments.data })
-            : res.status(404).json({ success: "ERROR", error: "No se encontraron turnos disponibles" });
+        
+        return res.status(200).json({ success: true, data: availableAppointments.data })
+            
     } catch (error) {
-        console.error("Error en getAvailableAppointments:", error);
-        return res.status(500).json({ success: "ERROR", error: "Error en el Servidor. Intente mas tarde" });
+        next(error)
     }
 };
 
-export const getNearestAppointments = async (req, res) => {
+export const getNearestAppointments = async (req, res, next) => {
     try {
         const { id } = req.params;
         const nearestAppointments = await appointmentsService.getNearestAppointments(id);
-        nearestAppointments
-            ? res.status(200).json({ success: "Success", data: nearestAppointments })
-            : res.status(404).json({ success: "ERROR", error: "No se encontraron turnos disponibles" });
+        
+        return res.status(200).json({ success: true, data: nearestAppointments })
+            
     } catch (error) {
-        console.error("Error en getNearestAppointments:", error);
-        return res.status(500).json({ success: "ERROR", error: "Error en el Servidor. Intente mas tarde" });
+        next(error)
     }
 };

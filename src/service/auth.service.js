@@ -1,4 +1,4 @@
-import { UserDTO } from "../dto/user.dto.js";
+import {AppError, InvalidCredentialsError, NotFoundError} from "../exceptions/index.js";
 import { generateToken } from "../middlewares/middlewares.js";
 import { User } from "../model/mongo/user.model.js";
 import MongoRepository from "../repositories/implementations/mongo.repository.js";
@@ -19,15 +19,15 @@ class AuthService extends BaseService {
     async login(credentials) {
 
         const user = await this.repository.findByFilter({ email: credentials.email });
-        if (!user) throw new Error('credenciales incorrectas');
+        if (!user) throw new InvalidCredentialsError('credenciales incorrectas');
 
         const isPasswordValid = isValidPassword(user.password, credentials.password);
-        if (!isPasswordValid) throw new Error('Credenciales incorrectas');
+        console.log(isPasswordValid)
+        if (!isPasswordValid) throw new InvalidCredentialsError('credenciales incorrectas');
 
         const token = generateToken(user);
         const { _id, email, rol } = user;
 
-        
         //Guardar usuario en redis que expira en 1h
         this.sessionRepository.create({
             userId: _id.toString(),
@@ -42,7 +42,7 @@ class AuthService extends BaseService {
 
     async login2factor(email) {
         const user = await this.repository.findByFilter({ email: email });
-        if (!user) throw new Error('credenciales incorrectas');
+        if (!user) throw new InvalidCredentialsError('credenciales incorrectas');
 
         //
         /* const isPasswordValid = isValidPassword(user.password, credentials.password);
@@ -64,26 +64,26 @@ class AuthService extends BaseService {
 
         if (!sent) {
             this.pendingCodes.delete(key);
-            throw new Error('No se pudo enviar el código de verificación');
+            throw new AppError('No se pudo enviar el código de verificación', 500);
         }
 
-        return { status: "Success", message: "Código de verificación enviado correctamente", key: key };
+        return { success: true, message: "Código de verificación enviado correctamente", key: key };
     }
 
     async verify2factor(userId, emailU, code) {
         const pending = this.pendingCodes.get(userId);
         if (!pending) {
-            throw new Error('No hay un código pendiente para este usuario o ha expirado');
+            throw new AppError('No hay un código pendiente para este usuario o ha expirado', 498);
         }
 
         if (pending.code !== code) {
-            throw new Error('Código de verificación incorrecto');
+            throw new AppError('Código de verificación incorrecto', 498);
         }
 
         // Verificar expiración
         if (Date.now() > pending.expires) {
             this.pendingCodes.delete(userId);
-            throw new Error('El código de verificación ha expirado');
+            throw new AppError('El código de verificación ha expirado', 498);
         }
 
         // Código correcto, eliminar del mapa
@@ -97,7 +97,7 @@ class AuthService extends BaseService {
             user = await super.findById(userId);
         }
 
-        if (!user) throw new Error('Usuario no encontrado');
+        if (!user) throw new NotFoundError("Usuario", userId);
 
         const token = generateToken(user);
         const { _id, email, rol } = user;
@@ -123,7 +123,7 @@ class AuthService extends BaseService {
    
         const token = generateToken(user);
 
-        if(!token) throw new Error("Error al crear la sessión")
+        if(!token) throw new AppError("Error al crear la sessión", 500)
 
         //Guardar usuario en redis que expira en 1h
         this.sessionRepository.create({
@@ -140,7 +140,7 @@ class AuthService extends BaseService {
     async logout(userId) {
         const deleted = await this.sessionRepository.delete(userId);
         if (!deleted) {
-            throw new Error('No se pudo eliminar la sesión o no existía');
+            throw new AppError('No se pudo eliminar la sesión o no existía', 500);
         }
         return deleted;
     }
@@ -149,16 +149,16 @@ class AuthService extends BaseService {
         //Verificar que la password actual sea correcta
         const user = await super.findById(userSession.id)
         const checkPassoword = isValidPassword(user.password, currentPassword)
-        if(!checkPassoword) throw new Error("Las contraseña actual, no es correcta")
+        if(!checkPassoword) throw new InvalidCredentialsError("Las contraseña actual, no es correcta")
         //verificar que la password nueva no sea igual a la anterior
-        if(currentPassword === newPassword ) throw new Error("La contraseña debe ser distinta a la anterior")
+        if(currentPassword === newPassword ) throw new InvalidCredentialsError("La contraseña debe ser distinta a la anterior")
         
         //verificar que la nueva contraseña no se haya usado antes    
         let arrayPassword = user.passwordHistory
         const isReused = user.passwordHistory.some(oldPassword => 
             isValidPassword(oldPassword, newPassword)
         );
-        if(isReused) throw new Error("La contraseña ya se usó antes")
+        if(isReused) throw new InvalidCredentialsError("La contraseña ya se usó antes")
         //Limpiar array para que solo se guarden 5
         if(arrayPassword.length >= 5){
             arrayPassword = arrayPassword.slice(1)
