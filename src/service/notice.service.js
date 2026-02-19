@@ -8,7 +8,7 @@ import {
 import BaseService from "./base.service.js";
 import MongoRepository from "../repositories/implementations/mongo.repository.js";
 import { NoticeDTO } from "../dto/notice.dto.js";
-
+import { NotFoundError, ValidationError } from "../exceptions/validations.exception.js";
 export default class NoticesService extends BaseService {
   constructor() {
     const repository = new MongoRepository(Notice)
@@ -44,7 +44,7 @@ export default class NoticesService extends BaseService {
    */
   async findById(id) {
     const noticeFounded = await super.findById(id);
-    if(!noticeFounded) throw new Error("Noticia no encontrada")
+    if (!noticeFounded) throw new NotFoundError("Notice", id);
     return enrichNoticeData(this.toDTO(noticeFounded));
   }
 
@@ -95,37 +95,35 @@ export default class NoticesService extends BaseService {
   /**
    * 🔹 Crea un nuevo aviso
    */
-  async create(newNotice, user) {
+ async create(newNotice, user) {
     if (!user) throw new Error("Falta el parametro user");
     if (!["admin", "employee"].includes(user.rol)) {
-      throw new Error("No autorizado para crear avisos");
+        throw new Error("No autorizado para crear avisos");
     }
 
     const noticeNormalized = {
-      ...newNotice,
-      title: normalizeText(newNotice.title),
-      visibility: newNotice.visibility || "general",
-      targetDoctor: newNotice.visibility === "particular" ? newNotice.targetDoctor : null
+        ...newNotice,
+        title: normalizeText(newNotice.title),
+        visibility: newNotice.visibility || "general",
+        targetDoctor: newNotice.visibility === "particular" ? newNotice.targetDoctor : null
     };
 
     const noticeFormatted = new NoticeDTO(noticeNormalized);
     const noticeAdded = await super.create(noticeFormatted);
 
-    if(!noticeAdded) throw new Error("Error al crear notice")
+    if (!noticeAdded) throw new Error("Error al crear notice");
 
-    return noticeAdded;
-    
-  }
-
+    return this.toDTO(noticeAdded); // ← este era el fix
+}
   /**
    * 🔹 Elimina un aviso por ID
    */
   async delete(noticeID, user) {
     if (!["admin", "employee"].includes(user?.rol)) {
-      throw new Error("No autorizado para eliminar avisos");
+      throw new ValidationError("No autorizado para eliminar avisos");
     }
     const deletedNotice = await super.delete(noticeID);
-
+    if (!deletedNotice) throw new NotFoundError("Notice", noticeID);
     return this.toDTO(deletedNotice)
   }
 
@@ -134,16 +132,18 @@ export default class NoticesService extends BaseService {
    */
   async update(noticeID, toUpdate, user) {
     if (!["admin", "employee"].includes(user?.rol)) {
-      throw new Error("No autorizado para actualizar avisos");
+        throw new ValidationError("No autorizado para actualizar avisos");
     }
-
-    const updated = await super.update(noticeID, toUpdate);
-
-    if(!updated) throw new Error("No se pudó actualizar el aviso")
-
-    return updated;
-  }
-
+    // Verificar que existe antes de actualizar
+    const exists = await super.findById(noticeID);
+    if (!exists) throw new NotFoundError("Notice", noticeID);
+    
+    await super.update(noticeID, toUpdate);
+    
+    // Buscar el documento actualizado
+    const updated = await super.findById(noticeID);
+    return this.toDTO(updated);
+}
   /**
    * 🔹 Filtra avisos por prioridad
    */

@@ -37,7 +37,7 @@ router.post("/", authToken, authorizeRoles("admin", "employee"), createNotice);
  * Actualiza un aviso existente
  * Solo Admin y Employee
  */
-router.put("/:id", authToken, authorizeRoles("Admin", "Employee"), updateNotice);
+router.put("/:id", authToken, authorizeRoles("admin", "employee"), updateNotice);
 
 /**
  * 🔹 DELETE /notices/:id
