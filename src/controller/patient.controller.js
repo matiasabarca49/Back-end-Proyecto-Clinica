@@ -1,9 +1,9 @@
 /**
  * PATRÓN A SEGUIR:
  * 
- * const miFuncion = async (req, res, next) => {
+ * const FuncionControlador = async (req, res, next) => {
  *   try {
- *     // 1. lógica
+ *     // 1. lógica(validaciones, llamadas a servicios, etc)
  *     // 2. Si hay error, throw new TipoError(...)
  *     // 3. Si todo bien, res.json(...)
  *   } catch (error) {
@@ -13,7 +13,7 @@
  */
 
 import PatientsService from "../service/patient.service.js";
-import { CreatePatientDTO } from "../dto/patient.dto.js";
+import { AddRequestObservationDTO, AddRequestTreatmentDTO, CreatePatientDTO } from "../dto/patient.dto.js";
 
 const patientsService = new PatientsService();
 
@@ -122,26 +122,6 @@ export const createPatient = async (req, res, next) => {
 };
 
 /**
- * Endpoint que elimina un paciente de la colección mediante su ID
- * Params: ID del paciente
- * Respuesta:
- *        200: retorna un JSON con estado y paciente eliminado
- *        404: Error. El ID no existe en la DB
- *        500: Error en el servidor
- */
-export const deletePatient = async (req, res, next) => {
-    try {
-        const patientID = req.params.id;
-        const patientDeleted = await patientsService.delete(patientID);
-        
-        res.status(200).json({ success: true, message: "Paciente eliminado exitosamente", data: patientDeleted })
-  
-    } catch (error) {
-        next(error)
-    }
-};
-
-/**
  * Endpoint que actualiza un paciente mediante su ID
  * Params: ID del paciente
  * Body: Datos a actualizar -> { clave: valor }
@@ -159,6 +139,50 @@ export const updatePatient = async (req, res, next) => {
         return res.status(201).json({ success: true, message: "Paciente actualizado" ,data: patientUpdated })
     } catch (error) {
         next(error)
+    }
+};
+
+/**
+ * Actualizar el campo de observaciones del paciente (agregar una nueva observación al array)
+ * POST /api/patients/:id/observations
+ * Body: { observation: "Texto de la observación" }
+ * */ 
+export const addObservation = async (req, res, next) => {
+        try {
+            const patientId = req.params.id.trim();
+            const observation = new AddRequestObservationDTO(req.body);
+
+            const patientUpdated = await patientsService.addObservation(patientId, observation);
+
+            return res.status(200).json({
+                success: true,
+                message: "Observación agregada correctamente",
+                data: patientUpdated
+            });
+        } catch (error) {
+            next(error);
+        }
+};
+
+/**
+ * Actualizar el campo de tratamientos del paciente (agregar un nuevo tratamiento al array)
+ * POST /api/patients/:id/treatments
+ * Body: { treatment: "Texto del tratamiento" }
+ * */ 
+export const addTreatment = async (req, res, next) => {
+    try {
+        const patientId = req.params.id.trim();
+        const treatment = new AddRequestTreatmentDTO(req.body);
+
+        const patientUpdated = await patientsService.addTreatment(patientId, treatment);
+
+        return res.status(200).json({
+            success: true,
+            message: "Tratamiento agregado correctamente",
+            data: patientUpdated
+        });
+    } catch (error) {
+        next(error);
     }
 };
 
@@ -205,3 +229,65 @@ export const resetOdontogram = async (req, res, next) => {
     next(error)
   }
 };
+
+/**
+ * Endpoint que elimina un paciente de la colección mediante su ID
+ * Params: ID del paciente
+ * Respuesta:
+ *        200: retorna un JSON con estado y paciente eliminado
+ *        404: Error. El ID no existe en la DB
+ *        500: Error en el servidor
+ */
+export const deletePatient = async (req, res, next) => {
+    try {
+        const patientID = req.params.id;
+        const patientDeleted = await patientsService.delete(patientID);
+        
+        res.status(200).json({ success: true, message: "Paciente eliminado exitosamente", data: patientDeleted })
+  
+    } catch (error) {
+        next(error)
+    }
+};
+
+
+/**
+ * Eliminar una observación específica de un paciente
+ * DELETE /api/patients/:patientId/observation/:idObservation
+ * Params: patientId, idObservation
+ */
+export const deleteObservation = async (req, res, next) => {
+    try {
+        const { patientId, idObservation } = req.params;
+
+        const patientUpdated = await patientsService.deleteObservation(patientId, idObservation);
+        
+        return res.status(200).json({
+            success: true,
+            message: "Observación eliminada correctamente",
+            data: patientUpdated
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Eliminar un tratamiento específico de un paciente
+ * DELETE /api/patients/:patientId/treatment/:idTreatment
+ * Params: patientId, idTreatment
+ */
+export const deleteTreatment = async (req, res, next) => {
+    try {
+        const { patientId, idTreatment } = req.params; 
+        const patientUpdated = await patientsService.deleteTreatment(patientId, idTreatment);
+        
+        return res.status(200).json({  
+            success: true,
+            message: "Tratamiento eliminado correctamente",
+            data: patientUpdated
+        });
+        }catch (error) {
+            next(error);
+        }
+};  

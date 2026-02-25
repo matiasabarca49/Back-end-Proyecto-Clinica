@@ -112,3 +112,22 @@ export class CreatePatientDTO {
         return validSex.includes(sexLower) ? sexLower : 'unspecified';
     }
 }
+
+export class AddRequestObservationDTO {
+    constructor(observation) {
+        this.name = observation.name;
+        this.date = observation.date || new Date().toISOString().split('T')[0];
+        this.status = observation.status || 'pending';
+    } 
+}
+
+export class AddRequestTreatmentDTO {
+    constructor(treatment) {
+        this.name = treatment.name;
+        this.dateStart = treatment.dateStart;
+        this.dateEnd = treatment.dateEnd;
+        this.idDoctor = treatment.idDoctor;
+        this.idPatient = treatment.idPatient;
+        this.status = treatment.status || 'pending';
+    } 
+}

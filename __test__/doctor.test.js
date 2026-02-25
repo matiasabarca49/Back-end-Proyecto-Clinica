@@ -35,11 +35,10 @@ describe('API de Doctores', () => {
         name: 'Carlos',
         lastName: 'González',
         email: 'carlos.gonzalez@hospital.com',
-        password: 'Test1234!',
+        password: '!securePassword123',
         rol: 'doctor',
-        status: 'active',
-        dni: '23456789',
-        phone: '1122334455',
+        dni: '12345678',
+        phone: '1234567890',
         professionalLicense: 'MP12345'
       };
 
@@ -61,11 +60,10 @@ describe('API de Doctores', () => {
         name: 'Luis',
         lastName: 'Rodríguez',
         email: 'luis.rodriguez@hospital.com',
-        password: 'Test1234!',
+        password: '!securePassword123',
         rol: 'doctor',
-        status: 'active',
         dni: '45678901',
-        phone: '1144556677',
+        phone: '1234567890',
         professionalLicense: 'MP67890',
         schedules: {
           monday: { start: '8:00', end: '14:00' },
@@ -99,7 +97,7 @@ describe('API de Doctores', () => {
         .post('/api/users')
         .set('Cookie', `token=${authToken}`)
         .send(usuarioInvalido)
-        .expect(500);
+        .expect(400);
 
       expect(response.body).toHaveProperty('success', false);
     });
@@ -109,11 +107,10 @@ describe('API de Doctores', () => {
         name: 'Pedro',
         lastName: 'López',
         email: 'pedro@hospital.com',
-        password: 'Test1234!',
+        password: '!securePassword123',
         rol: 'doctor',
-        status: 'active',
-        dni: '11111111',
-        phone: '1155667788',
+        dni: '1234567',
+        phone: '1234567890',
         professionalLicense: 'MP11111'
       };
 
@@ -127,10 +124,9 @@ describe('API de Doctores', () => {
         name: 'Juan',
         lastName: 'Pérez',
         email: 'juan@hospital.com',
-        password: 'Test1234!',
+        password: '!securePassword123',
         rol: 'doctor',
-        status: 'active',
-        dni: '11111111', // DNI duplicado
+        dni: '1234567', // DNI duplicado
         phone: '1166778899',
         professionalLicense: 'MP22222'
       };
@@ -149,11 +145,10 @@ describe('API de Doctores', () => {
         name: 'María',
         lastName: 'García',
         email: 'maria@hospital.com',
-        password: 'Test1234!',
+        password: '!securePassword123',
         rol: 'doctor',
-        status: 'active',
         dni: '22222222',
-        phone: '1177889900',
+        phone: '1234567890',
         professionalLicense: 'MP99999'
       };
 
@@ -167,11 +162,10 @@ describe('API de Doctores', () => {
         name: 'Laura',
         lastName: 'Fernández',
         email: 'laura@hospital.com',
-        password: 'Test1234!',
+        password: '!securePassword123',
         rol: 'doctor',
-        status: 'active',
         dni: '33333333',
-        phone: '1188990011',
+        phone: '1234567890',
         professionalLicense: 'MP99999' // Matrícula duplicada
       };
 
@@ -192,11 +186,11 @@ describe('API de Doctores', () => {
         name: 'Roberto',
         lastName: 'Sánchez',
         email: 'roberto@hospital.com',
-        password: 'Test1234!',
+        password: '!securePassword123',
         rol: 'doctor',
         status: 'active',
         dni: '44444444',
-        phone: '1199001122',
+        phone: '1234567890',
         professionalLicense: 'MP33333'
       };
 
@@ -225,11 +219,11 @@ describe('API de Doctores', () => {
         name: 'Elena',
         lastName: 'Torres',
         email: 'elena@hospital.com',
-        password: 'Test1234!',
+        password: '!securePassword123',
         rol: 'doctor',
         status: 'active',
         dni: '55555555',
-        phone: '1100112233',
+        phone: '1234567890',
         professionalLicense: 'MP44444'
       };
 

@@ -38,7 +38,7 @@ describe('API de Users', () => {
             name: "Armando",
             lastName: "Sofalto",
             email: "armando@example.com",
-            password: "12345",
+            password: "!securePassword123",
             rol: "employee",
        }
 
@@ -62,7 +62,7 @@ describe('API de Users', () => {
             name: "ARMANDO",
             lastName: "SOfalto",
             email: "ARMANDO@EXAMPLE.COM",
-            password: "12345",
+            password: "!securePassword123",
             rol: "employee",
        };
 
@@ -88,7 +88,7 @@ describe('API de Users', () => {
         .post('/api/users')
         .set('Cookie', `token=${authToken}`)
         .send(usuarioInvalido)
-        .expect(500);
+        .expect(400);
 
       expect(response.body).toHaveProperty('success', false);
     });
@@ -118,7 +118,7 @@ describe('API de Users', () => {
             name: "Armando",
             lastName: "Sofalto",
             email: "armando@example.com",
-            password: "12345",
+            password: "!securePassword123",
             rol: "employee",
        };
 
@@ -197,7 +197,7 @@ describe('API de Users', () => {
             name: "Armando",
             lastName: "Sofalto",
             email: "armando@example.com",
-            password: "12345",
+            password: "!securePassword123",
             rol: "employee",
        };
 

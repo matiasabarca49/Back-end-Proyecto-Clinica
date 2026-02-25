@@ -98,6 +98,20 @@ class MongoRepository extends IRepository{
             })
     }
 
+    async updateByFilter(filter, toUpdate, options = {}){
+        return await this.model.findOneAndUpdate(filter, toUpdate, 
+             {
+                new: true,
+                runValidators: true,
+                context: 'query',   
+                ...options
+             })
+            .catch( err =>{
+                console.log(err)
+                throw err
+            })
+    }
+
     async delete(ID){
         const documentToDelete = await this.findByID(ID)
         let documentDeleted 

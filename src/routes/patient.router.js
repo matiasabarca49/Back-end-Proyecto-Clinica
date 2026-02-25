@@ -1,6 +1,7 @@
 import expres from 'express';
-import { createPatient, getPatients, getPatientById, deletePatient, updatePatient, getPatientByQuery, getOdontogram, updateTooth, resetOdontogram } from '../controller/patient.controller.js'
+import { createPatient, getPatients, getPatientById, deletePatient, updatePatient, getPatientByQuery, getOdontogram, updateTooth, resetOdontogram, addObservation, addTreatment, deleteObservation, deleteTreatment } from '../controller/patient.controller.js'
 import { authToken, checkPermissionsAdmin } from '../middlewares/middlewares.js';
+import { validateAddObservation, validateAddTooth, validateAddTreatment, validateCreatePatient, validateUpdatePatient } from '../validation/patients.validations.js';
 const { Router } = expres;
 const router = new Router();
 
@@ -44,7 +45,42 @@ router.get("/:patientId/odontogram", authToken, getOdontogram)
  * @param {Object} patient Datos del paciente a crear.
  * @returns {Object} El paciente recién creado.
  */
-router.post("/", authToken, createPatient)
+router.post("/", authToken, validateCreatePatient, createPatient)
+
+/**
+ * Ruta para actualizar el odotograma de un paciente por su ID.
+ * @route PUT /patients/:patientId/odontogram/:toothId
+ * @param {String} patientId ID del paciente a actualizar.
+ * @param {String} toothId ID o numero de diente del paciente a actualizar.
+ * @body {Object} toothData Datos a actualizar en el paciente.
+ * @returns {Object} Paciente actualizado.
+ */
+router.post("/:patientId/odontogram/:toothId", authToken, validateAddTooth, updateTooth)
+
+/** Ruta para agregar una nueva observación a un paciente por su ID.
+ * @route POST /patients/:id/observations
+ * @param {String} id ID del paciente a actualizar.
+ * @body {Object} observation Datos de la observación a agregar.
+ * @returns {Object} Paciente actualizado con la nueva observación.
+ */
+router.post("/:id/observations", authToken, validateAddObservation,addObservation)
+/** Ruta para agregar un nuevo tratamiento a un paciente por su ID.
+ * @route POST /patients/:id/treatments
+ * @param {String} id ID del paciente a actualizar.
+ * @body {Object} treatment Datos del tratamiento a agregar.
+ * @returns {Object} Paciente actualizado con el nuevo tratamiento.
+ */
+router.post("/:id/treatments", authToken, validateAddTreatment, addTreatment)
+
+/**
+ * Ruta para actualizar los datos de un paciente por su ID.
+ * @route PUT /patients/:id
+ * @param {String} id ID del paciente a actualizar.
+ * @param {Object} updatedData Datos a actualizar en el paciente.
+ * @returns {Object} Paciente actualizado.
+ */
+router.put("/:id", authToken, validateUpdatePatient, updatePatient)
+
 
 /**
  * Ruta para eliminar un paciente por su ID.
@@ -62,23 +98,14 @@ router.delete("/:id", authToken, deletePatient)
 router.delete("/:patientId/odontogram", authToken, checkPermissionsAdmin, resetOdontogram)
 
 /**
- * Ruta para actualizar los datos de un paciente por su ID.
- * @route PUT /patients/:id
- * @param {String} id ID del paciente a actualizar.
- * @param {Object} updatedData Datos a actualizar en el paciente.
- * @returns {Object} Paciente actualizado.
- */
-router.put("/:id", authToken, updatePatient)
-
-/**
- * Ruta para actualizar el odotograma de un paciente por su ID.
- * @route PUT /patients/:patientId/odontogram/:toothId
+ * Ruta para eliminar una observación específica de un paciente por su ID.
+ * @route DELETE /patients/:patientId/observation/:idObservation
  * @param {String} patientId ID del paciente a actualizar.
- * @param {String} toothId ID o numero de diente del paciente a actualizar.
- * @query {Object} toothData Datos a actualizar en el paciente.
- * @returns {Object} Paciente actualizado.
+ * @param {String} idObservation ID de la observación a eliminar.
  */
-router.put("/:patientId/odontogram/:toothId", authToken, updateTooth)
+router.delete("/:patientId/observation/:idObservation", authToken, checkPermissionsAdmin, deleteObservation )
+
+router.delete("/:patientId/treatment/:idTreatment", authToken, checkPermissionsAdmin, deleteTreatment )
 
 
 export default router

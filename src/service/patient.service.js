@@ -101,10 +101,33 @@ class PatientsService extends BaseService {
     }
 
     async update(id, toUpdate) {
-        const updated = await super.update(id, toUpdate);
+        const updated = await super.update(id, this.toUpdateDTO(toUpdate));
         if (!updated) throw new NotFoundError("Paciente", id);
         return updated;
     }
+
+    async addObservation(patientId, observation){
+        const patientUpdated = await this.repository.updateByFilter(
+            {_id: patientId},
+            { $push: { observations: observation } }
+        );
+
+        if (!patientUpdated) throw new NotFoundError("Paciente", patientId);
+
+        return this.toDTO(patientUpdated);
+    }
+
+    async addTreatment(patientId, treatment){
+        const patientUpdated = await this.repository.updateByFilter(
+            {_id: patientId},
+            { $push: { treatments: treatment } }
+        );
+
+        if (!patientUpdated) throw new NotFoundError("Paciente", patientId);
+
+        return this.toDTO(patientUpdated);
+    }
+
 
     async updateTooth(patientId, toothId, toothData){
         const patient = await super.findById(patientId)
@@ -146,7 +169,31 @@ class PatientsService extends BaseService {
         await super.delete(id);
         return this.toDTO(patient);
     }
+    
+    async deleteObservation(patientId, idObservation){
+        const patient = await super.findById(patientId);
 
+        if (!patient) throw new NotFoundError("Paciente", patientId);
+
+        const updatedPatient = await this.repository.updateByFilter(
+            { _id: patientId },
+            { $pull: { observations: { _id: idObservation } } }
+        );
+
+        if (!updatedPatient) throw new NotFoundError("Observación", idObservation);
+    }
+
+    async deleteTreatment(patientId, idTreatment){
+        const patient = await super.findById(patientId);
+        if (!patient) throw new NotFoundError("Paciente", patientId);
+        
+        const updatedPatient = await this.repository.updateByFilter(
+            { _id: patientId },
+            { $pull: { treatments: { _id: idTreatment } } }
+        );
+    
+    }
+    
     async resetOdontogram(patientId){
         const patient = await super.findById(patientId);
         if(!patient) throw new NotFoundError("Paciente", id);
@@ -169,6 +216,10 @@ class PatientsService extends BaseService {
 
     toFormatDTO(data) {
         return new PatientDTO(data);
+    }
+
+    toUpdateDTO(data) {
+        return PatientDTO.toUpdate(data);
     }
 }
 

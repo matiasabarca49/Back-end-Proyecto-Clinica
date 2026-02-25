@@ -105,7 +105,7 @@ describe('API de Pacientes', () => {
         .post('/api/patients')
         .set('Cookie', `token=${authToken}`)
         .send(pacienteInvalido)
-        .expect(500);
+        .expect(400);
 
       expect(response.body).toHaveProperty('success', false);
     });

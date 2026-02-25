@@ -3,7 +3,7 @@ import mongoosePaginate from 'mongoose-paginate-v2'
 // Creación del Modelo para Appointments
 const appointmentSchema = new mongoose.Schema({
     date: {
-        type: Date,
+        type: Date,  // Solo se almacenará la fecha, sin hora -> YYYY-MM-DD
         required: true,
         match: /^\d{4}-\d{2}-\d{2}$/  // valida formato YYYY-MM-DD
     },

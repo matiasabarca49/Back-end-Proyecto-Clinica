@@ -40,10 +40,10 @@ describe('API de Appointments', () => {
                 name: 'Carlos',
                 lastName: 'González',
                 email: 'carlos.gonzalez@hospital.com',
-                password: 'Test1234!',
+                password: '!securePassword123',
                 rol: 'doctor',
-                dni: '23456789',
-                phone: '1122334455',
+                dni: '1234567',
+                phone: '1234567890',
                 professionalLicense: 'MP12345'
             };
         
@@ -68,7 +68,6 @@ describe('API de Appointments', () => {
             email: 'JUAN@TEST.COM',
             medicalCoverage: 'OSDE',
             nAffiliate: 'AFF123456',
-            status: 'active',
             idDoctor: idUser // ID válido de Mongo
         };
 
@@ -81,7 +80,7 @@ describe('API de Appointments', () => {
         const patientId = responsePaciente.body.data.id;
 
         const nuevoTurno = {
-                date: new Date(),
+                date: new Date().toISOString().split('T')[0], // Solo la fecha sin hora 2024-06-01
                 slots: [0],
                 typeAppointment: "consulta",
                 room: "Consultorio 1",
@@ -108,16 +107,16 @@ describe('API de Appointments', () => {
     });
 
 
-    describe('GET /api/patients/:id', () => {
-        it('debería retornar un paciente por ID', async () => {
+    describe('GET /api/appointments/:id', () => {
+        it('debería retornar un turno por ID', async () => {
             const nuevoUsuario = {
                     name: 'Carlos',
                     lastName: 'González',
                     email: 'carlos.gonzalez@hospital.com',
-                    password: 'Test1234!',
+                    password: '!securePassword123',
                     rol: 'doctor',
-                    dni: '23456789',
-                    phone: '1122334455',
+                    dni: '12345678',
+                    phone: '1234567890',
                     professionalLicense: 'MP12345'
                 };
             
@@ -142,7 +141,6 @@ describe('API de Appointments', () => {
                 email: 'JUAN@TEST.COM',
                 medicalCoverage: 'OSDE',
                 nAffiliate: 'AFF123456',
-                status: 'active',
                 idDoctor: idUser // ID válido de Mongo
             };
 
@@ -155,7 +153,7 @@ describe('API de Appointments', () => {
             const patientId = responsePaciente.body.data.id;
 
             const nuevoTurno = {
-                    date: new Date(),
+                    date: new Date().toISOString().split('T')[0],
                     slots: [0],
                     typeAppointment: "consulta",
                     room: "Consultorio 1",
