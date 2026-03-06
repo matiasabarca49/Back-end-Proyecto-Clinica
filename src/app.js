@@ -7,14 +7,17 @@ const app = express();
 app.use(express.json());
 //recibir datos complejos del navegador
 app.use(express.urlencoded({extended: true}));
+
 //Obtener la ruta actual
 import path from 'path';
 import { fileURLToPath } from 'url';
 // Obtener el __dirname equivalente en módulos ES
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
 //Archivos estaticos
 app.use(express.static(__dirname + '/public'))
+
 //passport google 
 import passport from 'passport';
 import "./config/passport.config.js";
@@ -62,7 +65,7 @@ app.use("/api/notices", routeNotices);
 //Autenticación Google
 import routeAuth from './routes/passports/google.passport.router.js';
 let googleAuth = false;
-if(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_CALLBACK_URL){
+if(validateEnvVars("google")){
     app.use("/api/auth",routeAuth);
     googleAuth = true;
 }
@@ -76,6 +79,8 @@ import SwaggerJsdoc from 'swagger-jsdoc'
 import SwaggerUIExpress from 'swagger-ui-express'
 import { swaggerOption } from './config/swagger.config.js'
 import { errorHandler, notFoundHandler } from './middlewares/errors.middleware.js';
+import { validate } from 'node-cron';
+import { validateEnvVars } from './utils/dotenv.helper.js';
 const specs = SwaggerJsdoc(swaggerOption)
 app.use('/api/docs', SwaggerUIExpress.serve, SwaggerUIExpress.setup(specs));
 

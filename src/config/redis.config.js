@@ -1,3 +1,13 @@
+
+/* 
+    * Archivo: redis.config.js
+    * Descripción: Configuración y manejo de la conexión a Redis.
+    * 
+    * Características:
+    * Se implementa un patrón singleton para asegurar que solo haya una instancia del cliente Redis en toda la aplicación.
+    * Se manejan eventos de error para detectar problemas de conexión y se implementa una función para cerrar la conexión de manera segura.
+*/
+
 import { createClient } from 'redis';
 
 // Variable global para almacenar la única instancia del cliente.
@@ -56,5 +66,6 @@ export const closeRedis = async () => {
     console.log("⚠️ [info] No hay una instancia de Redis para cerrar.");
   }
 };
+
 
 

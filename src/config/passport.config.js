@@ -4,10 +4,11 @@ import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { UserDTO } from '../dto/user.dto.js';
 import crypto from 'crypto';
 import { createhash } from "../utils/utils.js";
+import { validateEnvVars } from "../utils/dotenv.helper.js";
 
 const usersService = new UsersService();
 
-if(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_CALLBACK_URL){
+if(validateEnvVars('google')){
     passport.use('google', new GoogleStrategy({
         clientID: process.env.GOOGLE_CLIENT_ID,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,

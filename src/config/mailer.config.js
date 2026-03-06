@@ -1,8 +1,9 @@
 // config/mailer.js
 import nodemailer from "nodemailer";
+import { validateEnvVars } from "../utils/dotenv.helper.js";
 
 const createTransport = () =>{
-  if(!process.env.EMAIL_USER || !process.env.EMAIL_PASS){
+  if(!validateEnvVars("email")){
     return
   }else{
     return nodemailer.createTransport({

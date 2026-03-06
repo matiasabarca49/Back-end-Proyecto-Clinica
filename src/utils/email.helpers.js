@@ -4,6 +4,7 @@
  */
 
 import transporter from "../config/mailer.config.js";
+import { emailQueue } from "../queues/email.queue.js";
 
 const SENDER_NAME = "Clínica Odontológica";
 const EMAIL_USER = process.env.EMAIL_USER;
@@ -357,11 +358,17 @@ export const sendAppointmentConfirmation = async (
     </p>
   `;
 
-  return await sendEmail({
+  return await emailQueue.add("sendEmail", {
+                to: patientEmail,
+                subject: `✅ Turno Confirmado - ${formattedDate}`,
+                html: emailTemplate(content, COLORS.success)
+  });
+
+  /* return await sendEmail({
     to: patientEmail,
     subject: `✅ Turno Confirmado - ${formattedDate}`,
     html: emailTemplate(content, COLORS.success),
-  });
+  }); */
 };
 
 /**

@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { getRedisClient } from '../config/redis.config.js';
-const secretKey = "yourSecretKey1234"; // Debe coincidir con el que usás para firmar el token
+
+const secretKey = process.env.SECRET_SESSIONS; // Debe coincidir con el que usás para firmar el token
 
 // Generar token
 export const generateToken = (user) => {

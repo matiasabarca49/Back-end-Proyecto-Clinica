@@ -1,8 +1,12 @@
 import 'dotenv/config';
+import './utils/dotenv.helper.js';
 import app, { googleAuth } from './app.js';
 import MongoManager from './config/mongoDB.config.js';
 import {closeRedis, getRedisClient} from './config/redis.config.js';
 import { initCronJobs } from './jobs/cronScheduler.js';
+
+//Workers
+import "./workers/email.worker.js";
 
 async function startServer() {
     try {

@@ -18,6 +18,7 @@ import { determineSearchType } from "../utils/utils.js";
 import { getAvailableSlots, slotsToHours, slotsToRanges } from "../utils/slots.helper.js";
 import { DuplicateError, NotFoundError, ValidationError } from "../exceptions/validations.exception.js";
 import { sendAppointmentConfirmation } from "../utils/email.helpers.js";
+import { validateEnvVars } from "../utils/dotenv.helper.js";
 
 export default class AppointmentsService extends BaseService{
     constructor() {
@@ -172,40 +173,45 @@ export default class AppointmentsService extends BaseService{
         const newAppointmentFormated = new AppointmentDTO(newAppointment);
         const appointmentAdded = await super.create(newAppointmentFormated);
 
-        //Enviar email de confirmación al paciente
-        const patient = patientExists;
-                        
-        // Verificar que tengamos los datos necesarios y que el populate haya funcionado
-        if (!patient) {
-            console.warn("⚠️ No se pudo enviar email: patientID es null");
-        } else if (typeof patient === 'string' || patient.constructor?.name === 'ObjectId') {
-            console.warn("⚠️ No se pudo enviar email: patientID no está populado");
-        } else if (!patient.email) {
-            console.warn("⚠️ No se pudo enviar email: el paciente no tiene email");
-        } else if (!appointmentAdded.slots || appointmentAdded.slots.length === 0) {
-            console.warn("⚠️ No se pudo enviar email: no hay slots");
-        } else {
-            //enviar email
-            const patientFullName = `${patient.name} ${patient.lastName}`;
-            
-            // Usar el helper de slots existente para formatear el horario
-            const timeRanges = slotsToRanges(appointmentAdded.slots, "09:00", 30);
-            const appointmentTime = timeRanges.join(", ") || "Horario no especificado";
-            
-            const emailSent = await sendAppointmentConfirmation(
-                patient.email,
-                patientFullName,
-                appointmentAdded.date,
-                appointmentTime
-            );
-            
-            if (emailSent) {
-                console.log(`✉️ Email de confirmación enviado a ${patient.email}`);
+        if(!validateEnvVars("email")){
+            console.warn("⚠️ [Info] Email de confirmación no enviado: variables de entorno para email no definidas");
+        }else{
+            //Enviar email de confirmación al paciente
+            const patient = patientExists;
+                            
+            // Verificar que tengamos los datos necesarios y que el populate haya funcionado
+            if (!patient) {
+                console.warn("⚠️ No se pudo enviar email: patientID es null");
+            } else if (typeof patient === 'string' || patient.constructor?.name === 'ObjectId') {
+                console.warn("⚠️ No se pudo enviar email: patientID no está populado");
+            } else if (!patient.email) {
+                console.warn("⚠️ No se pudo enviar email: el paciente no tiene email");
+            } else if (!appointmentAdded.slots || appointmentAdded.slots.length === 0) {
+                console.warn("⚠️ No se pudo enviar email: no hay slots");
             } else {
-                console.warn(`⚠️ Error al enviar email a ${patient.email} (problema con el transporter)`);
+                //enviar email
+                const patientFullName = `${patient.name} ${patient.lastName}`;
+                
+                // Usar el helper de slots existente para formatear el horario
+                const timeRanges = slotsToRanges(appointmentAdded.slots, "09:00", 30);
+                const appointmentTime = timeRanges.join(", ") || "Horario no especificado";
+                
+                const emailSent = await sendAppointmentConfirmation(
+                    patient.email,
+                    patientFullName,
+                    appointmentAdded.date,
+                    appointmentTime
+                );
+                
+                if (emailSent) {
+                    console.log(`✉️ Email de confirmación enviado a ${patient.email}`);
+                } else {
+                    console.warn(`⚠️ Error al enviar email a ${patient.email} (problema con el transporter)`);
+                }
+    
             }
-
         }
+
 
         return this.toDTO(appointmentAdded)
     }
