@@ -28,7 +28,7 @@ import cors from 'cors'
 app.use(cors({
     optionsSuccessStatus: 200,
     credentials: true,
-    origin: "http://localhost:5173"
+    origin: process.env.ORIGIN_FRONTEND || "http://localhost:5173"
 }))
 
 //Utilizacion de Cookies
