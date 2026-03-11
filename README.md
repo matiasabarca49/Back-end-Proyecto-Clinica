@@ -85,3 +85,12 @@ Con "npm start" el servidor iniciará en modo desarrollo y el puerto utilizado s
 El acceso se realiza mediante el navegador. 
 
  - En local a través de la dirección -> http://localhost:8080
+
+## Licencia
+
+Este proyecto se encuentra bajo la licencia MIT.
+
+Esto significa que el código puede ser utilizado, modificado y distribuido libremente,
+siempre que se mantenga el aviso de copyright original.
+
+Ver archivo LICENSE para más información.
