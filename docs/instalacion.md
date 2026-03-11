@@ -31,7 +31,7 @@ Clonar el repositorio del proyecto:
 git clone <URL_Repositorio>
 ```
 
-Ingresar al directorio del proyecto -> cd /repositorio
+Ingresar al directorio del proyecto -> cd /Back-end-Proyecto-Clinica
 
 # 4. Instalar dependencias
 
@@ -95,6 +95,16 @@ Una vez iniciado, el servidor estará disponible en:
 ```
 http://<IP_SERVIDOR O localhost>:<PORT O 8080>
 ```
+
+# 6.1 Solicitudes a los Endpoints
+
+Los endpoints se encuentran protegidos con credenciales. En el momento de levantar el servidor por primera vez no tendrá un usuario administrador. Puede crear uno con el siguiente comando:
+
+```
+npm run create-admin -- -e <email> -p <password> -n <nombre_usuario>
+``` 
+
+**NOTA:** En caso de querer probar los endpoints en el navegador, en la raíz del servidor se encuentra un formulario de autenticación.
 
 # 8. Documentación de la API
 

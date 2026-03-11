@@ -34,6 +34,7 @@
 - **Node.js** Entorno de ejecucion.
 - **NPM** Para instalar las librerías necesarias
 - **Terminal Linux/cmd Windows** Para su instalación
+- **Servidor Redis** Para su ejecución
 
 Node.js se puede descargar de su página oficial -> https://nodejs.org/en
 El paquete de instalación de Node.js tambien instala la herramienta **npm**
@@ -62,23 +63,7 @@ git clone https://github.com/matiasabarca49/Back-end-Proyecto-Clinica.git
 
 ## Instalación
 
-Para instalar las librerias necesarias, ingresamos al directorio una vez realizada la descompresión del ZIP y ejecutamos el siguiente comando:
-```
-npm install
-```
-Es necesario tener instalado nodemon para poder ejecutar la aplicación. Esta herramienta nos permite reiniciar la aplicacion cada vez que se guardan los cambios. Para instalar:
-
-```
-npm install nodemon
-```
-
-Una vez instalados todas las libreriasa necesarias, ejecutamos la aplicacion con el siguiente comando:
-
-```
-npm start
-```
-
-Con "npm start" el servidor iniciará en modo desarrollo y el puerto utilizado será el "8080". Las opciones que pude establecer son:
+Para su instalación consultar el documento -> /docs/instalacion.md
 
 ## Acceso
 
