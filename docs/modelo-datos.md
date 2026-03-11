@@ -88,7 +88,7 @@ Cada diente contiene información sobre el estado de sus superficies.
 | Valor | Significado |
 | ----- | ----------- |
 | 0     | Sano        |
-| 1     | Carie       |
+| 1     | Cariado     |
 | 2     | Obturado    |
 
 # 4. Doctor
@@ -97,14 +97,41 @@ Representa a los profesionales que trabajan en la clínica.
 
 ```json
 {
-  "_id": "6983e67124241794aecb20e7",
-  "name": "Hernan",
-  "lastName": "Rodolfo",
-  "dni": "34567234",
-  "phone": "261453324",
-  "email": "hernan@correo.com",
-  "professionalLicense": "23454",
+  "_id": "69b1c1d50a5a71cd170b8ea5",
+  "name": "Alfonso",
+  "lastName": "Dupran",
+  "dni": "34556432",
+  "phone": "2617564834",
+  "email": "alfonso@correo.com",
+  "professionalLicense": "456443",
+  "schedules": {
+    "monday": {
+      "start": "09:00",
+      "end": "18:00"
+    },
+    "tuesday": {
+      "start": "09:00",
+      "end": "18:00"
+    },
+    "wednesday": {
+      "start": "14:00",
+      "end": "18:00"
+    },
+    "thursday": {
+      "start": "09:00",
+      "end": "18:00"
+    },
+    "friday": {
+      "start": "09:00",
+      "end": "18:00"
+    },
+    "saturday": {
+      "start": "09:00",
+      "end": "18:00"
+    }
+  },
   "status": "active",
+  "color": "#1f3aa8",
   "created": "date",
   "lastChange": "date"
 }
