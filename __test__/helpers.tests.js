@@ -53,10 +53,14 @@ export const createAdminUser = async () => {
   return adminUser;
 };
 
+/* 
+  Creamos el token JWT para el usuario admin, que se usará en los tests de autenticación y autorización.
+  La sesión activa en Redis se crea para simular un usuario logueado, lo que es necesario para probar rutas protegidas.
+  Esto evita tener que pasar por el proceso de login en cada test, haciendo los tests más rápidos y enfocados en la funcionalidad específica que queremos probar.
+*/
+// Crear token JWT para el usuario admin
 export const createAdminToken = (user) => {
-  console.log('Creando token para usuario:', user.email);
   const secretKey = process.env.SECRET_SESSIONS
-  console.log('Usando secretKey:', secretKey);
   return jwt.sign(
     {id: user._id,
       email: user.email,
@@ -67,6 +71,7 @@ export const createAdminToken = (user) => {
   )
 }
 
+// Crear sesión activa en Redis para el usuario admin
 export const createAdminSession = async (user) => {
   const redisClient = await getRedisClient();
   await redisClient.set(`session:${user._id}`, 'active', 'EX', 3600); // Sesión activa por 1 hora

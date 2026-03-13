@@ -26,6 +26,25 @@ export const getAppointments = async (req, res, next) => {
     }
 };
 
+
+/**
+ * Endpoint que retorna las citas del día actual
+ * Respuesta:
+ *        200: retorna un JSON con estado y array de citas
+ *        500: Error. Problema al obtener la colección de la DB
+ */
+export const getTodayAppointments = async (req, res, next) => {
+    try{
+
+        const appointmentsGetted = await appointmentsService.findToday();
+        
+        return res.status(200).json({ success: true , data: appointmentsGetted })
+
+    }catch(error){
+        next(error)
+    }
+}
+
 /**
  * Endpoint que retorna una cita de la colección mediante su ID
  * Param: ID de la cita

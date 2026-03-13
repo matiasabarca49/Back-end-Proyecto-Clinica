@@ -16,19 +16,24 @@ import { AppointmentDTO } from "../dto/appointment.dto.js";
 //utils and helpers
 import { determineSearchType } from "../utils/utils.js";
 import { getAvailableSlots, slotsToHours, slotsToRanges } from "../utils/slots.helper.js";
-import { DuplicateError, NotFoundError, ValidationError } from "../exceptions/validations.exception.js";
+import { NotFoundError, ValidationError } from "../exceptions/validations.exception.js";
 import { sendAppointmentConfirmation } from "../utils/email.helpers.js";
 import { validateEnvVars } from "../utils/dotenv.helper.js";
+import AppError from "../exceptions/AppErrors.js";
+import CacheService from "../cache/cache.service.js";
+import { dateNotHours } from "../utils/dates.helper.js";
 
 export default class AppointmentsService extends BaseService{
     constructor() {
         const repository = new MongoRepository(Appointment);
         super(repository);
+
+        this.cacheService = new CacheService();
     }
 
    async findAll(){
         const appointment = await super.findAll()
-        return this.toManyDTO(appointment)
+        return this.toManyShortDTO(appointment)
     }
 
     async findById(id){
@@ -128,10 +133,38 @@ export default class AppointmentsService extends BaseService{
         const appointmentsFounded = await this.repository.findPaginate(filters, limit, page, sort)
 
         if (appointmentsFounded) {
-            appointmentsFounded.docs = this.toManyDTO(appointmentsFounded.docs);
+            appointmentsFounded.docs = this.toManyShortDTO(appointmentsFounded.docs);
         }
         return appointmentsFounded || [];
     
+    }
+
+    async findToday(){
+            const today = new Date();
+            today.setUTCHours(0, 0, 0, 0); // Establecer a medianoche para comparar solo fechas
+            const day = today.getUTCDate().toString().padStart(2, '0');
+            const month = (today.getUTCMonth() + 1).toString().padStart(2, '0');
+            const year = today.getUTCFullYear();
+            const todayString = `${year}-${month}-${day}`;
+
+            //Buscar en cache
+            const cachedAppointments = await this.cacheService.get(`appointments:${todayString}`);
+            if (cachedAppointments) {
+                console.log(`Citas de hoy ${todayString} obtenidas de cache`);
+                return cachedAppointments;
+            }
+
+            const appointments = await this.repository.findPaginate({ date: todayString }, 10, 1, {date: 1, slots: 1});
+
+            if(!appointments) throw new AppError("Error al obtener las citas de hoy", 500)
+
+            appointments.docs = this.toManyShortDTO(appointments.docs);
+
+            //Guardar en cache por 10 minutos
+            console.log(`Guardando citas de hoy ${todayString} en cache por 10 minutos`);
+            await this.cacheService.set(`appointments:${todayString}`, appointments, 600); // 600 segundos = 10 minutos
+
+            return appointments;
     }
 
     async create(newAppointment) {
@@ -172,6 +205,15 @@ export default class AppointmentsService extends BaseService{
         // Crear la nueva cita
         const newAppointmentFormated = new AppointmentDTO(newAppointment);
         const appointmentAdded = await super.create(newAppointmentFormated);
+
+        //Invalidar cache de citas de hoy si la cita creada es para el día actual
+        const todayKey = `appointments:${dateNotHours(new Date())}`;
+        const appointmentDate = dateNotHours(new Date(date));
+
+        if (appointmentDate === dateNotHours(new Date())) {
+            console.log("La cita creada es para hoy. Invalidando cache...");
+            await this.cacheService.del(todayKey);
+        }
 
         if(!validateEnvVars("email")){
             console.warn("⚠️ [Info] Email de confirmación no enviado: variables de entorno para email no definidas");
@@ -218,12 +260,33 @@ export default class AppointmentsService extends BaseService{
 
     async delete(appointmentID) {
         const deletedAppointment = await super.delete(appointmentID)
+
+        //Invalidar cache de citas de hoy si la cita eliminada es para el día actual
+        const todayKey = `appointments:${dateNotHours(new Date())}`;
+        const appointmentDate = dateNotHours(new Date(deletedAppointment.date));
+
+        if (appointmentDate === dateNotHours(new Date())) {
+            console.log("La cita eliminada es para hoy. Invalidando cache...");
+            await this.cacheService.del(todayKey);
+        }
+
         return this.toDTO(deletedAppointment);
     }
 
     async update(appointmentID, toUpdate) {
-        toUpdate.lastChange = new Date()
-        return super.update(appointmentID, toUpdate);
+        const updatedAppointment = await this.repository.updateByFilter({_id: appointmentID }, toUpdate);
+
+        if(!updatedAppointment) throw new NotFoundError("Appointment", appointmentID);
+
+        //Invalidar cache de citas de hoy si la cita actualizada es para el día actual
+        const todayKey = `appointments:${dateNotHours(new Date())}`;
+        const appointmentDate = dateNotHours(new Date(updatedAppointment.date));
+
+        if (appointmentDate === dateNotHours(new Date())) {
+            console.log("La cita actualizada es para hoy. Invalidando cache...");
+            await this.cacheService.del(todayKey);
+        }
+        return this.toDTO(updatedAppointment);
     }
 
     async getAvailableAppointments(idDoctor, day){
@@ -264,10 +327,6 @@ export default class AppointmentsService extends BaseService{
         const nextDay = new Date(today);
         nextDay.setDate(today.getDate() + 1);
         nextDay.setUTCHours(0, 0, 0, 0); // Establecer a medianoche para comparar solo fechas
-
-        /* console.log("today:", today);
-        console.log("nextDay:", nextDay); */
-
         
         let dayFounded = false;
 
@@ -302,8 +361,16 @@ export default class AppointmentsService extends BaseService{
         return AppointmentDTO.toResponse(appointment)
     }
 
+    toShortDTO(appointment) {
+        return AppointmentDTO.toShortResponse(appointment)
+    }
+
     toManyDTO(appointments) {
         return appointments.map(appointment => AppointmentDTO.toResponse(appointment));
+    }
+
+    toManyShortDTO(appointments) {
+        return appointments.map(appointment => AppointmentDTO.toShortResponse(appointment));
     }
 
 }
