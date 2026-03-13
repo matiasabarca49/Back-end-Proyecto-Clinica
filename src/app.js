@@ -39,14 +39,6 @@ app.use(cookieParser())
 /**
  * ROUTES
 */
-//Raiz
-
-
-app.get("/", (req, res) =>{
-    res.sendFile(path.join(__dirname, './public/html/index.html'));
-    // res.send("Backend");
-})
-
 import routeUser from './routes/user.router.js';
 import routePatient from './routes/patient.router.js';
 import routeDoctor from './routes/doctor.router.js';
@@ -54,6 +46,22 @@ import routeAppointments from './routes/appointment.router.js';
 import routeSession from './routes/session.router.js';
 import routeFailure from './routes/failure.router.js';
 import routeNotices from './routes/notice.router.js';
+//Manejo de errores y excepciones
+import { errorHandler, notFoundHandler } from './middlewares/errors.middleware.js';
+//Autenticación Google
+import { validateEnvVars } from './utils/dotenv.helper.js';
+import routeAuth from './routes/passports/google.passport.router.js';
+//Documentación Swagger
+import SwaggerJsdoc from 'swagger-jsdoc'
+import SwaggerUIExpress from 'swagger-ui-express'
+import { swaggerOption } from './config/swagger.config.js'
+
+//Raiz
+app.get("/", (req, res) =>{
+    res.sendFile(path.join(__dirname, './public/html/index.html'));
+    // res.send("Backend");
+})
+
 app.use("/api/users", routeUser);
 app.use("/api/patients", routePatient);
 app.use("/api/doctors", routeDoctor);
@@ -63,32 +71,19 @@ app.use("/api/fails", routeFailure);
 app.use("/api/notices", routeNotices);
 
 //Autenticación Google
-import routeAuth from './routes/passports/google.passport.router.js';
 let googleAuth = false;
 if(validateEnvVars("google")){
     app.use("/api/auth",routeAuth);
     googleAuth = true;
 }
 
-//Manejo de Excepciones
-app.use(notFoundHandler);  // Maneja 404
-app.use(errorHandler);     // Maneja todos los errores
-
 //Docs
-import SwaggerJsdoc from 'swagger-jsdoc'
-import SwaggerUIExpress from 'swagger-ui-express'
-import { swaggerOption } from './config/swagger.config.js'
-import { errorHandler, notFoundHandler } from './middlewares/errors.middleware.js';
-import { validate } from 'node-cron';
-import { validateEnvVars } from './utils/dotenv.helper.js';
 const specs = SwaggerJsdoc(swaggerOption)
 app.use('/api/docs', SwaggerUIExpress.serve, SwaggerUIExpress.setup(specs));
 
-
-//Rutas que no existen. Mostrar 404 No encontrado
-app.use("*", (req, res) =>{
-    res.status(404).send({status:"Error", reason: "Error 404 NotFound"})
-});
+//Manejo de Excepciones
+app.use(notFoundHandler);  // Maneja 404
+app.use(errorHandler);     // Maneja todos los errores
 
 export {googleAuth};
 

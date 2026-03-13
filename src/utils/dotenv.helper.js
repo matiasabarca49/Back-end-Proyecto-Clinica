@@ -23,21 +23,38 @@ const missing = Object.entries(requiredEnvVars)
 
 
 if (missing.length > 0) {
-    console.log(`Variables de entorno faltantes o vacías:\n- ${missing.join(', \n- ')}`);
+    console.warn(`Variables de entorno faltantes o vacías:\n- ${missing.join(', \n- ')}`);
 }
 
-if(!process.env.DATABASE_URL?.trim() || !process.env.SECRET_SESSIONS?.trim()){
-    console.log("🔴 [Error] Falta una o todas de las variables de entorno requeridas. \n - DATABASE_URL \n - SECRET_SESSIONS");
-    process.exit()
+if( process.env.NODE_ENV !== "test" && !process.env.DATABASE_URL?.trim()){
+    console.error("🔴 [Error] Falta la variable de entorno DATABASE_URL");
+    process.exit(1);
+}
+
+if( !process.env.SECRET_SESSIONS?.trim()){
+    console.error("🔴 [Error] Falta la variable de entorno SECRET_SESSIONS");
+    process.exit(1);
+}
+
+if( !process.env.PORT_REDIS?.trim() || !process.env.HOST_REDIS?.trim()){
+    console.warn("⚠️ [Info] Falta la variable de entorno PORT_REDIS o HOST_REDIS. Se utilizará la configuración por defecto para Redis. IP: 127.0.0.1, Puerto: 6379");
+}
+
+if(!process.env.ORIGIN_FRONTEND?.trim()){
+    console.warn("⚠️ [Info] Falta la variable de entorno ORIGIN_FRONTEND. Se permitiŕa solo desde http://localhost:5173.");
 }
 
 if(!process.env.EMAIL_USER?.trim() || !process.env.EMAIL_PASS?.trim()){
-    console.log("⚠️ [Info] Envío de emails Desactivado")
+    console.warn("⚠️ [Info] Envío de emails Desactivado")
     requiredEnvVars.email = false
 }
 
+if(!process.env.PORT?.trim()){
+    console.warn("⚠️ [Info] Falta la variable de entorno PORT. Se utilizará el puerto por defecto 8080.");
+}
+
 if(!process.env.GOOGLE_CLIENT_ID?.trim() || !process.env.GOOGLE_CLIENT_SECRET?.trim() || !process.env.GOOGLE_CALLBACK_URL?.trim()){
-    console.log("⚠️ [Info] Autenticacion con GOOGLE Desactivada")
+    console.warn("⚠️ [Info] Autenticacion con GOOGLE Desactivada")
     requiredEnvVars.google = false
 }
 

@@ -8,7 +8,7 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "create-admin": "node scripts/create-admin.js",
-    "test": "cross-env NODE_OPTIONS=--experimental-vm-modules jest"
+    "test": "cross-env NODE_ENV=test SECRET_SESSIONS=test NODE_OPTIONS=--experimental-vm-modules jest"
   },
   "keywords": [],
   "author": "",

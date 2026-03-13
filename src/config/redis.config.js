@@ -60,7 +60,7 @@ export const closeRedis = async () => {
   if (redisClientInstance) {
     await redisClientInstance.quit();
     redisClientInstance = null;
-    console.log("🛑 [Error] Redis cerrado");
+    console.log("🛑 [info] Redis cerrado");
   }
   else{
     console.log("⚠️ [info] No hay una instancia de Redis para cerrar.");

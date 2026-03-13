@@ -1,4 +1,3 @@
-import e from 'express';
 import mongoose from 'mongoose'
 
 class MongoManager {
@@ -7,7 +6,6 @@ class MongoManager {
     }
 
     async connect() {
-        const portSelected = process.env.PORT || "8080";
         
         try {
             await mongoose.connect(this.url);
@@ -22,7 +20,7 @@ class MongoManager {
     async disconnect() {
         try {
             await mongoose.disconnect();
-            console.log("🛑 [Error] Desconectado de MongoDB");
+            console.log("🛑 [info] Desconectado de MongoDB");
         } catch (error) {
             console.error("🔴 [Error] Error al desconectar de MongoDB:", error.message);
         }

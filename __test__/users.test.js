@@ -1,25 +1,31 @@
 import request from 'supertest';
 import app from '../src/app.js';
-import { clearDB, createAdminUser, getAdminToken } from './helpers.tests.js';
+import { clearDB, createAdminSession, createAdminToken, createAdminUser} from './helpers.tests.js';
 
 // Conectar BD en memoria antes de todos los tests
 beforeAll(async () => {
-  await createAdminUser(); // ← Crear admin en BD
-  authToken = await getAdminToken(app); // ← Hacer login y obtener token
+  const user = await createAdminUser(); // ← Crear admin en BD
+  authToken = createAdminToken(user); // ← Crear el Token a utilizar
+  await createAdminSession(user);// ← Crear sesión en Redis para el admin
 
 }, 30000);
 
 // Limpiar BD antes de cada test
 beforeEach(async () => {
   await clearDB();
-  await createAdminUser(); //Crear admin en BD
-  authToken = await getAdminToken(app); //Hacer login y obtener token
+  const user = await createAdminUser();
+  //Creamos token y sesión para cada test, para evitar problemas de expiración o sesiones inactivas en Redis
+  authToken = createAdminToken(user);
+  await createAdminSession(user);
+  /* await createAdminUser(); //Crear admin en BD */
+  /* authToken = await getAdminToken(app); //Hacer login y obtener token */
 });
 
 describe('API de Users', () => {
   
   describe('GET /api/users', () => {
     it('debería retornar un array vacío si no hay pacientes', async () => {
+
       const response = await request(app)
         .get('/api/patients')
         .set('Cookie', `token=${authToken}`) //Usar el token

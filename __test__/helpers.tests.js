@@ -2,6 +2,8 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
 import bcrypt from 'bcrypt'; //
 import { User } from '../src/model/mongo/user.model'; 
+import jwt from 'jsonwebtoken';
+import { getRedisClient } from '../src/config/redis.config';
 
 let mongoServer;
 
@@ -16,7 +18,7 @@ export const connectDB = async () => {
 // Se ejecuta DESPUÉS de todos los tests
 export const disconnectDB = async () => {
   await mongoose.connection.dropDatabase();
-  await mongoose.connection.close();
+  await mongoose.disconnect();
   await mongoServer.stop();
 
   console.log('✅ MongoDB en memoria desconectada');
@@ -51,32 +53,21 @@ export const createAdminUser = async () => {
   return adminUser;
 };
 
-//Helper para hacer login y obtener token
-export const getAdminToken = async (app) => {
-  const request = (await import('supertest')).default;
-  
-  const response = await request(app)
-    .post('/api/sessions/login')
-    .send({
-      email: 'admin@test.com',
-      password: 'Admin123!'
-    });
+export const createAdminToken = (user) => {
+  console.log('Creando token para usuario:', user.email);
+  const secretKey = process.env.SECRET_SESSIONS
+  console.log('Usando secretKey:', secretKey);
+  return jwt.sign(
+    {id: user._id,
+      email: user.email,
+      rol: user.rol
+    },
+    process.env.SECRET_SESSIONS,
+    {expiresIn: '1h'}
+  )
+}
 
-  // Si tu API retorna el token en el body
-  if (response.body.token) {
-    return response.body.userData.token;
-  }
-  
-  // Si tu API retorna el token en una cookie (Set-Cookie header)
-  const cookies = response.headers['set-cookie'];
-  if (cookies) {
-    const tokenCookie = cookies.find(cookie => cookie.startsWith('token='));
-    if (tokenCookie) {
-      // Extraer el valor del token de "token=abc123; Path=/; HttpOnly"
-      const token = tokenCookie.split(';')[0].split('=')[1];
-      return token;
-    }
-  }
-  
-  throw new Error('No se pudo obtener el token de autenticación');
+export const createAdminSession = async (user) => {
+  const redisClient = await getRedisClient();
+  await redisClient.set(`session:${user._id}`, 'active', 'EX', 3600); // Sesión activa por 1 hora
 };
