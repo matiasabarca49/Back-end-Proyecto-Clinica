@@ -47,6 +47,12 @@ const appointmentSchema = new mongoose.Schema({
 }, {timestamps: {createdAt: 'created', updatedAt: 'lastChange'}});
 mongoose.plugin(mongoosePaginate)
 
+// Constraint para evitar que un doctor tenga citas solapadas
+appointmentSchema.index({ doctorID: 1, date: 1, slots: 1 }, { unique: true });
+
+//Constraint para evitar que un paciente tenga citas solapadas
+appointmentSchema.index({ patientID: 1, date: 1, slots: 1 }, { unique: true });
+
 // Population
 appointmentSchema.pre("find", function() {
     this.populate("doctorID").populate("patientID");
