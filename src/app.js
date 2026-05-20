@@ -35,6 +35,13 @@ app.use(cors({
 import cookieParser from 'cookie-parser';
 app.use(cookieParser())
 
+//Confiar en el proxy (si se despliega detrás de uno)
+app.set('trust proxy', 1);
+
+//Limitar el número de peticiones a la API
+import limitHandler from './middlewares/rateLimit.middleware.js';
+app.use(limitHandler);
+
 
 /**
  * ROUTES
