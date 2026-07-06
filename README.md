@@ -1,4 +1,85 @@
-# Repositorio Back-End Proyecto Clínica
+# Repositorio Back-End – Sistema de Gestión para Clínica Odontológica
+
+Backend de una aplicación web para la gestión integral de una clínica odontológica, desarrollado con Node.js, Express, Javascript y MongoDB.
+
+**Nota:** El frontend no es público. Si desea evaluar el proyecto completo, puede solicitar una demostración o una muestra del frontend.
+
+## Funcionalidades principales
+
+El sistema permite gestionar:
+
+- Autenticación y autorización de usuarios.
+- Gestión de pacientes.
+- Gestión de profesionales y sus horarios de atención.
+- Gestión de turnos con control de disponibilidad y seguimiento con calendario.
+- Historia clínica digital con odontograma.
+- Administración de usuarios del sistema.
+
+## Características principales
+
+- **Autenticación local y de terceros** para ofrecer diferentes métodos de inicio de sesión.
+- **Gestión de sesiones y caché** para optimizar el rendimiento de la aplicación.
+- **Procesamiento de tareas en segundo plano** para ejecutar operaciones asíncronas.
+- **Búsqueda automática del próximo turno disponible** según la agenda de cada profesional.
+- **Documentación interactiva de la API** para facilitar el desarrollo y las integraciones.
+- **Arquitectura por capas y stateless** para favorecer la escalabilidad y el mantenimiento del sistema.
+
+## Tecnologías
+
+- Node.js
+- Express
+- JavaScript
+- MongoDB
+- Redis
+- BullMQ
+- JWT
+- Passport.js
+- Swagger / OpenAPI
+
+## Arquitectura
+
+El proyecto sigue una arquitectura por capas para separar responsabilidades y facilitar el mantenimiento.
+
+```text
+Router -> Controller -> Service -> Repository -> MongoDB
+```
+
+---
+
+## Estructura del proyecto
+
+```
+src/
+├── cache/          # Configuración de servicios que manejan el cache
+├── config/         # Configuración general del sistema
+├── controllers/    # Manejo de requests y responses HTTP
+├── docs/           # Documentación endpoints swagger
+├── dto/            # Transferencia y normalización de datos
+├── exceptions/     # Excepciones personalizadas
+├── middlewares/    # Middlewares de Express
+├── model/          # Definiciones relacionadas a persistencia
+├── public/         # Recursos estáticos
+├── queue/          # Gestión de colas y procesamiento asíncrono
+├── repositories/   # Acceso a datos
+├── routes/         # Definición de rutas
+├── services/       # Lógica de negocio
+├── utils/          # utilidades para el código
+├── validation/     # Validaciones de entrada
+├── workers/        # Procesamiento de tareas en segundo plano
+├── app.js
+└── server.js
+```
+
+## Documentación
+
+Para obtener información detallada sobre el proyecto, consulte la documentación disponible en la carpeta `documentation`:
+
+- [Arquitectura](documentation/arquitectura.md)
+- [Base de datos](documentation/modelo-datos.md)
+- [Casos de uso](documentation/casos-de-uso.md)
+- [Instalación y configuración](documentation/instalacion.md)
+
+# Trabajo del equipo
 
 ## Estructuras Ramas:
 
@@ -28,7 +109,7 @@
 ### 3 - Preparación para Producción
 * Cuando los cambios en development están listos y estables, se fusionan en _main_.
 
-## Instalación y puesta en marcha
+# Instalación y puesta en marcha
 ###### Requisitos para la instalación:
 
 - **Node.js** Entorno de ejecucion.
