@@ -1,5 +1,5 @@
 import {AppError, InvalidCredentialsError, NotFoundError} from "../exceptions/index.js";
-import { generateToken } from "../middlewares/middlewares.js";
+import { generateTokens } from "../middlewares/middlewares.js";
 import { User } from "../model/mongo/user.model.js";
 import MongoRepository from "../repositories/implementations/mongo.repository.js";
 import RedisRepository from "../repositories/implementations/redis.repository.js";
@@ -25,7 +25,8 @@ class AuthService extends BaseService {
         
         if (!isPasswordValid) throw new InvalidCredentialsError('credenciales incorrectas');
 
-        const token = generateToken(user);
+        //Obtenemos los tokens. accessToken y refreshToken
+        const tokens = generateTokens(user);
         const { _id, email, rol } = user;
 
         //Guardar usuario en redis que expira en 1h
@@ -33,11 +34,13 @@ class AuthService extends BaseService {
             userId: _id.toString(),
             expiration: 3600 // 1 hora en segundos
         });
+
+        //Guardar el refreshToken en redis con expiración de 7 días
         
         // Actualizar la fecha de última conexión sin modificar timestamps
         await this.repository.updateWhioutTStamp(_id, { lastLogintAt: new Date() });
 
-        return { token, id: _id, email, rol };
+        return { accessToken: tokens.accessToken, refreshToken: tokens.refreshToken, id: _id, email, rol };
     }
 
     async login2factor(email) {
@@ -99,7 +102,7 @@ class AuthService extends BaseService {
 
         if (!user) throw new NotFoundError("Usuario", userId);
 
-        const token = generateToken(user);
+        const tokens = generateTokens(user);
         const { _id, email, rol } = user;
 
         //Guardar usuario en redis que expira en 1h
@@ -114,7 +117,7 @@ class AuthService extends BaseService {
         sendLoginSuccessNotification(user.email, user.name)
               .catch(err => console.warn("Aviso de login exitoso falló:", err.message || err));
 
-        return { token, id: _id, email, rol };
+        return { accessToken: tokens.accessToken, refreshToken: tokens.refreshToken, id: _id, email, rol };
 
     }
 

@@ -3,23 +3,31 @@ import { getRedisClient } from '../config/redis.config.js';
 
 const secretKey = process.env.SECRET_SESSIONS; // Debe coincidir con el que usás para firmar el token
 
-// Generar token
-export const generateToken = (user) => {
-    const token = jwt.sign(
+// Generar token de acceso y refresh token
+export const generateTokens = (user) => {
+    const accessToken = jwt.sign(
         { id: user._id || user.id, email: user.email, rol: user.rol },
         secretKey,
-        { expiresIn: '1h' }
+        { expiresIn: '30min' }
     );
-    return token;
+
+    const refreshToken = jwt.sign(
+        { id: user._id || user.id, email: user.email, rol: user.rol },
+        secretKey,
+        { expiresIn: '7d' }
+    );
+    return { accessToken, refreshToken };
 };
 
 // Middleware basado en cookies (para rutas protegidas que usan cookies)
 export const authToken = (req, res, next) => {
-    const token = req.cookies.token;
+    // Obtener el token de acceso de la cookie
+    const token = req.cookies.accessToken;
     if (!token) {
         return res.status(401).json({ success: false, error: { message: "Not Authenticated", statusCode: 401}});
     }
 
+    // Verificar el token de acceso
     jwt.verify(token, secretKey, async (error, credentials) => {
         if (error) {
             return res.status(403).json({success: false , error: { message: "Not authorized", statusCode: 403 }});

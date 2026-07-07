@@ -100,6 +100,8 @@ http://<IP_SERVIDOR O localhost>:<PORT O 8080>
 
 Los endpoints se encuentran protegidos con credenciales. En el momento de levantar el servidor por primera vez no tendrá un usuario administrador. Puede crear uno con el siguiente comando:
 
+Con el servidor levantado aplique el siguiente comando:
+
 ```
 npm run create-admin -- -e <email> -p <password> -n <nombre_usuario>
 ``` 

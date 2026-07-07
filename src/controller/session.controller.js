@@ -10,11 +10,17 @@ export const loginUser = async (req,res, next)=>{
     const {email, password } = req.body;
     try {  
         const loginData = await authService.login({email: email, password: password});
-       //Generar token
-       res.cookie('token', loginData.token, {
-            httpOnly: true, // Asegura que solo sea accesible por el servidor
+       //Generar cookie con el accessToken y refreshToken
+       res.cookie('accessToken', loginData.accessToken, {
+            httpOnly: true, // Asegura que solo sea accesible por el servidor no por javascript del cliente
             sameSite: 'strict', // Protección CSRF
-            maxAge: 3600000, // Tiempo de expiración en milisegundos (1 hora)
+            maxAge:  30 * 60 * 1000, // Tiempo de expiración en milisegundos (30 minutos)
+        });
+
+        res.cookie('refreshToken', loginData.refreshToken, {
+            httpOnly: true,
+            sameSite: 'strict',
+            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días
         });
 
        return res.status(200).json({ success: true , data: loginData});
@@ -57,10 +63,17 @@ export const verify2FA = async (req, res, next) => {
     
     const loginVerification = await authService.verify2factor(userId, email, code);
 
-    res.cookie("token", loginVerification.token, {
-      httpOnly: true,
-      sameSite: "strict",
-      maxAge: 3600000, // 1 hora
+    //Generar cookie con el accessToken y refreshToken
+    res.cookie('accessToken', loginVerification.accessToken, {
+        httpOnly: true, // Asegura que solo sea accesible por el servidor no por javascript del cliente
+        sameSite: 'strict', // Protección CSRF
+        maxAge:  30 * 60 * 1000, // Tiempo de expiración en milisegundos (30 minutos)
+    });
+
+    res.cookie('refreshToken', loginVerification.refreshToken, {
+        httpOnly: true,
+        sameSite: 'strict',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días
     });
 
     return res.status(200).json({ success: true , data: loginVerification});
@@ -103,13 +116,15 @@ export const currentUser = async (req, res, next) => {
 // =======================
 export const disconnectUser = async (req, res, next) =>{
     try {
-      const cookieFounded = req.cookies.token;
+      const cookieFounded = req.cookies.accessToken;
 
       if(!cookieFounded){
         return res.status(400).json({ success: false, error: "User Not Loged"});
       }
 
-      res.clearCookie('token'); 
+      // Limpiar las cookies de sesión
+      res.clearCookie('accessToken'); 
+      res.clearCookie('refreshToken'); 
 
       const deletedSession = await  authService.logout(req.user.id);
       
