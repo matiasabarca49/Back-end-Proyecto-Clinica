@@ -5,7 +5,7 @@ import { clearDB, createAdminSession, createAdminToken, createAdminUser } from '
 // Conectar BD en memoria antes de todos los tests
 beforeAll(async () => {
   const user = await createAdminUser(); // ← Crear admin en BD
-  authToken = createAdminToken(user); // ← Crear el Token a utilizar
+  accessToken = createAdminToken(user); // ← Crear el Token a utilizar
   await createAdminSession(user);// ← Crear sesión en Redis para el admin
 
 }, 30000);
@@ -15,7 +15,7 @@ beforeEach(async () => {
   await clearDB();
   const user = await createAdminUser();
   //Creamos token y sesión para cada test, para evitar problemas de expiración o sesiones inactivas en Redis
-  authToken = createAdminToken(user);
+  accessToken = createAdminToken(user);
   await createAdminSession(user);
 });
 
@@ -25,7 +25,7 @@ describe('API de Pacientes', () => {
     it('debería retornar un array vacío si no hay pacientes', async () => {
       const response = await request(app)
         .get('/api/patients')
-        .set('Cookie', `token=${authToken}`) //Usar el token
+        .set('Cookie', `accessToken=${accessToken}`) //Usar el token
         .expect('Content-Type', /json/)
         .expect(200);
 
@@ -55,7 +55,7 @@ describe('API de Pacientes', () => {
 
       const response = await request(app)
         .post('/api/patients')
-        .set('Cookie', `token=${authToken}`)
+        .set('Cookie', `accessToken=${accessToken}`)
         .send(nuevoPaciente)
         .expect('Content-Type', /json/)
         .expect(201); // Ajusta según tu API (200 o 201)
@@ -87,7 +87,7 @@ describe('API de Pacientes', () => {
 
       const response = await request(app)
         .post('/api/patients')
-        .set('Cookie', `token=${authToken}`)
+        .set('Cookie', `accessToken=${accessToken}`)
         .send(paciente)
         .expect(201);
 
@@ -105,29 +105,12 @@ describe('API de Pacientes', () => {
 
       const response = await request(app)
         .post('/api/patients')
-        .set('Cookie', `token=${authToken}`)
+        .set('Cookie', `accessToken=${accessToken}`)
         .send(pacienteInvalido)
         .expect(400);
 
       expect(response.body).toHaveProperty('success', false);
     });
-
-    /* it('debería rechazar email inválido', async () => {
-      const paciente = {
-        name: 'Test',
-        lastName: 'Usuario',
-        birth: '1990-05-15',
-        dni: '11111111',
-        sex: 'M',
-        phone: '1234567890',
-        email: 'email-invalido', // Email sin @
-      };
-
-      await request(app)
-        .post('/api/patients')
-        .send(paciente)
-        .expect(400);
-    }); */
   });
 
   describe('GET /api/patients/:id', () => {
@@ -151,7 +134,7 @@ describe('API de Pacientes', () => {
 
       const crearResponse = await request(app)
         .post('/api/patients')
-        .set('Cookie', `token=${authToken}`)
+        .set('Cookie', `accessToken=${accessToken}`)
         .send(nuevoPaciente);
 
       const pacienteId = crearResponse.body.data.id;
@@ -159,63 +142,13 @@ describe('API de Pacientes', () => {
       // Luego buscarlo
       const response = await request(app)
         .get(`/api/patients/${pacienteId}`)
-        .set('Cookie', `token=${authToken}`)
+        .set('Cookie', `accessToken=${accessToken}`)
         .expect(200);
 
       expect(response.body.data.name).toBe('Maria');
       expect(response.body.data.id).toBe(pacienteId);
     });
-
-    /* it('debería retornar 404 si el paciente no existe', async () => {
-      const idInexistente = '507f1f77bcf86cd799439011';
-
-      await request(app)
-        .get(`/api/patients/${idInexistente}`)
-        .expect(404);
-    }); */
   });
-
-  /* describe('PUT /api/patients/:id', () => {
-    it('debería actualizar un paciente existente', async () => {
-      // Crear paciente
-      const paciente = {
-        name: 'Armando',
-        lastName: 'peReZ',
-        birth: '1990-05-15',
-        typeDNI: 'DNI',
-        dni: '12345678',
-        sex: 'M',
-        address: 'Calle Falsa 123',
-        phone: '1234567890',
-        email: 'ARMANDO@TEST.COM',
-        medicalCoverage: 'OSDE',
-        nAffiliate: 'AFF123456',
-        status: 'active',
-        idDoctor: '507f1f77bcf86cd799439011' // ID válido de Mongo
-      };
-
-      const crearResponse = await request(app)
-        .post('/api/patients')
-        .send(paciente);
-
-      const pacienteId = crearResponse.body.id;
-
-      // Actualizar teléfono
-      const datosActualizados = {
-        phone: '9999999999',
-        lastName: "Rato"
-      };
-
-      const response = await request(app)
-        .put(`/api/patients/${pacienteId}`)
-        .send(datosActualizados)
-        .expect(200);
-
-      expect(response.body.phone).toBe('9999999999');
-      expect(response.body.name).toBe('Armando'); // Otros campos sin cambios
-      expect(response.body.lastName).toBe('Rato'); // Otros campos sin cambios
-    });
-  }); */
 
   describe('DELETE /api/patients/:id', () => {
     it('debería eliminar un paciente', async () => {
@@ -238,7 +171,7 @@ describe('API de Pacientes', () => {
 
       const crearResponse = await request(app)
         .post('/api/patients')
-        .set('Cookie', `token=${authToken}`)
+        .set('Cookie', `accessToken=${accessToken}`)
         .send(paciente);
 
       const pacienteId = crearResponse.body.data.id;
@@ -246,13 +179,13 @@ describe('API de Pacientes', () => {
       // Eliminar
       await request(app)
         .delete(`/api/patients/${pacienteId}`)
-        .set('Cookie', `token=${authToken}`)
+        .set('Cookie', `accessToken=${accessToken}`)
         .expect(200);
 
       // Verificar que ya no existe
       await request(app)
         .get(`/api/patients/${pacienteId}`)
-        .set('Cookie', `token=${authToken}`)
+        .set('Cookie', `accessToken=${accessToken}`)
         .expect(404);
     });
   });

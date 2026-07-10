@@ -2,10 +2,12 @@ import request from 'supertest';
 import app from '../src/app.js';
 import {clearDB, createAdminSession, createAdminToken, createAdminUser } from './helpers.tests.js';
 
+let accessToken;
+
 // Conectar BD en memoria antes de todos los tests
 beforeAll(async () => {
   const user = await createAdminUser(); // ← Crear admin en BD
-  authToken = createAdminToken(user); // ← Crear el Token a utilizar
+  accessToken = createAdminToken(user); // ← Crear el Token a utilizar
   await createAdminSession(user);// ← Crear sesión en Redis para el admin
 
 }, 30000);
@@ -15,7 +17,7 @@ beforeEach(async () => {
   await clearDB();
   const user = await createAdminUser();
   //Creamos token y sesión para cada test, para evitar problemas de expiración o sesiones inactivas en Redis
-  authToken = createAdminToken(user);
+  accessToken = createAdminToken(user);
   await createAdminSession(user);
 });
 
@@ -25,7 +27,7 @@ describe('API de Appointments', () => {
     it('debería retornar un array vacío si no hay turnos', async () => {
       const response = await request(app)
         .get('/api/appointments')
-        .set('Cookie', `token=${authToken}`) //Usar el token
+        .set('Cookie', `accessToken=${accessToken}`) //Usar el token
         .expect('Content-Type', /json/)
         .expect(200);
 
@@ -51,7 +53,7 @@ describe('API de Appointments', () => {
         
         const responseUser = await request(app)
             .post('/api/users')
-            .set('Cookie', `token=${authToken}`)
+            .set('Cookie', `accessToken=${accessToken}`)
             .send(nuevoUsuario)
             .expect(201);
         
@@ -75,7 +77,7 @@ describe('API de Appointments', () => {
 
         const responsePaciente = await request(app)
         .post('/api/patients')
-        .set('Cookie', `token=${authToken}`)
+        .set('Cookie', `accessToken=${accessToken}`)
         .send(paciente)
         .expect(201);
 
@@ -94,7 +96,7 @@ describe('API de Appointments', () => {
 
         const responseTurno = await request(app)
         .post('/api/appointments')
-        .set('Cookie', `token=${authToken}`)
+        .set('Cookie', `accessToken=${accessToken}`)
         .send(nuevoTurno)
         .expect(201);
 
@@ -124,7 +126,7 @@ describe('API de Appointments', () => {
             
             const responseUser = await request(app)
                 .post('/api/users')
-                .set('Cookie', `token=${authToken}`)
+                .set('Cookie', `accessToken=${accessToken}`)
                 .send(nuevoUsuario)
                 .expect(201);
             
@@ -148,7 +150,7 @@ describe('API de Appointments', () => {
 
             const responsePaciente = await request(app)
             .post('/api/patients')
-            .set('Cookie', `token=${authToken}`)
+            .set('Cookie', `accessToken=${accessToken}`)
             .send(paciente)
             .expect(201);
 
@@ -167,7 +169,7 @@ describe('API de Appointments', () => {
 
             const responseTurno = await request(app)
             .post('/api/appointments')
-            .set('Cookie', `token=${authToken}`)
+            .set('Cookie', `accessToken=${accessToken}`)
             .send(nuevoTurno)
             .expect(201);
 
@@ -176,7 +178,7 @@ describe('API de Appointments', () => {
             // Luego buscarlo
             const response = await request(app)
             .get(`/api/appointments/${idTurno}`)
-            .set('Cookie', `token=${authToken}`)
+            .set('Cookie', `accessToken=${accessToken}`)
             .expect(200);
 
             // Verifica que se creó correctamente

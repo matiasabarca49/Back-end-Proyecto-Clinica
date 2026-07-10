@@ -246,6 +246,37 @@ paths:
           description: "Usuario no encontrado"
         "500":
           description: "Error en el servidor"
+  /api/sessions/refresh-token:
+    post:
+      summary: "Refrescar token"
+      description: "Genera nuevos tokens de acceso y refresco"
+      tags:
+        - Authorization
+      responses:
+        "200":
+          description: "Contraseña actualizada correctamente"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Contraseña actualizada correctamente"
+        "401":
+          description: "Token inválido o expirado"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "No existe el token de refresco o ha expirado"
+        "403":
+          description: "Token de refresco no válido"
+        "500":
+          description: "Error en el servidor"
 
   /api/sessions/current:
     get:

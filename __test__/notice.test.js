@@ -2,7 +2,7 @@ import request from 'supertest';
 import app from '../src/app.js';
 import { clearDB, createAdminSession, createAdminToken, createAdminUser } from './helpers.tests.js';
 
-let authToken;
+let accessToken;
 
 // Notice válido base para reutilizar en los tests
 const noticeBase = {
@@ -17,7 +17,7 @@ const noticeBase = {
 // Conectar BD en memoria antes de todos los tests
 beforeAll(async () => {
   const user = await createAdminUser(); // ← Crear admin en BD
-  authToken = createAdminToken(user); // ← Crear el Token a utilizar
+  accessToken = createAdminToken(user); // ← Crear el Token a utilizar
   await createAdminSession(user);// ← Crear sesión en Redis para el admin
 
 }, 30000);
@@ -27,7 +27,7 @@ beforeEach(async () => {
   await clearDB();
   const user = await createAdminUser();
   //Creamos token y sesión para cada test, para evitar problemas de expiración o sesiones inactivas en Redis
-  authToken = createAdminToken(user);
+  accessToken = createAdminToken(user);
   await createAdminSession(user);
 });
 
@@ -37,7 +37,7 @@ describe('API de Notices', () => {
         it('debería retornar un array vacío si no hay avisos', async () => {
             const response = await request(app)
                 .get('/api/notices')
-                .set('Cookie', `token=${authToken}`)
+                .set('Cookie', `accessToken=${accessToken}`)
                 .expect('Content-Type', /json/)
                 .expect(200);
 
@@ -50,12 +50,12 @@ describe('API de Notices', () => {
             // Crear un aviso primero
             await request(app)
                 .post('/api/notices')
-                .set('Cookie', `token=${authToken}`)
+                .set('Cookie', `accessToken=${accessToken}`)
                 .send(noticeBase);
 
             const response = await request(app)
                 .get('/api/notices')
-                .set('Cookie', `token=${authToken}`)
+                .set('Cookie', `accessToken=${accessToken}`)
                 .expect(200);
 
             expect(response.body.success).toBe(true);
@@ -67,7 +67,7 @@ describe('API de Notices', () => {
         it('debería crear un aviso nuevo', async () => {
             const response = await request(app)
                 .post('/api/notices')
-                .set('Cookie', `token=${authToken}`)
+                .set('Cookie', `accessToken=${accessToken}`)
                 .send(noticeBase)
                 .expect('Content-Type', /json/)
                 .expect(201);
@@ -85,7 +85,7 @@ describe('API de Notices', () => {
 
             const response = await request(app)
                 .post('/api/notices')
-                .set('Cookie', `token=${authToken}`)
+                .set('Cookie', `accessToken=${accessToken}`)
                 .send(noticeInvalido)
                 .expect(500);
 
@@ -97,14 +97,14 @@ describe('API de Notices', () => {
         it('debería retornar un aviso por ID', async () => {
             const crearResponse = await request(app)
                 .post('/api/notices')
-                .set('Cookie', `token=${authToken}`)
+                .set('Cookie', `accessToken=${accessToken}`)
                 .send(noticeBase);
 
             const noticeId = crearResponse.body.data.id;
 
             const response = await request(app)
                 .get(`/api/notices/${noticeId}`)
-                .set('Cookie', `token=${authToken}`)
+                .set('Cookie', `accessToken=${accessToken}`)
                 .expect(200);
 
             expect(response.body.success).toBe(true);
@@ -117,7 +117,7 @@ describe('API de Notices', () => {
 
             const response = await request(app)
                 .get(`/api/notices/${idInexistente}`)
-                .set('Cookie', `token=${authToken}`)
+                .set('Cookie', `accessToken=${accessToken}`)
                 .expect(404);
 
             expect(response.body.success).toBe(false);
@@ -128,14 +128,14 @@ describe('API de Notices', () => {
         it('debería actualizar un aviso existente', async () => {
             const crearResponse = await request(app)
                 .post('/api/notices')
-                .set('Cookie', `token=${authToken}`)
+                .set('Cookie', `accessToken=${accessToken}`)
                 .send(noticeBase);
 
             const noticeId = crearResponse.body.data.id;
 
             const response = await request(app)
                 .put(`/api/notices/${noticeId}`)
-                .set('Cookie', `token=${authToken}`)
+                .set('Cookie', `accessToken=${accessToken}`)
                 .send({ title: 'Título actualizado', priority: 'high' })
                 .expect(200);
 
@@ -149,7 +149,7 @@ describe('API de Notices', () => {
 
             const response = await request(app)
                 .put(`/api/notices/${idInexistente}`)
-                .set('Cookie', `token=${authToken}`)
+                .set('Cookie', `accessToken=${accessToken}`)
                 .send({ title: 'Título actualizado' })
                 .expect(404);
 
@@ -161,20 +161,20 @@ describe('API de Notices', () => {
         it('debería eliminar un aviso', async () => {
             const crearResponse = await request(app)
                 .post('/api/notices')
-                .set('Cookie', `token=${authToken}`)
+                .set('Cookie', `accessToken=${accessToken}`)
                 .send(noticeBase);
 
             const noticeId = crearResponse.body.data.id;
 
             await request(app)
                 .delete(`/api/notices/${noticeId}`)
-                .set('Cookie', `token=${authToken}`)
+                .set('Cookie', `accessToken=${accessToken}`)
                 .expect(200);
 
             // Verificar que ya no existe
             await request(app)
                 .get(`/api/notices/${noticeId}`)
-                .set('Cookie', `token=${authToken}`)
+                .set('Cookie', `accessToken=${accessToken}`)
                 .expect(404);
         });
 
@@ -183,7 +183,7 @@ describe('API de Notices', () => {
 
             const response = await request(app)
                 .delete(`/api/notices/${idInexistente}`)
-                .set('Cookie', `token=${authToken}`)
+                .set('Cookie', `accessToken=${accessToken}`)
                 .expect(404);
 
             expect(response.body.success).toBe(false);

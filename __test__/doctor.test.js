@@ -2,12 +2,12 @@ import request from 'supertest';
 import app from '../src/app.js';
 import {clearDB, createAdminSession, createAdminToken, createAdminUser} from './helpers.tests.js';
 
-let authToken;
+let accessToken;
 
 // Conectar BD en memoria antes de todos los tests
 beforeAll(async () => {
   const user = await createAdminUser(); // ← Crear admin en BD
-  authToken = createAdminToken(user); // ← Crear el Token a utilizar
+  accessToken = createAdminToken(user); // ← Crear el Token a utilizar
   await createAdminSession(user);// ← Crear sesión en Redis para el admin
 
 }, 30000);
@@ -17,7 +17,7 @@ beforeEach(async () => {
   await clearDB();
   const user = await createAdminUser();
   //Creamos token y sesión para cada test, para evitar problemas de expiración o sesiones inactivas en Redis
-  authToken = createAdminToken(user);
+  accessToken = createAdminToken(user);
   await createAdminSession(user);
 });
 describe('API de Doctores', () => {
@@ -26,7 +26,7 @@ describe('API de Doctores', () => {
     it('debería retornar un array vacío si no hay doctores', async () => {
       const response = await request(app)
         .get('/api/doctors')
-        .set('Cookie', `token=${authToken}`)
+        .set('Cookie', `accessToken=${accessToken}`)
         .expect('Content-Type', /json/)
         .expect(200);
 
@@ -49,7 +49,7 @@ describe('API de Doctores', () => {
 
       const response = await request(app)
         .post('/api/users')
-        .set('Cookie', `token=${authToken}`)
+        .set('Cookie', `accessToken=${accessToken}`)
         .send(nuevoUsuario)
         .expect(201);
 
@@ -83,7 +83,7 @@ describe('API de Doctores', () => {
 
       const response = await request(app)
         .post('/api/users')
-        .set('Cookie', `token=${authToken}`)
+        .set('Cookie', `accessToken=${accessToken}`)
         .send(usuario)
         .expect(201);
 
@@ -100,7 +100,7 @@ describe('API de Doctores', () => {
 
       const response = await request(app)
         .post('/api/users')
-        .set('Cookie', `token=${authToken}`)
+        .set('Cookie', `accessToken=${accessToken}`)
         .send(usuarioInvalido)
         .expect(400);
 
@@ -121,7 +121,7 @@ describe('API de Doctores', () => {
 
       await request(app)
         .post('/api/users')
-        .set('Cookie', `token=${authToken}`)
+        .set('Cookie', `accessToken=${accessToken}`)
         .send(doctor1)
         .expect(201);
 
@@ -138,7 +138,7 @@ describe('API de Doctores', () => {
 
       const response = await request(app)
         .post('/api/users')
-        .set('Cookie', `token=${authToken}`)
+        .set('Cookie', `accessToken=${accessToken}`)
         .send(doctor2)
         .expect(409);
 
@@ -159,7 +159,7 @@ describe('API de Doctores', () => {
 
       await request(app)
         .post('/api/users')
-        .set('Cookie', `token=${authToken}`)
+        .set('Cookie', `accessToken=${accessToken}`)
         .send(doctor1)
         .expect(201);
 
@@ -176,7 +176,7 @@ describe('API de Doctores', () => {
 
       const response = await request(app)
         .post('/api/users')
-        .set('Cookie', `token=${authToken}`)
+        .set('Cookie', `accessToken=${accessToken}`)
         .send(doctor2)
         .expect(409);
 
@@ -201,7 +201,7 @@ describe('API de Doctores', () => {
 
       const crearResponse = await request(app)
         .post('/api/users')
-        .set('Cookie', `token=${authToken}`)
+        .set('Cookie', `accessToken=${accessToken}`)
         .send(nuevoUsuario);
 
       const doctorId = crearResponse.body.data.id;
@@ -209,7 +209,7 @@ describe('API de Doctores', () => {
       // Buscar el doctor
       const response = await request(app)
         .get(`/api/doctors/${doctorId}`)
-        .set('Cookie', `token=${authToken}`)
+        .set('Cookie', `accessToken=${accessToken}`)
         .expect(200);
 
       expect(response.body.data.name).toBe('Roberto');
@@ -234,7 +234,7 @@ describe('API de Doctores', () => {
 
       const crearResponse = await request(app)
         .post('/api/users')
-        .set('Cookie', `token=${authToken}`)
+        .set('Cookie', `accessToken=${accessToken}`)
         .send(usuario);
 
       const doctorId = crearResponse.body.data.id;
@@ -242,13 +242,13 @@ describe('API de Doctores', () => {
       // Eliminar
       await request(app)
         .delete(`/api/doctors/${doctorId}`)
-        .set('Cookie', `token=${authToken}`)
+        .set('Cookie', `accessToken=${accessToken}`)
         .expect(200);
 
       // Verificar que ya no existe
       await request(app)
         .get(`/api/doctors/${doctorId}`)
-        .set('Cookie', `token=${authToken}`)
+        .set('Cookie', `accessToken=${accessToken}`)
         .expect(404);
     });
   });

@@ -52,7 +52,7 @@ export const authRefreshToken = (req, res, next) => {
     const refreshToken = req.cookies.refreshToken;
 
     if (!refreshToken) {
-        return res.status(401).json({ success: false, error: { message: "No refresh token provided", statusCode: 401 }});
+        return res.status(401).json({ success: false, error: { message: "No existe el token de refresco", statusCode: 401 }});
     }
 
     jwt.verify(refreshToken, secretKey, async (error, credentials) => {

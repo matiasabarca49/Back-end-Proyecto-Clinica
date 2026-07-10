@@ -61,14 +61,15 @@ export const createAdminUser = async () => {
 // Crear token JWT para el usuario admin
 export const createAdminToken = (user) => {
   const secretKey = process.env.SECRET_SESSIONS
-  return jwt.sign(
+  const accessToken = jwt.sign(
     {id: user._id,
       email: user.email,
       rol: user.rol
     },
     process.env.SECRET_SESSIONS,
-    {expiresIn: '1h'}
+    {expiresIn: '30m'}
   )
+  return accessToken;
 }
 
 // Crear sesión activa en Redis para el usuario admin
