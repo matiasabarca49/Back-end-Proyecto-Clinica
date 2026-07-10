@@ -29,13 +29,14 @@ class AuthService extends BaseService {
         const tokens = generateTokens(user);
         const { _id, email, rol } = user;
 
-        //Guardar usuario en redis que expira en 1h
-        this.sessionRepository.create({
-            userId: _id.toString(),
-            expiration: 3600 // 1 hora en segundos
-        });
+        // Guardar el refresh token en Redis con una expiración de 7 días
+        await this.sessionRepository.saveRefreshToken(_id.toString(), tokens.refreshToken, 7 * 24 * 60 * 60);
 
-        //Guardar el refreshToken en redis con expiración de 7 días
+        //Guardar usuario en redis que expira en 1h
+        await this.sessionRepository.create({
+            userId: _id.toString(),
+            expiration: 7 * 24 * 60 * 60 // 7 días en segundos
+        });
         
         // Actualizar la fecha de última conexión sin modificar timestamps
         await this.repository.updateWhioutTStamp(_id, { lastLogintAt: new Date() });
@@ -140,11 +141,17 @@ class AuthService extends BaseService {
         return { token, id: user.id, email: user.email, rol: user.rol };
     }
 
-    async logout(userId) {
+    async logout(userId, refreshToken) {
+        //Eliminar la sesión del usuario en Redis
         const deleted = await this.sessionRepository.delete(userId);
         if (!deleted) {
             throw new AppError('No se pudo eliminar la sesión o no existía', 500);
         }
+
+        //Eliminar el refresh token del usuario en Redis
+        const isDeleted = await this.sessionRepository.deleteRefreshToken(refreshToken);
+        if(!isDeleted) throw new AppError("No se pudo eliminar el token de refresco", 500)
+
         return deleted;
     }
 
@@ -180,6 +187,32 @@ class AuthService extends BaseService {
 
         return userUpdated
 
+    }
+
+    async refreshSession(userId, refreshToken) {
+        //Validar usuario
+        const user = await super.findById(userId);
+
+        if (!user) throw new NotFoundError("Usuario", userId);
+
+        //Eliminar la token de refresco anterior en Redis
+        const isDeleted = await this.sessionRepository.deleteRefreshToken(refreshToken);
+
+        if(!isDeleted) throw new AppError("No se pudo eliminar el token de refresco anterior", 500)
+
+        //Generar nuevos tokens
+        const tokens = generateTokens(user);
+
+        //Guardar el nuevo refresh token en Redis con una expiración de 7 días
+        await this.sessionRepository.saveRefreshToken(userId, tokens.refreshToken, 7 * 24 * 60 * 60);
+
+        // Actualizar la expiración de la sesión en Redis
+        const isExpirationReset = await this.sessionRepository.resetExpiration(userId, 7 * 24 * 60 * 60);
+
+        if(!isExpirationReset) throw new AppError("No se pudo actualizar la expiración de la sesión", 500)
+
+        const { _id, email, rol } = user;
+        return { ...tokens, id: _id, email, rol };
     }
 
 }

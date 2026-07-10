@@ -12,10 +12,11 @@ export const generateTokens = (user) => {
     );
 
     const refreshToken = jwt.sign(
-        { id: user._id || user.id, email: user.email, rol: user.rol },
+        { id: user._id || user.id },
         secretKey,
         { expiresIn: '7d' }
     );
+
     return { accessToken, refreshToken };
 };
 
@@ -46,6 +47,34 @@ export const authToken = (req, res, next) => {
         next();
     });
 };
+
+export const authRefreshToken = (req, res, next) => {
+    const refreshToken = req.cookies.refreshToken;
+
+    if (!refreshToken) {
+        return res.status(401).json({ success: false, error: { message: "No refresh token provided", statusCode: 401 }});
+    }
+
+    jwt.verify(refreshToken, secretKey, async (error, credentials) => {
+        if (error) {
+            return res.status(403).json({ success: false, error: { message: "Invalid refresh token", statusCode: 403 }});
+        }
+
+        req.user = {
+            id: credentials.id,
+        };
+
+        //Verificar si el refresh token es valido en redis
+        const redisClient = await getRedisClient()
+        const isValid = await redisClient.get(`refreshToken:${refreshToken}`);
+
+        if(!isValid){
+            return res.status(401).json({success: false, error: { message: 'Inactive or expired session', statusCode: 401 }});
+        }
+
+        next();
+    });
+}
 
 // Verifica si es admin
 export const checkPermissionsAdmin = (req, res, next) => {

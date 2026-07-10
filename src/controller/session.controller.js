@@ -102,12 +102,14 @@ export const changePassword = async (req, res, next) =>{
 // =======================
 export const currentUser = async (req, res, next) => {
   try {
-      return req.user 
-          ? res.status(200).json({ success: true, data: req.user })
-          : res.status(400).json({ success: false, error: {message: "User Not Loged", statusCode: 400}});
-    } catch (error) {
-        console.log(error);
-        return res.status(500).json({ success: false, error: { message: "Error en el servidor. Intente más tarde", statusCode: 500 }});
+
+      if(!req.user) throw new UnauthorizedError('Usuario no autenticado');
+    
+    
+      return res.status(200).json({ success: true, data: req.user })
+         
+    } catch (error) { 
+        next(error)
     }
 };
 
@@ -116,22 +118,53 @@ export const currentUser = async (req, res, next) => {
 // =======================
 export const disconnectUser = async (req, res, next) =>{
     try {
-      const cookieFounded = req.cookies.accessToken;
 
+      // Verificar si la cookie de acceso existe
+      const cookieFounded = req.cookies.accessToken;
+      
       if(!cookieFounded){
-        return res.status(400).json({ success: false, error: "User Not Loged"});
+        return res.status(400).json({ success: false, error: "El usuario no tiene sesión activa"});
       }
+
+      //Obtener el refresh token de la cookie
+      const refreshToken = req.cookies.refreshToken;
+
+      const deletedSession = await  authService.logout(req.user.id, refreshToken);
 
       // Limpiar las cookies de sesión
       res.clearCookie('accessToken'); 
       res.clearCookie('refreshToken'); 
-
-      const deletedSession = await  authService.logout(req.user.id);
       
-      return res.status(200).json({ success: true, data: {message: "User Disconnected"}})
+      return res.status(200).json({ success: true, data: {message: "Usuario desconectado correctamente", deletedSession: deletedSession}});
           
       
     } catch (error) {
         next(error)
     }
 };
+
+export const refreshToken = async (req, res, next) => {
+    try {
+      
+      const TokenData = await authService.refreshSession(req.user.id, req.cookies.refreshToken);
+
+      //Generar cookie con el accessToken y refreshToken
+      res.cookie('accessToken', TokenData.accessToken, {
+          httpOnly: true, // Asegura que solo sea accesible por el servidor no por javascript del cliente
+          sameSite: 'strict', // Protección CSRF
+          maxAge:  30 * 60 * 1000, // Tiempo de expiración en milisegundos (30 minutos)
+      });
+
+      res.cookie('refreshToken', TokenData.refreshToken, {
+          httpOnly: true,
+          sameSite: 'strict',
+          maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días
+      });
+
+      res.status(200).json({ success: true, data: {message: "Tokens regenerados correctamente"}})
+
+    }
+    catch (error) {
+        next(error)
+    }
+}

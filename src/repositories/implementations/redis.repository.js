@@ -22,6 +22,12 @@ class RedisRepository extends SessionRepository {
         return { sessionId, userId, data };
     }
 
+    async resetExpiration(userId, expiration) {
+        const redisClient = await getRedisClient();
+        const result = await redisClient.expire(`session:${userId}`, expiration);
+        return result === 1; // Devuelve true si la expiración se actualizó correctamente
+    }
+
     async delete(sessionId) {
         const redisClient = await getRedisClient();
         const result = await redisClient.del(`session:${sessionId}`);
@@ -44,6 +50,18 @@ class RedisRepository extends SessionRepository {
         }
 
         return deletedCount;
+    }
+
+    async saveRefreshToken(userId, refreshToken, expiration) {
+        const redisClient = await getRedisClient();
+        const redisInstance = await redisClient.set(`refreshToken:${refreshToken}`, userId, { EX: expiration });
+        return redisInstance;
+    }
+
+    async deleteRefreshToken(refreshToken){
+        const redisClient = await getRedisClient();
+        const result = await redisClient.del(`refreshToken:${refreshToken}`);
+        return result > 0;
     }
 }
 

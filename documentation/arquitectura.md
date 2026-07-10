@@ -101,15 +101,22 @@ La comunicación con la base de datos se realiza mediante ODM **Mongoose**.
 
 ## 4. Autenticación y Seguridad
 
-El sistema utiliza **JWT (JSON Web Tokens)** para autenticación de usuarios.
+El sistema utiliza **JWT (JSON Web Tokens)** para autenticación de usuarios. Para ello se mantienen dos tokens. El token de Acceso y el de refresco.
+
+A su vez se implementó rotación de tokens. En cada refresco se crean ambos tokens nuevamente.
+
+Duracion:
+* refreshToken: 7 días
+* accessToken: 30 min
 
 Proceso:
 
 1. El usuario envía sus credenciales al endpoint de login
 2. El servidor valida las credenciales
-3. Se genera un token JWT
-4. El token se almacena en una cookie segura
+3. Se genera un token JWT de acceso y otro de refresco
+4. Los tokens se almacenan en una cookie segura
 5. En cada request posterior el servidor valida el token para autorizar el acceso a recursos protegidos
+6. El usuario puede solicitar un nuevo token de acceso siempre y cuando el token de refresco sea válido.
 
 ---
 

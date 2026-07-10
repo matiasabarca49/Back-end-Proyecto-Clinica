@@ -41,7 +41,7 @@ El sistema permite gestionar:
 El proyecto sigue una arquitectura por capas para separar responsabilidades y facilitar el mantenimiento.
 
 ```text
-Router -> Controller -> Service -> Repository -> MongoDB
+Router -> Controller -> Service -> Repository -> DB
 ```
 
 ---
@@ -75,7 +75,7 @@ src/
 Para obtener información detallada sobre el proyecto, consulte la documentación disponible en la carpeta `documentation`:
 
 - [Arquitectura](documentation/arquitectura.md)
-- [Base de datos](documentation/modelo-datos.md)
+- [Modelo de datos](documentation/modelo-datos.md)
 - [Casos de uso](documentation/casos-de-uso.md)
 - [Instalación y configuración](documentation/instalacion.md)
 
@@ -144,7 +144,7 @@ git clone https://github.com/matiasabarca49/Back-end-Proyecto-Clinica.git
 
 ## Instalación
 
-Para su instalación consultar el documento -> /docs/instalacion.md
+Para su instalación consultar el documento -> [Instalación y configuración](documentation/instalacion.md)
 
 ## Acceso
 
