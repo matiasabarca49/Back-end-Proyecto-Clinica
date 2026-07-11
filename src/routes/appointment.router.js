@@ -1,6 +1,6 @@
 import express from 'express';
 import { createAppointment, deleteAppointment, getAppointmentById, getAppointments,updateAppointment, getAvailableAppointments, getNearestAppointments, getTodayAppointments } from '../controller/appointment.controller.js';
-import { authToken } from '../middlewares/middlewares.js';
+import { authToken } from '../middlewares/auth.middlewares.js';
 import { validateAppointmentData, validateUpdateAppointment } from '../validation/appointment.validation.js';
 const { Router } = express;
 const router = new Router();

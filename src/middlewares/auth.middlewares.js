@@ -20,7 +20,8 @@ export const generateTokens = (user) => {
     return { accessToken, refreshToken };
 };
 
-// Middleware basado en cookies (para rutas protegidas que usan cookies)
+//  Verificar usuario autenticado
+//  Middleware basado en cookies (para rutas protegidas que usan cookies)
 export const authToken = (req, res, next) => {
     // Obtener el token de acceso de la cookie
     const token = req.cookies.accessToken;
@@ -76,6 +77,17 @@ export const authRefreshToken = (req, res, next) => {
     });
 }
 
+export const authRoles = (...roles) => {
+    return (req, res, next) => {
+        
+        if (!roles.includes(req.user.rol)) {
+            return res.status(403).json({ success: false, error: { message: "No autorizado", statusCode: 403}});
+        }
+
+        next();
+    }
+}
+
 // Verifica si es admin
 export const checkPermissionsAdmin = (req, res, next) => {
     if (req.user.rol === "admin") {
@@ -94,11 +106,3 @@ export const checkAuth = (req, res, next) => {
     }
 };
 
-export const authorizeRoles = (...roles) => {
-  return (req, res, next) => {
-    if (!roles.includes(req.user.rol)) {
-      return res.status(403).json({ success: false, error: { message: "No autorizado", statusCode: 403}});
-    }
-    next();
-  };
-};

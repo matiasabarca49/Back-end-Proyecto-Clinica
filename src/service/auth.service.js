@@ -1,5 +1,5 @@
 import {AppError, InvalidCredentialsError, NotFoundError} from "../exceptions/index.js";
-import { generateTokens } from "../middlewares/middlewares.js";
+import { generateTokens } from "../middlewares/auth.middlewares.js";
 import { User } from "../model/mongo/user.model.js";
 import MongoRepository from "../repositories/implementations/mongo.repository.js";
 import RedisRepository from "../repositories/implementations/redis.repository.js";

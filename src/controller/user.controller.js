@@ -8,11 +8,14 @@ const usersService = new UsersService();
  */
 export const getUsers = async (req, res, next) => {
     try {
-        const {search, rol, sort, page, limit } = req.query;
+        const {sort, page, limit } = req.query;
         let usersGetted;
         if(!page && !limit){
             usersGetted = await usersService.findAll();
         }else{
+            
+            //filtros
+            const {search, rol} = req.query;
             usersGetted = await usersService.paginateUsers(search, rol, limit, page, sort);
         }
         
@@ -89,48 +92,8 @@ export const updateUser = async (req, res, next) => {
         const userID = req.params.id;
         const userSession = req.user;
 
-        // Validación: Si promociona a Doctor, validar campos requeridos
-        if (userData.rol && String(userData.rol).toLowerCase() === "doctor") {
-            const df = (userData?.doctorFields && typeof userData.doctorFields === "object")
-                ? userData.doctorFields
-                : userData;
-
-            const missingFields = ["dni", "phone", "professionalLicense"]
-                .filter(field => !df?.[field]);
-
-            if (missingFields.length) {
-                // Obtener el usuario actual para verificar si ya era Doctor
-                const currentUser = await usersService.findById(userID);
-                const wasDoctor = currentUser && String(currentUser.rol).toLowerCase() === "doctor";
-
-                // Solo validar si NO era Doctor antes (promoción)
-                if (!wasDoctor) {
-                    return res.status(400).json({
-                        success: false,
-                        message: `Para promocionar a Doctor se requieren: ${missingFields.join(", ")}`
-                    });
-                }
-            }
-        }
-
         // Llamar al service
-        const userUpdated = await usersService.update(userID, userData, userSession);
-
-        // Manejo de respuestas
-        if (!userUpdated) {
-            return res.status(404).json({
-                success: false,
-                message: "Usuario no encontrado"
-            });
-        }
-
-        // Si el service devuelve un objeto con status:false (error de duplicado)
-        if (userUpdated.status === false && userUpdated.error?.code === 11000) {
-            return res.status(409).json({
-                success: false,
-                message: "El email ya existe"
-            });
-        }
+        const userUpdated = await usersService.update(userID, userData);
 
         // Éxito
         return res.status(200).json({

@@ -58,10 +58,7 @@ import { errorHandler, notFoundHandler } from './middlewares/errors.middleware.j
 //Autenticación Google
 import { validateEnvVars } from './utils/dotenv.helper.js';
 import routeAuth from './routes/passports/google.passport.router.js';
-//Documentación Swagger
-import SwaggerJsdoc from 'swagger-jsdoc'
-import SwaggerUIExpress from 'swagger-ui-express'
-import { swaggerOption } from './config/swagger.config.js'
+
 
 //Raiz
 app.get("/", (req, res) =>{
@@ -85,8 +82,12 @@ if(validateEnvVars("google")){
 }
 
 //Docs
+//Documentación Swagger
+import SwaggerJsdoc from 'swagger-jsdoc'
+import SwaggerUIExpress from 'swagger-ui-express'
+import { swaggerOption, swaggerOpts } from './config/swagger.config.js'
 const specs = SwaggerJsdoc(swaggerOption)
-app.use('/api/docs', SwaggerUIExpress.serve, SwaggerUIExpress.setup(specs));
+app.use('/api/docs', SwaggerUIExpress.serve, SwaggerUIExpress.setup(specs, swaggerOpts));
 
 //Manejo de Excepciones
 app.use(notFoundHandler);  // Maneja 404

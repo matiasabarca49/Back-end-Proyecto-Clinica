@@ -269,7 +269,201 @@ paths:
           description: "Paciente no encontrado"
         "500":
           description: "Error en el servidor"
-
+  /patients/:id/observations:
+    post:
+      summary: "Agrega una observación a un paciente"
+      tags:
+        - Patients
+      responses:
+        "200": 
+          description: "Observacion agregada con exito"
+        "500": 
+          description: "Error en el servidor"
+  /patients/:id/treatments:
+    post:
+      summary: "Agrega un tratatamiento a un paciente"
+      tags:
+        - Patients
+      responses:
+        "200": 
+          description: "Tratamiento agregada con exito"
+        "500": 
+          description: "Error en el servidor"
+  /api/patients/{patientId}/odontogram/{tooth}:
+    post:
+      summary: Agrega una actualizacion de diente del odontograma de un diente específico
+      description: >
+        Actualiza la información clínica de un diente (caries por superficie,
+        estado de corona, condición periodontal, etc.) para un paciente determinado.
+      tags:
+        - Patients
+      parameters:
+        - name: patientId
+          in: path
+          required: true
+          description: ID del paciente
+          schema:
+            type: string
+            example: "6a526667e89262563a66513f"
+        - name: tooth
+          in: path
+          required: true
+          description: Número de diente según nomenclatura FDI
+          schema:
+            type: integer
+            example: 28
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - tooth
+                - caries
+              properties:
+                tooth:
+                  type: integer
+                  example: 28
+                caries:
+                  type: object
+                  properties:
+                    vestibular:
+                      type: string
+                      example: "0"
+                    mesial:
+                      type: string
+                      example: "0"
+                    oclusal:
+                      type: string
+                      example: "0"
+                    distal:
+                      type: string
+                      example: "1"
+                    lingual:
+                      type: string
+                      example: "0"
+                allcaries:
+                  type: boolean
+                  example: false
+                corona:
+                  type: boolean
+                  example: false
+                incurable:
+                  type: boolean
+                  example: false
+                periodontal:
+                  type: boolean
+                  example: false
+                extracted:
+                  type: boolean
+                  example: false
+                malposition:
+                  type: boolean
+                  example: false
+                inscrustration:
+                  type: boolean
+                  example: false
+            example:
+              tooth: 28
+              caries:
+                vestibular: "0"
+                mesial: "0"
+                oclusal: "0"
+                distal: "1"
+                lingual: "0"
+              allcaries: false
+              corona: false
+              incurable: false
+              periodontal: false
+              extracted: false
+              malposition: false
+              inscrustration: false
+      responses:
+        '200':
+          description: Odontograma actualizado correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Odontograma actualizado correctamente"
+              example:
+                message: "Odontograma actualizado correctamente"
+                tooth: 28
+        '404':
+          description: Paciente o diente no encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Paciente no encontrado"
+              example:
+                message: "Paciente no encontrado"
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Error interno del servidor"
+              example:
+                message: "Error interno del servidor"
+  /api/patients/:patientId/observation/:idObservation:
+    delete:
+      summary: "Elimina una observation del paciente"
+      tags:
+        - Patients
+      responses:
+        "200":
+          description: "Observacion eliminada con éxito"
+        "404":
+          description: "Paciente no encontrado"
+        "500":
+          description: "Error en el servidor"
+  /api/patients/:patientId/treatment/:idTreatment:
+    delete:
+      summary: "Elimina un tratamiento del paciente"
+      tags:
+        - Patients
+      responses:
+        "200":
+          description: "Tratamiento eliminado con éxito"
+        "404":
+          description: "Paciente no encontrado"
+        "500":
+          description: "Error en el servidor"
+  /api/patients/:patientId/odontogram:
+    get:
+      summary: "Obtener el odontograma de un paciente"
+      tags: 
+       - Patients
+      responses:
+        "200":
+          description: "Tratamiento eliminado con éxito"
+        "404":
+          description: "Paciente no encontrado"
+        "500":
+          description: "Error en el servidor"
+    delete:
+      summary: "Resetear odontrograma de un paciente"
+      tags:
+        - Patients
+      responses:
+        "200":
+          description: "Tratamiento eliminado con éxito"
+        "404":
+          description: "Paciente no encontrado"
+        "500":
+          description: "Error en el servidor"
 components:
   schemas:
     PatientCreate:

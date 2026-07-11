@@ -7,8 +7,7 @@ import {
   updateNotice, 
 } from '../controller/notice.controller.js';
 
-import { authToken } from '../middlewares/middlewares.js';
-import { authorizeRoles } from '../middlewares/middlewares.js';
+import { authToken, authRoles } from '../middlewares/auth.middlewares.js';
 
 const router = express.Router();
 
@@ -30,20 +29,20 @@ router.get("/:id", authToken, getNoticeById);
  * Crea un nuevo aviso
  * Solo Admin y Employee
  */
-router.post("/", authToken, authorizeRoles("admin", "employee"), createNotice);
+router.post("/", authToken, authRoles("admin", "employee"), createNotice);
 
-/**
+/*
  * 🔹 PUT /notices/:id
  * Actualiza un aviso existente
  * Solo Admin y Employee
  */
-router.put("/:id", authToken, authorizeRoles("admin", "employee"), updateNotice);
+router.put("/:id", authToken, authRoles("admin", "employee"), updateNotice);
 
 /**
  * 🔹 DELETE /notices/:id
  * Elimina un aviso
  * Solo Admin y Employee
  */
-router.delete("/:id", authToken, authorizeRoles("admin", "employee"), deleteNotice);
+router.delete("/:id", authToken, authRoles("admin", "employee"), deleteNotice);
 
 export default router;

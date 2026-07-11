@@ -1,6 +1,6 @@
 import express from 'express'
 import { getDoctors, createDoctor, deleteDoctor, updateDoctor, getDoctorById, getSchedules} from '../controller/doctor.controller.js';
-import { authToken } from '../middlewares/middlewares.js';
+import { authToken } from '../middlewares/auth.middlewares.js';
 import { validateDoctorData, validateUpdateDoctor } from '../validation/doctor.validation.js';
 
 const {Router} = express

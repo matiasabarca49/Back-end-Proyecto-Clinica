@@ -19,18 +19,30 @@ class UsersService extends BaseService{
         super(repository);
     }
 
+    /**
+     * Retorna todos los usuarios formateados como DTO
+     * @returns {Promise<Array>} Array de usuarios formateados como DTO
+     */
     async findAll(){
         const users = await super.findAll()
         return this.toManyDTO(users)
     }
 
-    //Bucar usuario por email
+    /**
+     * Retorna todos los usuarios formateados como DTO
+     * @param {String} email - Email del usuario a buscar
+     * @returns {Promise<Object>} Usuario formateado como DTO
+     */
     async findUserByEmail(email){
         const user = await this.repository.findByFilter({email: email})
         return user ? this.toDTO(user) : undefined
     }
 
-    //Buscar usuarios por estado y rol
+    /**
+     * Busca usuarios por filtro (status, rol) y retorna formateados como DTO
+     * @param {Object} filter - Filtro de búsqueda (status, rol)
+     * @returns {Promise<Array>} Array de usuarios formateados como DTO
+     */
     async searchUsers({ status, rol}){
         const filter = {};
         
@@ -42,12 +54,26 @@ class UsersService extends BaseService{
         return this.toManyDTO(users);
     }
 
+    /**
+     * Busca un usuario por ID y retorna formateado como DTO
+     * @param {String} id - ID del usuario a buscar
+     * @returns {Promise<Object>} Usuario formateado como DTO
+     */
     async findById(id){
         const user = await super.findById(id)
         if(!user) throw new NotFoundError("User", id);
         return this.toDTO(user)
     }
 
+    /**
+     * 
+     * @param {String} search 
+     * @param {String} rol 
+     * @param {Number} limit 
+     * @param {Number} page 
+     * @param {Number} sort 
+     * @returns {Promise<Object>} Objeto con usuarios paginados y formateados como DTO
+     */
     async paginateUsers(search, rol, limit, page, sort){
         //Default query: {}
         let filter = {};
@@ -77,7 +103,7 @@ class UsersService extends BaseService{
      * Crea un usuario y opcionalmente su registro en la colección Doctor
      * @param {Object} newUser - Datos del nuevo usuario
      * @param {Object} userSession - Usuario autenticado (req.user)
-     * @returns {Object} { status, dt?, error? }
+     * @returns {Promise<Object>} { status, dt?, error? }
      */
     async create(newUser) {
     
@@ -132,10 +158,9 @@ class UsersService extends BaseService{
      * Actualiza un usuario y sincroniza con la colección Doctor si corresponde
      * @param {String} userID - ID del usuario
      * @param {Object} toUpdate - Datos a actualizar
-     * @param {Object} userSession - Usuario autenticado (req.user)
-     * @returns {Object|false} Usuario actualizado o false
+     * @returns {Promise<Object>} Usuario actualizado o false
      */
-    async update(userID, toUpdate, userSession) {
+    async update(userID, toUpdate) {
         
         //Obtener usuario actual
         const prevUser = await super.findById(userID);
@@ -159,29 +184,37 @@ class UsersService extends BaseService{
 
         if (!updatedUser) throw new Error("Error al actualizar el usuario");
 
-        if(isDoctor){
-            let updatedFields = {};
-            if(toUpdate.name) updatedFields.name = toUpdate.name;
-            if(toUpdate.lastName) updatedFields.lastName = toUpdate.lastName;
-            if(toUpdate.email) updatedFields.email = toUpdate.email;
-            if(toUpdate.dni) updatedFields.dni = toUpdate.dni;
-            if(toUpdate.phone) updatedFields.phone = toUpdate.phone;
-            if(toUpdate.professionalLicense) updatedFields.professionalLicense = toUpdate.professionalLicense;
-            if(toUpdate.color) updatedFields.color = toUpdate.color;
-            if(toUpdate.schedules) updatedFields.schedules = toUpdate.schedules;
-            const updatedDoctor = new DoctorDTO(updatedFields);
-            const doctorService = new DoctorService();
-            await doctorService.update(userID, updatedDoctor);
+        // Si no es Doctor, retornar usuario actualizado
+        if(!isDoctor) return updatedUser;
+
+        //Validar datos de Doctor si corresponde
+        const isDoctorDataValid = this._validateDoctorData(toUpdate);
+
+        if (!isDoctorDataValid) {
+            throw new ValidationError("Faltan campos de Doctor");
         }
-        
+
+        let updatedFields = {};
+        if(toUpdate.name) updatedFields.name = toUpdate.name;
+        if(toUpdate.lastName) updatedFields.lastName = toUpdate.lastName;
+        if(toUpdate.email) updatedFields.email = toUpdate.email;
+        if(toUpdate.dni) updatedFields.dni = toUpdate.dni;
+        if(toUpdate.phone) updatedFields.phone = toUpdate.phone;
+        if(toUpdate.professionalLicense) updatedFields.professionalLicense = toUpdate.professionalLicense;
+        if(toUpdate.color) updatedFields.color = toUpdate.color;
+        if(toUpdate.schedules) updatedFields.schedules = toUpdate.schedules;
+        const updatedDoctor = new DoctorDTO(updatedFields);
+        const doctorService = new DoctorService();
+        await doctorService.update(userID, updatedDoctor);
+
         return updatedUser;
     }
 
     /**
      * Elimina un usuario y su registro en Doctor (si corresponde)
+     * 
      * @param {String} userID - ID del usuario
-     * @param {Object} userSession - Usuario autenticado (req.user)
-     * @returns {Object|false} Usuario eliminado formateado o false
+     * @returns {Promise<Object | false>} Usuario eliminado formateado o false
      */
     async delete(userID) {
         //Obtener usuario antes de eliminarlo
@@ -217,7 +250,7 @@ class UsersService extends BaseService{
             }})
 
         if (emptyField.length > 0) {
-            throw new Error(`Faltan campos de Doctor: ${emptyField.join(", ")}`);
+            return false;
         }
         //Retorna 'true' si todo los campos están presentes
         return true;

@@ -9,6 +9,13 @@ const swaggerOption = {
     apis:[`./src/docs/*.yaml`]
 }
 
+const swaggerOpts = {
+    swaggerOptions: {
+      supportedSubmitMethods: ['get']
+    }
+}
+
 export {
-    swaggerOption
+    swaggerOption,
+    swaggerOpts
 }
