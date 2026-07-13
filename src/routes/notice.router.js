@@ -12,36 +12,46 @@ import { authToken, authRoles } from '../middlewares/auth.middlewares.js';
 const router = express.Router();
 
 /**
- * 🔹 GET /notices
  * Obtiene todos los avisos visibles para el usuario
+ * 
+ * @route GET /notices
+ * @returns {Array} Lista de avisos
  */
-router.get("/", authToken, getNotices);
+router.get("/", authToken, authRoles("admin", "employee", "doctor"), getNotices);
 
 
 /**
- * 🔹 GET /notices/:id
  * Obtiene un aviso por su ID
+ * 
+ * @route GET /notices/:id
+ * @returns {Object} Aviso encontrado
  */
-router.get("/:id", authToken, getNoticeById);
+router.get("/:id", authToken, authRoles("admin", "employee", "doctor"), getNoticeById);
 
 /**
- * 🔹 POST /notices
  * Crea un nuevo aviso
- * Solo Admin y Employee
+ * 
+ * @route POST /notices
+ * @access Private(Admin y Employee)
+ * @returns {Object} Aviso creado
  */
 router.post("/", authToken, authRoles("admin", "employee"), createNotice);
 
-/*
- * 🔹 PUT /notices/:id
+/**
  * Actualiza un aviso existente
- * Solo Admin y Employee
+ * 
+ * @route PUT /notices/:id
+ * @access Private(Admin y Employee)
+ * @returns {Object} Mensaje de éxito o error
  */
 router.put("/:id", authToken, authRoles("admin", "employee"), updateNotice);
 
 /**
- * 🔹 DELETE /notices/:id
  * Elimina un aviso
- * Solo Admin y Employee
+ * 
+ * @route DELETE /notices/:id
+ * @access Private(Admin y Employee)
+ * @returns {Object} Mensaje de éxito o error
  */
 router.delete("/:id", authToken, authRoles("admin", "employee"), deleteNotice);
 

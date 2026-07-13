@@ -13,7 +13,5 @@ router.get('/google/callback',
 passport.authenticate('google', { session: false }),
 authGoogle
 );
-/*
-router.get('/profile', verificarJWT, getProfile);
-*/
+
 export default router;

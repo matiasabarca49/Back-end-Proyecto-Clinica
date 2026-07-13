@@ -370,7 +370,9 @@ export default class AppointmentsService extends BaseService{
     }
 
     toManyShortDTO(appointments) {
-        return appointments.map(appointment => AppointmentDTO.toShortResponse(appointment));
+        return appointments
+                    .filter(appointment => (appointment.patientID !== null && appointment.doctorID !== null))
+                    .map(appointment => AppointmentDTO.toShortResponse(appointment));
     }
 
 }

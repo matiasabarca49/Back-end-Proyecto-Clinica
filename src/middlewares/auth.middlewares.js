@@ -88,21 +88,6 @@ export const authRoles = (...roles) => {
     }
 }
 
-// Verifica si es admin
-export const checkPermissionsAdmin = (req, res, next) => {
-    if (req.user.rol === "admin") {
-        next();
-    } else {
-        res.status(403).json({ success: false, error: {message: "No Autorizado", statusCode:403 }});
-    }
-};
 
-// Verifica que esté autenticado
-export const checkAuth = (req, res, next) => {
-    if (req.user.rol) {
-        next();
-    } else {
-        res.status(401).json({ success: false, error: { message: "No Autenticado", statusCode: 401 }});
-    }
-};
+
 

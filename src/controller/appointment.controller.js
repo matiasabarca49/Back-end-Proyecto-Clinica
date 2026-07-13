@@ -11,6 +11,7 @@ const appointmentsService = new AppointmentsService();
  */
 export const getAppointments = async (req, res, next) => {
     try {
+        
         const { person, query, status, limit, page, sort } = req.query;
         let appointmentsGetted;
         if(!limit && !page){
@@ -22,6 +23,7 @@ export const getAppointments = async (req, res, next) => {
         return res.status(200).json({ success: true , data: appointmentsGetted })
             
     } catch (error) {
+        console.log(error)
         next(error)
     }
 };
@@ -60,6 +62,8 @@ export const getAppointmentById = async (req, res, next) => {
         return res.status(200).json({ success: true, data: appointmentGetted })
             
     } catch (error) {
+        console.log("enpoint ID")
+        console.log(error)
         next(error)
     }
 };
