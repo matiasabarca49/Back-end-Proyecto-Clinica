@@ -1,5 +1,4 @@
-import 'dotenv/config';
-import './utils/dotenv.helper.js';
+import './config/env.config.js'
 import app from './app.js';
 import MongoManager from './config/mongoDB.config.js';
 import {closeRedis, getRedisClient} from './config/redis.config.js';
