@@ -76,7 +76,7 @@ router.post("/", authToken, authRoles("admin", "employee", "doctor"), validateAp
  * @middleware auth y authRoles
  * @return {Object} Mensaje de error o éxito
  */
-router.delete("/:id", authToken,  authRoles("admin", "employee", "doctor") ,deleteAppointment);
+router.delete("/:id", authToken,  authRoles("admin") ,deleteAppointment);
 
 /**
  * Actualizar un turno por ID
