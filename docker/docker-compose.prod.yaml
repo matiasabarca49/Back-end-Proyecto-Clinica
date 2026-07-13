@@ -1,0 +1,56 @@
+services:
+  # ==========================================
+  # SESIONES (REDIS)
+  # ==========================================
+  redis_clinica:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - network_backend_clinica
+
+  # ==========================================
+  # BASE DE DATOS PRINCIPAL (Mongo)
+  # ==========================================
+  mongo_clinica:
+    image: mongo:8
+    restart: unless-stopped
+    volumes:
+      - mongo_clinica_data:/data/db
+    ports:
+      - "27017:27017"
+    networks:
+      - network_backend_clinica
+
+
+  # ==========================================
+  # MONOLITO NODE (CONTENEDOR 1)
+  # ==========================================
+  app_node:
+    ports:
+      - "8080:8080"
+    build:
+      context: ..      # Sube un nivel a la raíz para encontrar el código
+      dockerfile: docker/dockerfile.prod  # Ruta al Dockerfile desde la raíz
+    restart: unless-stopped
+    env_file:
+      - .env.production  # Carga las variables automáticamente en el contenedor
+    depends_on:
+      - redis_clinica
+      - mongo_clinica
+    networks:
+      - network_backend_clinica # Para hablar con la DB y Redis
+
+
+# ==========================================
+# CONFIGURACIÓN DE REDES Y VOLÚMENES
+# ==========================================
+networks:
+  network_backend_clinica:
+    driver: bridge
+
+volumes:
+  redis_data:
+  mongo_clinica_data:

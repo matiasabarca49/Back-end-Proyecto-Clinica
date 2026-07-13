@@ -10,6 +10,11 @@ node_modules
 .env.development
 .env.test
 .env.production
+/docker/.env
+/docker/.env.development
+/docker/.env.production
+/docker/.env.test
+
 
 #errores
 errors.log

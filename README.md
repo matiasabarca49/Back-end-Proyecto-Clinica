@@ -78,6 +78,7 @@ Para obtener información detallada sobre el proyecto, consulte la documentació
 - [Modelo de datos](documentation/modelo-datos.md)
 - [Casos de uso](documentation/casos-de-uso.md)
 - [Instalación y configuración](documentation/instalacion.md)
+- [Despliegue con Docker](documentation/despliegue-docker.md)
 
 # Trabajo del equipo
 
@@ -110,6 +111,9 @@ Para obtener información detallada sobre el proyecto, consulte la documentació
 * Cuando los cambios en development están listos y estables, se fusionan en _main_.
 
 # Instalación y puesta en marcha
+
+**NOTA**: Existe la opcion de desplegar con docker -> [Ver documentacion Docker](documentation/despliegue-docker.md)
+
 ###### Requisitos para la instalación:
 
 - **Node.js** Entorno de ejecucion.
