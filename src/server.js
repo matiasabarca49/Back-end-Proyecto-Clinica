@@ -3,6 +3,9 @@ import app from './app.js';
 import MongoManager from './config/mongoDB.config.js';
 import {closeRedis, getRedisClient} from './config/redis.config.js';
 import { initCronJobs } from './jobs/cronScheduler.js';
+import { createServer } from 'node:http'
+
+const server = createServer(app)
 
 //Workers
 import "./workers/email.worker.js";
@@ -21,7 +24,7 @@ async function startServer() {
 
         const portSelected = process.env.PORT || 8080;
 
-        app.listen(portSelected, () => {
+        server.listen(portSelected, () => {
             console.log(`✅ Servidor corriendo en puerto ${portSelected}`);
             console.log('-'.repeat(50));
             console.log("🟢 [STATUS] Servidor Backend Clínica UP");

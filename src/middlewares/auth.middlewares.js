@@ -1,80 +1,49 @@
-import jwt from 'jsonwebtoken';
-import { getRedisClient } from '../config/redis.config.js';
-
-const secretKey = process.env.SECRET_SESSIONS; // Debe coincidir con el que usás para firmar el token
-
-// Generar token de acceso y refresh token
-export const generateTokens = (user) => {
-    const accessToken = jwt.sign(
-        { id: user._id || user.id, email: user.email, rol: user.rol },
-        secretKey,
-        { expiresIn: '30min' }
-    );
-
-    const refreshToken = jwt.sign(
-        { id: user._id || user.id },
-        secretKey,
-        { expiresIn: '7d' }
-    );
-
-    return { accessToken, refreshToken };
-};
+import { verifyAccessToken, verifyRefreshToken } from '../service/jwt.service.js';
 
 //  Verificar usuario autenticado
 //  Middleware basado en cookies (para rutas protegidas que usan cookies)
-export const authToken = (req, res, next) => {
+export const authToken = async (req, res, next) => {
     // Obtener el token de acceso de la cookie
     const token = req.cookies.accessToken;
+
     if (!token) {
         return res.status(401).json({ success: false, error: { message: "Not Authenticated", statusCode: 401}});
     }
 
     // Verificar el token de acceso
-    jwt.verify(token, secretKey, async (error, credentials) => {
-        if (error) {
-            return res.status(403).json({success: false , error: { message: "Not authorized", statusCode: 403 }});
-        }
-        req.user = {
-            id: credentials.id,
-            email: credentials.email,
-            rol: credentials.rol
-        };
-        //Verificar si el usuario sigue activo en redis
-        const redisClient = await getRedisClient()
-        const isActive = await redisClient.get(`session:${req.user.id}`);
-        if(!isActive){
-            return res.status(401).json({success: false, error: { message: 'Inactive or expired session', statusCode: 401 }});
-        }
-        next();
-    });
+    const user = await verifyAccessToken(token)
+   
+    if (!user) {
+        return res.status(401).json({success: false , error: { message: "Not authorized", statusCode: 403 }});
+    }
+    req.user = {
+        id: user.id,
+        email: user.email,
+        rol: user.rol
+    };
+        
+    next();
 };
 
-export const authRefreshToken = (req, res, next) => {
+export const authRefreshToken = async (req, res, next) => {
     const refreshToken = req.cookies.refreshToken;
 
     if (!refreshToken) {
         return res.status(401).json({ success: false, error: { message: "No existe el token de refresco", statusCode: 401 }});
     }
 
-    jwt.verify(refreshToken, secretKey, async (error, credentials) => {
-        if (error) {
-            return res.status(403).json({ success: false, error: { message: "Invalid refresh token", statusCode: 403 }});
-        }
+    const credentials = await verifyRefreshToken(refreshToken)
 
-        req.user = {
-            id: credentials.id,
-        };
+    if(!credentials){
+        return res.status(401).json({success: false, error: { message: 'Inactive or expired session', statusCode: 401 }});
+    }
 
-        //Verificar si el refresh token es valido en redis
-        const redisClient = await getRedisClient()
-        const isValid = await redisClient.get(`refreshToken:${refreshToken}`);
+    req.user = {
+        id: credentials.id,
+    };
 
-        if(!isValid){
-            return res.status(401).json({success: false, error: { message: 'Inactive or expired session', statusCode: 401 }});
-        }
-
-        next();
-    });
+    next();
+    
 }
 
 export const authRoles = (...roles) => {
