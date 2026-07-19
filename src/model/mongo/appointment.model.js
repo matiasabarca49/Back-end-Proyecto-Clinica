@@ -37,7 +37,7 @@ const appointmentSchema = new mongoose.Schema({
     },
     status: {
         type: String,
-        enum: ["pending", "confirmed", "noshow", "rescheduled","finalized", "canceled"],
+        enum: ["pending", "confirmed","waiting","called", "noshow", "rescheduled","finalized", "canceled"],
         required: true
     },
     observations: {
