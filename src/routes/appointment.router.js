@@ -1,5 +1,5 @@
 import express from 'express';
-import { createAppointment, deleteAppointment, getAppointmentById, getAppointments,updateAppointment, getAvailableAppointments, getNearestAppointments, getTodayAppointments } from '../controller/appointment.controller.js';
+import { createAppointment, deleteAppointment, getAppointmentById, getAppointments,updateAppointment, getAvailableAppointments, getNearestAppointments, getTodayAppointments,checkInAppointment } from '../controller/appointment.controller.js';
 import { authRoles, authToken } from '../middlewares/auth.middlewares.js';
 import { validateAppointmentData, validateUpdateAppointment } from '../validation/appointment.validation.js';
 const { Router } = express;
@@ -89,4 +89,10 @@ router.delete("/:id", authToken,  authRoles("admin") ,deleteAppointment);
  */
 router.put("/:id", authToken,  authRoles("admin", "employee", "doctor"), validateUpdateAppointment, updateAppointment);
 
+router.patch(
+    "/:id/check-in",
+    authToken,
+    authRoles("admin", "employee"),
+    checkInAppointment
+);
 export default router;

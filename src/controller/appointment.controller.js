@@ -154,3 +154,19 @@ export const getNearestAppointments = async (req, res, next) => {
         next(error)
     }
 };
+export const checkInAppointment = async (req, res, next) => {
+    try {
+
+        const appointmentID = req.params.id;
+
+        const appointment = await appointmentsService.checkIn(appointmentID);
+
+        return res.status(200).json({
+            success: true,
+            data: appointment
+        });
+
+    } catch (error) {
+        next(error);
+    }
+};
