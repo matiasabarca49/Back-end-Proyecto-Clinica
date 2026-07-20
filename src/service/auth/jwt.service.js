@@ -1,4 +1,4 @@
-import { getRedisClient } from "../config/redis.config.js";
+import { getRedisClient } from "../../config/redis.config.js";
 import jwt from 'jsonwebtoken';
 
 const secretKey = process.env.SECRET_SESSIONS

@@ -1,4 +1,4 @@
-import { verifyAccessToken, verifyRefreshToken } from '../service/jwt.service.js';
+import { verifyAccessToken, verifyRefreshToken } from '../service/auth/jwt.service.js';
 
 //  Verificar usuario autenticado
 //  Middleware basado en cookies (para rutas protegidas que usan cookies)

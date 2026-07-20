@@ -1,9 +1,12 @@
 import { Server } from 'socket.io'
-import { verifyAccessToken } from '../service/jwt.service';
+import { verifyAccessToken } from '../service/auth/jwt.service';
 import cookie from "cookie";
+import { AppError } from '../exceptions';
+
+let io;
 
 const setupSocket = (server) =>{
-     const io = new Server(server, {
+     io = new Server(server, {
         //Definimos el CORS para permitir conexiones desde cualquier origen
         cors: { origin: "*" } 
     });
@@ -26,6 +29,11 @@ const setupSocket = (server) =>{
         console.log("Cliente desconectado: ", client.id)
     });
     });
-
     
+}
+
+export const getIO = () =>{
+    if(!io) throw new AppError("La instancia no existe")
+
+    return io
 }

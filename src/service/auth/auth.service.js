@@ -1,11 +1,11 @@
-import {AppError, InvalidCredentialsError, NotFoundError} from "../exceptions/index.js";
-import { generateTokens } from "../service/jwt.service.js";
-import { User } from "../model/mongo/user.model.js";
-import MongoRepository from "../repositories/implementations/mongo.repository.js";
-import RedisRepository from "../repositories/implementations/redis.repository.js";
-import { send2FACode, sendLoginSuccessNotification } from "../utils/email.helpers.js";
-import { createhash, isValidPassword} from "../utils/utils.js";
-import BaseService from "./base.service.js";
+import {AppError, InvalidCredentialsError, NotFoundError} from "../../exceptions/index.js";
+import { generateTokens } from "./jwt.service.js";
+import { User } from "../../model/mongo/user.model.js";
+import MongoRepository from "../../repositories/implementations/mongo.repository.js";
+import RedisRepository from "../../repositories/implementations/redis.repository.js";
+import { send2FACode, sendLoginSuccessNotification } from "../../utils/email.helpers.js";
+import { createhash, isValidPassword} from "../../utils/utils.js";
+import BaseService from "../base.service.js";
 
 class AuthService extends BaseService {
 
@@ -32,7 +32,7 @@ class AuthService extends BaseService {
         // Guardar el refresh token en Redis con una expiración de 7 días
         await this.sessionRepository.saveRefreshToken(_id.toString(), tokens.refreshToken, 7 * 24 * 60 * 60);
 
-        //Guardar usuario en redis que expira en 1h
+        //Guardar usuario en redis que expira en 7 dias
         await this.sessionRepository.create({
             userId: _id.toString(),
             expiration: 7 * 24 * 60 * 60 // 7 días en segundos
@@ -125,20 +125,23 @@ class AuthService extends BaseService {
     async loginGoogle(user) {
         //Formatear para cambiar el ID por _ID
    
-        const token = generateToken(user);
+        const tokens = generateTokens(user);
 
-        if(!token) throw new AppError("Error al crear la sessión", 500)
+        const {id, email, rol} = user
 
-        //Guardar usuario en redis que expira en 1h
-        this.sessionRepository.create({
-            userId: user.id.toString(),
-            expiration: 3600 // 1 hora en segundos
+        // Guardar el refresh token en Redis con una expiración de 7 días
+        await this.sessionRepository.saveRefreshToken(id.toString(), tokens.refreshToken, 7 * 24 * 60 * 60);
+
+        //Guardar usuario en redis que expira en 7 dias
+        await this.sessionRepository.create({
+            userId: id.toString(),
+            expiration: 7 * 24 * 60 * 60 // 7 días en segundos
         });
 
         // Actualizar la fecha de última conexión sin modificar timestamps
-        await this.repository.updateWhioutTStamp(user.id, { lastLogintAt: new Date() });
+        await this.repository.updateWhioutTStamp(id, { lastLogintAt: new Date() });
 
-        return { token, id: user.id, email: user.email, rol: user.rol };
+        return { accessToken: tokens.accessToken, refreshToken: tokens.refreshToken, id, email, rol };
     }
 
     async logout(userId, refreshToken) {

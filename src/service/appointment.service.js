@@ -20,7 +20,7 @@ import { NotFoundError, ValidationError } from "../exceptions/validations.except
 import { sendAppointmentConfirmation } from "../utils/email.helpers.js";
 import { validateEnvVars } from "../utils/dotenv.helper.js";
 import AppError from "../exceptions/AppErrors.js";
-import CacheService from "../cache/cache.service.js";
+import CacheService from "./cache/cache.service.js";
 import { dateNotHours } from "../utils/dates.helper.js";
 
 export default class AppointmentsService extends BaseService{
