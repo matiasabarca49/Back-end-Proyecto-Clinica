@@ -9,11 +9,15 @@ const server = createServer(app)
 
 //Workers
 import "./workers/email.worker.js";
+import { setupSocket } from './config/socket.config.js';
 
 async function startServer() {
     try {
         // Redis
         await getRedisClient();
+
+        //Socket
+        setupSocket(server)
 
         // Cron
         initCronJobs();

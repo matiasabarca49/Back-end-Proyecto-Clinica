@@ -10,8 +10,8 @@ const patientsService = new PatientsService();
 import DoctorsService from "./doctor.service.js";
 const doctorsService = new DoctorsService();
 //notification service
-import NotificationService from "./notification.service.js";
-const notificationService = new NotificationService();
+import notificationService from "./notification/notification.service.js";
+
 //Repository
 import MongoRepository from "../repositories/implementations/mongo.repository.js";
 //DTO
@@ -394,8 +394,6 @@ export default class AppointmentsService extends BaseService {
         nextDay,
       );
 
-      //console.log("availableAppointments:", availableAppointments);
-
       if (
         availableAppointments.success &&
         availableAppointments.data.length > 0
@@ -416,6 +414,7 @@ export default class AppointmentsService extends BaseService {
     } while (!dayFounded);
     return { success: false };
   }
+
   // Método para cambiar el estado de una cita a "waiting" (check-in)
   async checkIn(appointmentID) {
     const appointment = await this.repository.findByFilter({ _id: appointmentID });
@@ -430,22 +429,13 @@ export default class AppointmentsService extends BaseService {
       );
     }
 
-    appointment.status = "waiting";
+    const updateAppointment = await this.repository.update(appointmentID, {status: "waiting"}) 
 
-    await appointment.save();
+    const appointmentDTO = this.toShortDTO(appointment);
 
-    const appointmentDTO = this.toDTO(appointment);
-
-    // Notificar al doctor. No debe romper el flujo de check-in si falla.
-    try {
-      await notificationService.notifyAppointmentWaiting(appointmentDTO);
-    } catch (error) {
-      console.warn(
-        "⚠️ [Warning] No se pudo notificar al doctor sobre el turno en espera:",
-        error.message,
-      );
-    }
-
+    //Notificar al doctor. Es asincronico pero no se rompe el flujo
+    void notificationService.notifyPatientWaiting(appointmentDTO);
+      
     return appointmentDTO;
 }
 

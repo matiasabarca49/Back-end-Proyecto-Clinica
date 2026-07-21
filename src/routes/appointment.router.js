@@ -89,10 +89,15 @@ router.delete("/:id", authToken,  authRoles("admin") ,deleteAppointment);
  */
 router.put("/:id", authToken,  authRoles("admin", "employee", "doctor"), validateUpdateAppointment, updateAppointment);
 
-router.patch(
-    "/:id/check-in",
-    authToken,
-    authRoles("admin", "employee"),
-    checkInAppointment
-);
+/**
+ * Actualizar el estado de un turno
+ * 
+ * Esto permite generar un evento que notifica al doctor
+ * 
+ * @route PATCH /api/appointments/:id/check-in
+ * @middleware auth y authRoles
+ * @return {Object} Mensaje de error o éxito
+ */
+router.patch("/:id/check-in", authToken, authRoles("admin", "employee", "doctor"), checkInAppointment);
+
 export default router;

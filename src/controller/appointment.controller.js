@@ -154,6 +154,7 @@ export const getNearestAppointments = async (req, res, next) => {
         next(error)
     }
 };
+
 export const checkInAppointment = async (req, res, next) => {
     try {
 
