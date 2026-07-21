@@ -52,97 +52,95 @@ export default class AppointmentsService extends BaseService {
     return this.toDTO(appointment);
   }
 
-  async paginateAppointments(
-    person = "",
-    query = "",
-    status,
-    limit,
-    page,
-    sort,
-  ) {
-    const filtersPerson = [];
-    const filtersQuery = [];
-    let filters = {};
-    if (mongoose.Types.ObjectId.isValid(person)) {
-      filtersPerson.push({ doctorID: person });
-      filtersPerson.push({ patientID: person });
-      filtersPerson.push({ _id: person });
-    } else if (typeof person === "string" && person.length > 1) {
-      const searchRegex = new RegExp(person, "i");
-      //Buscando Pacientes y doctores que coincidan con la persona
-      const patientsFounded = await patientsService.searchPaginate(searchRegex);
-      const doctorsFounded = await doctorsService.searchPaginate(searchRegex);
-      //Usamos un conjunto de concidencias para un campo. En este caso [_id, _id, _id, _id]
-      if (patientsFounded.docs.length > 0) {
-        filtersPerson.push({
-          patientID: { $in: patientsFounded.docs.map((p) => p.id) },
-        });
+  /**
+   * Obtener turnos mediate filtros de busqueda
+   * 
+   * Esto metodo devuelve los turnos por páginas
+   * 
+   * @param {Object} filters Filtros de Busqueda[from, to, doctor, patient, status, typeAppointmet, room]
+   * @param {Number} limit Cantidad de documentos a devolver
+   * @param {Number} page Numero de página
+   * @param {Number} sort Filtrar por fecha y slots
+   * @returns {Object} Objeto con pagínas de turnos
+   */
+  async paginateAppointments(filters = {}, limit = 10, page = 1, sort = 1) {
+    
+    //Verificar si es ID o nombre de Doctor
+    if(filters.doctor){
+      if (mongoose.Types.ObjectId.isValid(filters.doctor)) {
+        filters.doctorID = filters.doctor;
+      } else if (typeof filters.doctor === "string" && filters.doctor.length > 1) {
+        const searchRegex = new RegExp(filters.doctor, "i");
+        //Buscando doctores que coincidan con la persona
+        const doctorsFounded = await doctorsService.searchPaginate(searchRegex);
+        //Usamos un conjunto de concidencias para un campo. En este caso [_id, _id, _id, _id]
+        if (!doctorsFounded.docs.length > 0) {
+          return {
+                  "docs": [],
+                  "totalDocs": 0,
+                  "limit": 10,
+                  "page": 1,
+                  "totalPages": 0,
+                  "hasNextPage": false,
+                  "hasPrevPage": false
+              }
+        } else{
+          filters.doctorID = { $in: doctorsFounded.docs.map((d) => d.id) }
+        }
       }
-      if (doctorsFounded.docs.length > 0) {
-        filtersPerson.push({
-          doctorID: { $in: doctorsFounded.docs.map((d) => d.id) },
-        });
-      }
+
+      delete filters.doctor
     }
 
-    if (determineSearchType(query) === "fecha") {
-      const fecha = new Date(query);
+    if(filters.patient){
 
-      let fechaInicio, fechaFin;
+      if (mongoose.Types.ObjectId.isValid(filters.patient)) {
+        filters.patientID = filters.patient;
+      } else if (typeof filters.patient === "string" && filters.patient.length > 1) {
+        const searchRegex = new RegExp(filters.patient, "i");
+        //Buscando Pacientes que coincidan con la persona
+        const patientsFounded = await patientsService.searchPaginate(searchRegex);
+        //Usamos un conjunto de concidencias para un campo. En este caso [_id, _id, _id, _id]
+        if (!patientsFounded.docs.length > 0) {
+            return {
+                  "docs": [],
+                  "totalDocs": 0,
+                  "limit": 10,
+                  "page": 1,
+                  "totalPages": 0,
+                  "hasNextPage": false,
+                  "hasPrevPage": false
+              }
+        }else{
+          filters.patientID = { $in: patientsFounded.docs.map((d) => d.id) }
+        }
+      }
 
-      // Caso: solo año
-      if (/^\d{4}$/.test(query)) {
-        fechaInicio = new Date(`${query}-01-01T00:00:00.000Z`);
-        fechaFin = new Date(`${query}-12-31T23:59:59.999Z`);
-      }
-      // Caso: año-mes
-      else if (/^\d{4}-\d{2}$/.test(query)) {
-        fechaInicio = new Date(`${query}-01T00:00:00.000Z`);
-        fechaFin = new Date(
-          new Date(fechaInicio).setMonth(fechaInicio.getMonth() + 1) - 1,
-        );
-      }
-      // Caso: fecha completa
-      else {
-        fechaInicio = new Date(fecha.setHours(0, 0, 0, 0));
-        fechaFin = new Date(fecha.setHours(23, 59, 59, 999));
-      }
-
-      filtersQuery.push({ date: { $gte: fechaInicio, $lte: fechaFin } });
-    } else if (typeof query === "string" && query.length > 3) {
-      const searchRegex = new RegExp(query, "i");
-      filtersQuery.push({
-        $or: [{ typeAppointment: searchRegex }, { room: searchRegex }],
-      });
+      delete filters.patient
+    }  
+  
+    if(filters.from){
+      filters.date = {$gte: filters.from, ...filters.date}
+      delete filters.from
     }
 
-    if (person && query) {
-      filters = {
-        $and: [
-          {
-            $or: filtersPerson,
-          },
-          {
-            $or: filtersQuery,
-          },
-        ],
-      };
-      //status && (filters.status = status)
-    } else if (!person) {
-      filters =
-        filtersQuery.length > 1 ? { $or: filtersQuery } : filtersQuery[0];
-      //console.log(filters)
-    } else {
-      filters =
-        filtersPerson.length > 1 ? { $or: filtersPerson } : filtersPerson[0];
+    if(filters.to){
+      filters.date = {...filters.date, $lte: filters.to, }
+      delete filters.to
     }
 
-    if (!filters || typeof filters !== "object") {
-      filters = {};
+    if(filters.typeAppointment){
+      const searchRegex = new RegExp(filters.typeAppointment, "i");
+      filters.typeAppointment = searchRegex 
     }
 
-    if (status) {
-      filters.status = status;
+    if(filters.room){
+      const searchRegex = new RegExp(filters.room, "i");
+      filters.room = searchRegex 
+    }
+
+    if (filters.status) {
+      filters.status = filters.status;
     }
 
     switch (parseInt(sort)) {
@@ -154,12 +152,7 @@ export default class AppointmentsService extends BaseService {
         break;
     }
 
-    const appointmentsFounded = await this.repository.findPaginate(
-      filters,
-      limit,
-      page,
-      sort,
-    );
+    const appointmentsFounded = await this.repository.findPaginate(filters,limit,page,sort);
 
     if (appointmentsFounded) {
       appointmentsFounded.docs = this.toManyShortDTO(appointmentsFounded.docs);
@@ -167,6 +160,15 @@ export default class AppointmentsService extends BaseService {
     return appointmentsFounded || [];
   }
 
+  /**
+   * Retornar los turnos de hoy
+   * 
+   * Este método utiliza cache. La ventana de los datos es de 10min
+   * 
+   * Primero se consulta si los datos estan en cache. Si no lo estan se guarda para la próxima consulta
+   * 
+   * @returns {Object} Páginas con turnos
+   */
   async findToday() {
     const today = new Date();
     today.setUTCHours(0, 0, 0, 0); // Establecer a medianoche para comparar solo fechas
@@ -209,6 +211,11 @@ export default class AppointmentsService extends BaseService {
     return appointments;
   }
 
+  /**
+   * Crear un turno nuevo
+   * @param {*} newAppointment 
+   * @returns {Object}
+   */
   async create(newAppointment) {
     const { date, doctorID, patientID, slots } = newAppointment;
 
@@ -312,6 +319,9 @@ export default class AppointmentsService extends BaseService {
     return this.toDTO(appointmentAdded);
   }
 
+  /**
+   * Borrar un turno
+   */
   async delete(appointmentID) {
     const deletedAppointment = await super.delete(appointmentID);
 
@@ -327,6 +337,9 @@ export default class AppointmentsService extends BaseService {
     return this.toDTO(deletedAppointment);
   }
 
+  /**
+   * Actualizar un turno
+   */
   async update(appointmentID, toUpdate) {
     const updatedAppointment = await this.repository.updateByFilter(
       { _id: appointmentID },
@@ -376,6 +389,12 @@ export default class AppointmentsService extends BaseService {
     }
   }
 
+  /**
+   * Obtener los turnos disponibles más cercanos para un doctor especifico
+   * @param {String} idDoctor Identificador de doctor
+   * @param {Number} totalSlots Cantidad de slots disponibles del doctor
+   * @returns {Object}
+   */
   async getNearestAppointments(idDoctor, totalSlots = 18) {
     // Obtener la fecha actual y sumarle 1 dia
     const today = new Date();
@@ -415,7 +434,9 @@ export default class AppointmentsService extends BaseService {
     return { success: false };
   }
 
-  // Método para cambiar el estado de una cita a "waiting" (check-in)
+  /**
+   * Método para cambiar el estado de una cita a "waiting" (check-in)
+  */
   async checkIn(appointmentID) {
     const appointment = await this.repository.findByFilter({ _id: appointmentID });
 

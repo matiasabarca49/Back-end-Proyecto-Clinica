@@ -11,13 +11,23 @@ const appointmentsService = new AppointmentsService();
  */
 export const getAppointments = async (req, res, next) => {
     try {
-        
-        const { person, query, status, limit, page, sort } = req.query;
         let appointmentsGetted;
-        if(!limit && !page){
+        if(!Object.keys(req.query).length){
             appointmentsGetted = await appointmentsService.findAll();
         }else{
-            appointmentsGetted = await appointmentsService.paginateAppointments(person, query, status, limit, page, sort);
+            const {doctor, patient,  from, to, room, typeAppointment, status, limit, page, sort} = req.query;
+
+            let filters = {}
+
+            if(doctor) filters.doctor= doctor
+            if(patient) filters.patient= patient
+            if(from) filters.from= from
+            if(to) filters.to= to
+            if(room) filters.room= room
+            if(typeAppointment) filters.typeAppointment= typeAppointment
+            if(status) filters.status= status
+
+            appointmentsGetted = await appointmentsService.paginateAppointments(filters, limit, page, sort);
         }
         
         return res.status(200).json({ success: true , data: appointmentsGetted })

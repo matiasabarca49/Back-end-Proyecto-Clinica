@@ -1,7 +1,7 @@
 import express from 'express';
 import { createAppointment, deleteAppointment, getAppointmentById, getAppointments,updateAppointment, getAvailableAppointments, getNearestAppointments, getTodayAppointments,checkInAppointment } from '../controller/appointment.controller.js';
 import { authRoles, authToken } from '../middlewares/auth.middlewares.js';
-import { validateAppointmentData, validateUpdateAppointment } from '../validation/appointment.validation.js';
+import { validateAppointmentData, validateGetAppointmets, validateUpdateAppointment } from '../validation/appointment.validation.js';
 const { Router } = express;
 const router = new Router();
 
@@ -14,7 +14,7 @@ const router = new Router();
  * @middleware authRoles Verifica que el usuario tenga el rol adecuado
  * @return {Array} Lista de turnos
  */
-router.get("/", authToken, authRoles("admin", "employee", "doctor"), getAppointments);
+router.get("/", authToken, authRoles("admin", "employee", "doctor"), validateGetAppointmets, getAppointments);
 
 /**
  * Obtener turnos para el día de hoy

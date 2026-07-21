@@ -7,7 +7,7 @@ import { slotsToHours, slotsToRanges } from "../utils/slots.helper.js";
  */
 export class AppointmentDTO{
     constructor(appointment){
-        this.date = new Date(appointment.date).setUTCHours(0,0,0,0);
+        this.date = appointment.date;
         this.slots = appointment.slots;
         this.typeAppointment = appointment.typeAppointment;
         this.room = appointment.room;
@@ -66,7 +66,7 @@ export class AppointmentDTO{
 
 export class CreateAppointmentDTO{
     constructor(appointment){
-        this.date = dateNotHours(appointment.date);
+        this.date = appointment.date;
         this.slots = appointment.slots || [];
         this.typeAppointment = this.normalizeType(appointment.typeAppointment);
         this.room = appointment.room;
