@@ -8,6 +8,11 @@ export class SocketProvider {
           .emit(event, data);
     }
 
+    emitToDashBoard(event, data){
+        const io = getIO()
+        io.to("dashboard")
+          .emit(event, data);
+    }
 
     emitToReception(event, data) {
         const io = getIO()

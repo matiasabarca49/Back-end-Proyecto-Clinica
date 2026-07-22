@@ -8,7 +8,7 @@ let io;
 export const setupSocket = (server) =>{
      io = new Server(server, {
         //Definimos el CORS para permitir conexiones desde cualquier origen
-        cors: { origin: "http://127.0.0.1:5500", credentials: true } 
+        cors: { origin: process.env.ORIGIN_FRONTEND, credentials: true } 
     });
 
     //Se ejecuta cada vez que un cliente realiza una conexión
@@ -26,25 +26,23 @@ export const setupSocket = (server) =>{
            console.log("conexion de usuario inexistente")
            return;
         }
-
+        
         //Obtener ID del JWT
         console.log("Usuario para evento: ", user)
-
-        //Meterlo en la sala correcta
-
+        
+        //ingresar en la sala correcta
         if (user.rol === "doctor") {
             client.join(`doctor:${user.id}`);
+            console.log(`${user.email} ingreso a la sala doctor`)
         }
-
-        if (user.rol === "employee") {
+        
+        if (user.rol === "employee" || user.rol === "admin") {
             client.join("reception");
+            console.log(`${user.email} ingreso a la sala recepcion`)
         }
 
-        console.log("Usuario conectado:", user.id);
-
-        //Crear la Room
         client.on('disconnect', (client) => {
-        console.log("Cliente desconectado: ", client.id)
+        console.log("Cliente desconectado: ", client.socket)
     });
     });
     

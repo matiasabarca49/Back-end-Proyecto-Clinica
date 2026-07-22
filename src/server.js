@@ -1,15 +1,16 @@
 import './config/env.config.js'
-import app from './app.js';
-import MongoManager from './config/mongoDB.config.js';
+import { setupSocket } from './config/socket.config.js';
 import {closeRedis, getRedisClient} from './config/redis.config.js';
+import MongoManager from './config/mongoDB.config.js';
 import { initCronJobs } from './jobs/cronScheduler.js';
 import { createServer } from 'node:http'
+import app from './app.js';
 
 const server = createServer(app)
 
 //Workers
 import "./workers/email.worker.js";
-import { setupSocket } from './config/socket.config.js';
+
 
 async function startServer() {
     try {
