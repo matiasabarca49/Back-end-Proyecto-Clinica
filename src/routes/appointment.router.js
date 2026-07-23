@@ -1,5 +1,6 @@
 import express from 'express';
-import { createAppointment, deleteAppointment, getAppointmentById, getAppointments,updateAppointment, getAvailableAppointments, getNearestAppointments, getTodayAppointments,checkInAppointment } from '../controller/appointment.controller.js';
+import { createAppointment, deleteAppointment, getAppointmentById, getAppointments,updateAppointment, getAvailableAppointments, getNearestAppointments, getTodayAppointments,checkInAppointment,callAppointment,
+    finalizeAppointment } from '../controller/appointment.controller.js';
 import { authRoles, authToken } from '../middlewares/auth.middlewares.js';
 import { validateAppointmentData, validateGetAppointmets, validateUpdateAppointment } from '../validation/appointment.validation.js';
 const { Router } = express;
@@ -90,7 +91,7 @@ router.delete("/:id", authToken,  authRoles("admin") ,deleteAppointment);
 router.put("/:id", authToken,  authRoles("admin", "employee", "doctor"), validateUpdateAppointment, updateAppointment);
 
 /**
- * Actualizar el estado de un turno
+ * Actualizar el estado de un turno a check-in
  * 
  * Esto permite generar un evento que notifica al doctor
  * 
@@ -99,5 +100,21 @@ router.put("/:id", authToken,  authRoles("admin", "employee", "doctor"), validat
  * @return {Object} Mensaje de error o éxito
  */
 router.patch("/:id/check-in", authToken, authRoles("admin", "employee", "doctor"), checkInAppointment);
-
+/**
+ * Actualizar el estado de un turno a llamado
+ * 
+ * Esto permite generar un evento que notifica al doctor
+ * * @route PATCH /api/appointments/:id/call
+ * @middleware auth y authRoles
+ * @return {Object} Mensaje de error o éxito
+ */
+router.patch("/:id/call",authToken,authRoles("admin", "doctor"),callAppointment);
+/**
+ * Actualizar el estado de un turno a finalizado
+ * Esto permite generar un evento que notifica al doctor
+ * @route PATCH /api/appointments/:id/finalize
+ * @middleware auth y authRoles
+ * @return {Object} Mensaje de error o éxito
+ */
+router.patch("/:id/finalize",authToken,authRoles("admin", "doctor"),finalizeAppointment);
 export default router;
