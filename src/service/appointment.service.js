@@ -459,7 +459,71 @@ export default class AppointmentsService extends BaseService {
       
     return appointmentDTO;
 }
+async call(appointmentID) {
+    const appointment = await this.repository.findByFilter({ _id: appointmentID });
 
+    if (!appointment) {
+        throw new NotFoundError("Appointment", appointmentID);
+    }
+
+    if (appointment.status.toLowerCase() !== "waiting") {
+        throw new ValidationError(
+            "Solo los turnos en espera pueden ser llamados."
+        );
+    }
+
+    const updatedAppointment = await this.repository.update(
+        appointmentID,
+        { status: "called" }
+    );
+
+    if (updatedAppointment.modifiedCount === 0) {
+        throw new AppError("No se pudo actualizar el turno", 500);
+    }
+
+    appointment.status = "called";
+    //Eliminar cache o invalidar contenido
+    const todayKey = `appointments:${dateNotHours(new Date())}`;
+    await this.cacheService.del(todayKey);
+    const appointmentDTO = this.toShortDTO(appointment);
+
+    void notificationService.notifyPatientCalled(appointmentDTO);
+
+    return appointmentDTO;
+}
+
+async finalize(appointmentID) {
+    const appointment = await this.repository.findByFilter({ _id: appointmentID });
+
+    if (!appointment) {
+        throw new NotFoundError("Appointment", appointmentID);
+    }
+
+    if (appointment.status.toLowerCase() !== "called") {
+        throw new ValidationError(
+            "Solo los turnos llamados pueden finalizarse."
+        );
+    }
+
+    const updatedAppointment = await this.repository.update(
+        appointmentID,
+        { status: "finalized" }
+    );
+
+    if (updatedAppointment.modifiedCount === 0) {
+        throw new AppError("No se pudo actualizar el turno", 500);
+    }
+
+    appointment.status = "finalized";
+    //Eliminar cache o invalidar contenido
+    const todayKey = `appointments:${dateNotHours(new Date())}`;
+    await this.cacheService.del(todayKey);
+    const appointmentDTO = this.toShortDTO(appointment);
+
+    void notificationService.notifyPatientFinalized(appointmentDTO);
+
+    return appointmentDTO;
+}
 
   //Métodos de mapeo DTO
   toFormatDTO(appointmentData) {
