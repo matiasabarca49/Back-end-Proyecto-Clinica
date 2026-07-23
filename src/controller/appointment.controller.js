@@ -172,12 +172,15 @@ export const checkInAppointment = async (req, res, next) => {
 
         const appointment = await appointmentsService.checkIn(appointmentID);
 
+        console.log("Controlador check-in")
+
         return res.status(200).json({
             success: true,
             data: appointment
         });
 
     } catch (error) {
+        console.error(error)
         next(error);
     }
 };

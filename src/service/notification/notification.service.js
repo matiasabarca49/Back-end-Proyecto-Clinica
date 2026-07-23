@@ -22,13 +22,13 @@ class NotificationService {
             this.socketProvider.emitToDoctor(
                 appointment.doctorId,
                 "appointment.waiting",
-                AppointmentDTO.toShortResponse(appointment)
+                appointment
             );
 
             console.log("Notificando a recepción")
             this.socketProvider.emitToReception(
                 "appointment.waiting",
-                 AppointmentDTO.toShortResponse(appointment)
+                 appointment
             )
         }catch(error){
             console.warn(

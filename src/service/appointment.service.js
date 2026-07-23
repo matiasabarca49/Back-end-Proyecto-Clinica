@@ -452,6 +452,16 @@ export default class AppointmentsService extends BaseService {
 
     const updateAppointment = await this.repository.update(appointmentID, {status: "waiting"}) 
 
+    if (updateAppointment.modifiedCount === 0) {
+      throw new AppError("No se pudo actualizar el turno", 500);
+    }
+
+    appointment.status = "waiting"
+
+    //Eliminar cache o invalidad contenido
+    const todayKey = `appointments:${dateNotHours(new Date())}`;
+    await this.cacheService.del(todayKey);
+
     const appointmentDTO = this.toShortDTO(appointment);
 
     //Notificar al doctor. Es asincronico pero no se rompe el flujo
