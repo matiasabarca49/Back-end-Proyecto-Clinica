@@ -1,11 +1,46 @@
 import {rateLimit} from 'express-rate-limit';
 
-const limitHandler = rateLimit({
-  windowMs: 5 * 60 * 1000, // 5 minutos
-  limit: 100, // limit each IP to 100 requests per windowMs
-  message:{ success: false, error: "Demaciadas peticiones, intente más tarde", statusCode: 429},
+
+const createLimit = (limit, windowsMS, message) => rateLimit({
+  windowMs: windowsMS,
+  limit: limit,
+  message:{ success: false, error: message, statusCode: 429},
   legacyHeaders: false,
   standardHeaders: "draft-8"
-});
+  }
+)
 
-export default limitHandler;
+export const generalLimit = createLimit(
+  15 * 60 * 1000, 
+  1000, 
+  "Demaciadas peticiones, intente más tarde");
+
+export const loginLimit = createLimit(
+  15 * 60 * 1000,
+  5,
+  "Demasiados intentos de inicio de sesión"
+  );
+
+export const registerLimit = createLimit(
+  60 * 60 * 1000,
+  5,
+  "Demasiados intentos de registro"
+);
+
+export const changePasswordLimit = createLimit(
+  60 * 60 * 1000,
+  3,
+  "Límite de subidas alcanzado"
+);
+
+export const refreshTokenLimit = createLimit(
+  15 * 60 * 1000,
+  100,
+  "Límite de subidas alcanzado"
+)
+
+export const uploadLimit = createLimit(
+  60 * 60 * 1000,
+  20,
+  "Límite de subidas alcanzado"
+);

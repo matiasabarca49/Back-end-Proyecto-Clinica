@@ -18,9 +18,9 @@ class NotificationService {
     async notifyPatientWaiting(appointment) {
 
         try{
-            console.log("Notificando a doctor")
+            console.log("Notificando a doctor: ", appointment)
             this.socketProvider.emitToDoctor(
-                appointment.doctorId,
+                appointment.doctorID.id,
                 "appointment.waiting",
                 appointment
             );
@@ -52,13 +52,13 @@ class NotificationService {
             console.log("Notificando a la pantalla")
             this.socketProvider.emitToDashBoard(
                 "appointment.called",
-                 AppointmentDTO.toShortResponse(appointment)
+                 appointment
             );
 
             console.log("Notificando a recepción")
             this.socketProvider.emitToReception(
                 "appointment.called",
-                 AppointmentDTO.toShortResponse(appointment)
+                 appointment
             )
 
         }catch(error){
@@ -78,7 +78,7 @@ class NotificationService {
 
              this.socketProvider.emitToReception(
                 "appointment.finalized",
-                 AppointmentDTO.toShortResponse(appointment)
+                 appointment
             )
 
         }catch(error){

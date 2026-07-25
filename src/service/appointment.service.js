@@ -444,7 +444,7 @@ export default class AppointmentsService extends BaseService {
       throw new NotFoundError("Appointment", appointmentID);
     }
 
-    if (appointment.status.toLowerCase() !== "confirmed") {
+    if (appointment.status.toLowerCase() !== "confirmed" && appointment.status.toLowerCase() !== "called") {
       throw new ValidationError(
         "Solo los turnos confirmados pueden pasar a espera.",
       );
@@ -469,6 +469,10 @@ export default class AppointmentsService extends BaseService {
       
     return appointmentDTO;
 }
+
+/**
+ * Método que maneja a traves de eventos los turnos en estado de espera
+ */
 async call(appointmentID) {
     const appointment = await this.repository.findByFilter({ _id: appointmentID });
 

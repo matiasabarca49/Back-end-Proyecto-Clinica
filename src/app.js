@@ -39,8 +39,8 @@ app.use(cookieParser())
 app.set('trust proxy', 1);
 
 //Limitar el número de peticiones a la API
-import limitHandler from './middlewares/rateLimit.middleware.js';
-app.use(limitHandler);
+import { generalLimit } from './middlewares/rateLimit.middleware.js';
+app.use(generalLimit);
 
 
 /**

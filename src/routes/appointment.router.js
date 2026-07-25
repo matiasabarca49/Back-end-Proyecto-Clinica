@@ -100,21 +100,27 @@ router.put("/:id", authToken,  authRoles("admin", "employee", "doctor"), validat
  * @return {Object} Mensaje de error o éxito
  */
 router.patch("/:id/check-in", authToken, authRoles("admin", "employee", "doctor"), checkInAppointment);
+
 /**
  * Actualizar el estado de un turno a llamado
  * 
  * Esto permite generar un evento que notifica al doctor
- * * @route PATCH /api/appointments/:id/call
+ * 
+ * @route PATCH /api/appointments/:id/call
  * @middleware auth y authRoles
  * @return {Object} Mensaje de error o éxito
  */
 router.patch("/:id/call",authToken,authRoles("admin", "doctor"),callAppointment);
+
 /**
  * Actualizar el estado de un turno a finalizado
+ * 
  * Esto permite generar un evento que notifica al doctor
+ * 
  * @route PATCH /api/appointments/:id/finalize
  * @middleware auth y authRoles
  * @return {Object} Mensaje de error o éxito
  */
 router.patch("/:id/finalize",authToken,authRoles("admin", "doctor"),finalizeAppointment);
+
 export default router;
