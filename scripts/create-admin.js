@@ -7,7 +7,9 @@ import dotenv from 'dotenv';
 import UsersService from '../src/service/user.service.js';
 const usersService = new UsersService()
 
-dotenv.config();
+dotenv.config({
+    path: `.env.${process.env.NODE_ENV || 'development'}`
+}); 
 
 const program = new Command();
 
