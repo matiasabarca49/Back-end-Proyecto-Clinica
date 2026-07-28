@@ -80,7 +80,7 @@ export const validateAppointmentData= [
   body('status')
     .exists().withMessage('Atributo requerido')
     .notEmpty().withMessage('No puede estar vacío')
-    .isIn(["pending", "confirmed", "noshow", "eescheduled","finalized", "canceled"]).withMessage('El status debe ser "pending", "confirmed", "noshow", "eescheduled","finalized", "canceled"'),
+    .isIn(["pending", "confirmed", "waiting", "noshow", "eescheduled","finalized", "canceled", "called"]).withMessage('El status debe ser "pending", "confirmed", "noshow", "eescheduled","finalized", "canceled"'),
 
   validate //middleware
 ];

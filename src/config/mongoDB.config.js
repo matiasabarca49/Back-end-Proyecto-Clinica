@@ -29,12 +29,11 @@ class MongoManager {
     // Configura los listeners para eventos de conexión de MongoDB
     setupListeners() {
         mongoose.connection.on("connected", () => {
-            console.log("✅ Mongo conectado");
+            console.log("✅ [OK] Mongo conectado nuevamente");
         });
 
         mongoose.connection.on("disconnected", () => {
             console.error("🔴 [Error] MongoDB se ha desconectado inesperadamente.");
-            process.exit(1); // Salir del proceso si MongoDB se desconecta
         });
 
         mongoose.connection.on("error", err => {

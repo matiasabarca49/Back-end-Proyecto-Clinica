@@ -30,7 +30,7 @@ export const generateTokens = (user) => {
     const accessToken = jwt.sign(
         { id: user._id || user.id, email, rol },
         secretKey,
-        { expiresIn: '30min' }
+        { expiresIn: '30m' }
     );
 
     const refreshToken = jwt.sign(

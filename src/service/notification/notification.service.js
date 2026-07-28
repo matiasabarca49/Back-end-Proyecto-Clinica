@@ -18,14 +18,12 @@ class NotificationService {
     async notifyPatientWaiting(appointment) {
 
         try{
-            console.log("Notificando a doctor: ", appointment)
             this.socketProvider.emitToDoctor(
                 appointment.doctorID.id,
                 "appointment.waiting",
                 appointment
             );
 
-            console.log("Notificando a recepción")
             this.socketProvider.emitToReception(
                 "appointment.waiting",
                  appointment
@@ -49,16 +47,20 @@ class NotificationService {
      */
     async notifyPatientCalled(appointment){
         try{
-            console.log("Notificando a la pantalla")
             this.socketProvider.emitToDashBoard(
                 "appointment.called",
                  appointment
             );
 
-            console.log("Notificando a recepción")
             this.socketProvider.emitToReception(
                 "appointment.called",
                  appointment
+            )
+
+            this.socketProvider.emitToDoctor(
+                appointment.doctorID.id,
+                "appointment.called",
+                appointment
             )
 
         }catch(error){
@@ -79,6 +81,12 @@ class NotificationService {
              this.socketProvider.emitToReception(
                 "appointment.finalized",
                  appointment
+            )
+
+            this.socketProvider.emitToDoctor(
+                appointment.doctorID.id,
+                "appointment.finalized",
+                appointment
             )
 
         }catch(error){

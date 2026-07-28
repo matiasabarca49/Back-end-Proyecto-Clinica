@@ -38,10 +38,14 @@ export async function getRedisClient() {
 
     client.on('error', async (err) => {
         console.error("🔴 [Error] Error en el Cliente Redis: " + err.message);
+    });
 
-        await closeRedis(); // Cierra la conexión si hay un error
-        
-        process.exit(1); // Salir del proceso con código de error
+    client.on("reconnecting", () => {
+        console.log("🟠 [info] Reconectando Redis...");
+    });
+
+    client.on("ready", () => {
+        console.log("✅ [OK] Redis nuevamente disponible");
     });
 
     try {
@@ -52,6 +56,7 @@ export async function getRedisClient() {
 
     } catch (error) {
         console.error('🔴 [Error] No se pudo conectar a Redis:');
+        await closeRedis(); // Cierra la conexión si hay un error
         throw new Error("Falló al conectar el cliente Redis");
     }
 }

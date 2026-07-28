@@ -51,7 +51,7 @@ const validatePatients= [
   body('sex')
     .exists().withMessage('El sexo es requerido')
     .notEmpty().withMessage('El sexo no puede estar vacío')
-    .isIn(["male", "female", "other"]).withMessage('El sexo debe ser "male", "female" u "other"'),
+    .isIn(["male", "female", "other", "another"]).withMessage('El sexo debe ser "male", "female" u "other"'),
 ];
 
 //Validaciones para tratamientos

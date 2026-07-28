@@ -11,24 +11,30 @@ export const setupSocket = (server) =>{
         cors: { origin: process.env.ORIGIN_FRONTEND, credentials: true } 
     });
 
+    //Middleware de conexion
+    io.use(async (socket, next) => {
+        const cookies = cookie.parse(socket.handshake.headers.cookie || "");
+        const token = cookies.accessToken;
+
+        const user = await verifyAccessToken(token);
+
+        if (!user) {
+            return next(new AppError("TOKEN_EXPIRED"));
+        }
+
+        console.log("Usuario conectado para eventos: ", user)
+
+        socket.data.user = user;
+
+        next();
+    });
+
     //Se ejecuta cada vez que un cliente realiza una conexión
     io.on('connection', async client => {
-        console.log("Cliente conectado: ", client.id)
-        
-        //Obtener las cookies y parsearla
-        const cookies = cookie.parse(client.handshake.headers.cookie || "");
-        const token = cookies.accessToken;
-        
-        const user = await verifyAccessToken(token)
-        
-        if (!user) {
-           client.disconnect();
-           console.log("conexion de usuario inexistente")
-           return;
-        }
-        
-        //Obtener ID del JWT
-        console.log("Usuario para evento: ", user)
+        //console.log("Cliente conectado: ", client.id)
+
+        const user = client.data.user
+
         
         //ingresar en la sala correcta
         if (user.rol === "doctor") {
@@ -41,9 +47,11 @@ export const setupSocket = (server) =>{
             console.log(`${user.email} ingreso a la sala recepcion`)
         }
 
-        client.on('disconnect', (client) => {
-        console.log("Cliente desconectado: ", client.socket)
-    });
+        client.on('disconnect', (reason) => {
+            console.log("Cliente desconectado: ", client.id)
+            console.log("Motivo:", reason);
+        });
+
     });
     
 }

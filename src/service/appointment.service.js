@@ -31,7 +31,7 @@ import { sendAppointmentConfirmation } from "../utils/email.helpers.js";
 import { validateEnvVars } from "../utils/dotenv.helper.js";
 import AppError from "../exceptions/AppErrors.js";
 import CacheService from "./cache/cache.service.js";
-import { dateNotHours } from "../utils/dates.helper.js";
+import { dateNotHours, getTodaySTR } from "../utils/dates.helper.js";
 
 export default class AppointmentsService extends BaseService {
   constructor() {
@@ -170,21 +170,12 @@ export default class AppointmentsService extends BaseService {
    * @returns {Object} Páginas con turnos
    */
   async findToday() {
-    const today = new Date();
-    today.setUTCHours(0, 0, 0, 0); // Establecer a medianoche para comparar solo fechas
-    const day = today.getUTCDate().toString().padStart(2, "0");
-    const month = (today.getUTCMonth() + 1).toString().padStart(2, "0");
-    const year = today.getUTCFullYear();
-    const todayString = `${year}-${month}-${day}`;
-
     //Buscar en cache
-    const cachedAppointments = await this.cacheService.get(
-      `appointments:${todayString}`,
-    );
-    if (cachedAppointments) {
-      console.log(`Citas de hoy ${todayString} obtenidas de cache`);
-      return cachedAppointments;
-    }
+    const cachedAppointments = await this.getCacheAppointment()
+    if (cachedAppointments) return cachedAppointments;
+    
+    //En caso de no estar en cache, lo traemos de la DB
+    const todayString = getTodaySTR()
 
     const appointments = await this.repository.findPaginate(
       { date: todayString },
@@ -199,14 +190,7 @@ export default class AppointmentsService extends BaseService {
     appointments.docs = this.toManyShortDTO(appointments.docs);
 
     //Guardar en cache por 10 minutos
-    console.log(
-      `Guardando citas de hoy ${todayString} en cache por 10 minutos`,
-    );
-    await this.cacheService.set(
-      `appointments:${todayString}`,
-      appointments,
-      600,
-    ); // 600 segundos = 10 minutos
+    this.saveCacheAppointment(appointments)
 
     return appointments;
   }
@@ -259,12 +243,12 @@ export default class AppointmentsService extends BaseService {
     const appointmentAdded = await super.create(newAppointmentFormated);
 
     //Invalidar cache de citas de hoy si la cita creada es para el día actual
-    const todayKey = `appointments:${dateNotHours(new Date())}`;
+    const todayString = getTodaySTR()
+
     const appointmentDate = dateNotHours(new Date(date));
 
-    if (appointmentDate === dateNotHours(new Date())) {
-      console.log("La cita creada es para hoy. Invalidando cache...");
-      await this.cacheService.del(todayKey);
+    if (appointmentDate === todayString) {
+      this.deleteCacheAppointment()
     }
 
     if (!validateEnvVars("email")) {
@@ -326,12 +310,12 @@ export default class AppointmentsService extends BaseService {
     const deletedAppointment = await super.delete(appointmentID);
 
     //Invalidar cache de citas de hoy si la cita eliminada es para el día actual
-    const todayKey = `appointments:${dateNotHours(new Date())}`;
+    const todayString = getTodaySTR()
+
     const appointmentDate = dateNotHours(new Date(deletedAppointment.date));
 
-    if (appointmentDate === dateNotHours(new Date())) {
-      console.log("La cita eliminada es para hoy. Invalidando cache...");
-      await this.cacheService.del(todayKey);
+    if (appointmentDate === todayString) {
+      this.deleteCacheAppointment()
     }
 
     return this.toDTO(deletedAppointment);
@@ -350,12 +334,12 @@ export default class AppointmentsService extends BaseService {
       throw new NotFoundError("Appointment", appointmentID);
 
     //Invalidar cache de citas de hoy si la cita actualizada es para el día actual
-    const todayKey = `appointments:${dateNotHours(new Date())}`;
+    const todayString = getTodaySTR()
+
     const appointmentDate = dateNotHours(new Date(updatedAppointment.date));
 
-    if (appointmentDate === dateNotHours(new Date())) {
-      console.log("La cita actualizada es para hoy. Invalidando cache...");
-      await this.cacheService.del(todayKey);
+    if (appointmentDate === todayString) {
+      this.deleteCacheAppointment()
     }
     return this.toDTO(updatedAppointment);
   }
@@ -364,7 +348,7 @@ export default class AppointmentsService extends BaseService {
     // Obtener todos los turnos del doctor en la fecha dada
     const appointments = await this.repository.findManyByFilter({
       doctorID: idDoctor,
-      date: new Date(day),
+      date:day,
     });
 
     let success;
@@ -398,11 +382,14 @@ export default class AppointmentsService extends BaseService {
   async getNearestAppointments(idDoctor, totalSlots = 18) {
     // Obtener la fecha actual y sumarle 1 dia
     const today = new Date();
-    //setUTCHours para evitar problemas de zona horaria
-    today.setUTCHours(0, 0, 0, 0); // Establecer a medianoche para comparar solo fechas
     const nextDay = new Date(today);
     nextDay.setDate(today.getDate() + 1);
-    nextDay.setUTCHours(0, 0, 0, 0); // Establecer a medianoche para comparar solo fechas
+
+    const month = nextDay.getMonth() + 1
+    const year = nextDay.getFullYear()
+    const day = nextDay.getDate()
+
+    const nextDayStr = `${year}-${month.toString().padStart(2,'0')}-${day.toString().padStart(2,'0')}`
 
     let dayFounded = false;
 
@@ -410,7 +397,7 @@ export default class AppointmentsService extends BaseService {
       // Obtener los turnos disponibles para el doctor en la fecha actual
       const availableAppointments = await this.getAvailableAppointments(
         idDoctor,
-        nextDay,
+        nextDayStr,
       );
 
       if (
@@ -422,7 +409,7 @@ export default class AppointmentsService extends BaseService {
         //console.log("Citas disponibles encontradas para el día:", nextDay);
         return {
           success: true,
-          date: nextDay,
+          date: nextDayStr,
           slots: slotsToHours(availableAppointments.data),
         };
       } else {
@@ -433,6 +420,10 @@ export default class AppointmentsService extends BaseService {
     } while (!dayFounded);
     return { success: false };
   }
+
+  /**
+   * Eventos
+   */
 
   /**
    * Método para cambiar el estado de una cita a "waiting" (check-in)
@@ -459,8 +450,7 @@ export default class AppointmentsService extends BaseService {
     appointment.status = "waiting"
 
     //Eliminar cache o invalidad contenido
-    const todayKey = `appointments:${dateNotHours(new Date())}`;
-    await this.cacheService.del(todayKey);
+    this.deleteCacheAppointment()
 
     const appointmentDTO = this.toShortDTO(appointment);
 
@@ -497,8 +487,8 @@ async call(appointmentID) {
 
     appointment.status = "called";
     //Eliminar cache o invalidar contenido
-    const todayKey = `appointments:${dateNotHours(new Date())}`;
-    await this.cacheService.del(todayKey);
+    this.deleteCacheAppointment()
+
     const appointmentDTO = this.toShortDTO(appointment);
 
     void notificationService.notifyPatientCalled(appointmentDTO);
@@ -530,14 +520,53 @@ async finalize(appointmentID) {
 
     appointment.status = "finalized";
     //Eliminar cache o invalidar contenido
-    const todayKey = `appointments:${dateNotHours(new Date())}`;
-    await this.cacheService.del(todayKey);
+    this.deleteCacheAppointment()
+
     const appointmentDTO = this.toShortDTO(appointment);
 
     void notificationService.notifyPatientFinalized(appointmentDTO);
 
     return appointmentDTO;
-}
+  }
+
+  /**
+   * Cache
+   */
+
+  //Obtener de Cache
+  async getCacheAppointment(){
+    const todayString = getTodaySTR()
+    const todayKey = `appointments:${todayString}`;
+    const cachedAppointments = await this.cacheService.get(
+      `appointments:${todayString}`,
+    );
+
+    if(!cachedAppointments) {
+      return null
+    }
+
+    console.log(`Citas de hoy ${todayString} obtenidas de cache`);
+    return cachedAppointments;
+  }
+
+  //Guardar en Cache
+  async saveCacheAppointment(appointments){
+    const todayString = getTodaySTR()
+    console.log(`Guardando citas de hoy ${todayString} en cache por 10 minutos`);
+    await this.cacheService.set(
+      `appointments:${todayString}`,
+      appointments,
+      600,
+    ); //600 segundos = 10 minutos
+  }
+
+  //Borrar turnos del cache
+  async deleteCacheAppointment(){
+    const todayString = getTodaySTR()
+    const todayKey = `appointments:${todayString}`;
+    console.log(`Invalidando caché del día ${todayString}`)
+    await this.cacheService.del(todayKey);
+  } 
 
   //Métodos de mapeo DTO
   toFormatDTO(appointmentData) {

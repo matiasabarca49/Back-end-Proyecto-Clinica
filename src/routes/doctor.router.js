@@ -15,7 +15,7 @@ const router = new Router();
  * @middleware authRoles("Permisos de roles") Verifica los roles permitidos para acceder a la ruta
  * @returns {Array} Lista de doctores
  */
-router.get("/", authToken, authRoles("admin", "employee"), getDoctors);
+router.get("/", authToken, authRoles("admin", "employee", "doctor"), getDoctors);
 
 /**
  * Obtener horarios de doctores
