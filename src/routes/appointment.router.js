@@ -1,8 +1,9 @@
 import express from 'express';
 import { createAppointment, deleteAppointment, getAppointmentById, getAppointments,updateAppointment, getAvailableAppointments, getNearestAppointments, getTodayAppointments,checkInAppointment,callAppointment,
-    finalizeAppointment } from '../controller/appointment.controller.js';
+    finalizeAppointment, 
+    changeStatusAppointment} from '../controller/appointment.controller.js';
 import { authRoles, authToken } from '../middlewares/auth.middlewares.js';
-import { validateAppointmentData, validateGetAppointmets, validateUpdateAppointment } from '../validation/appointment.validation.js';
+import { validateAppointmentData, validateChangeStatusAppointment, validateGetAppointmets, validateUpdateAppointment } from '../validation/appointment.validation.js';
 const { Router } = express;
 const router = new Router();
 
@@ -122,5 +123,16 @@ router.patch("/:id/call",authToken,authRoles("admin", "doctor"),callAppointment)
  * @return {Object} Mensaje de error o éxito
  */
 router.patch("/:id/finalize",authToken,authRoles("admin", "doctor"),finalizeAppointment);
+
+/**
+ * Actualizar el estado de un turno a finalizado
+ * 
+ * Esto permite generar un evento que notifica a recepcion
+ * 
+ * @route PATCH /api/appointments/:id/status
+ * @middleware auth y authRoles
+ * @return {Object} Mensaje de error o éxito
+ */
+router.patch("/:id/status",authToken,authRoles("admin", "employee"), validateChangeStatusAppointment, changeStatusAppointment);
 
 export default router;

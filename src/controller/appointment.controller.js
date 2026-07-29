@@ -170,7 +170,9 @@ export const checkInAppointment = async (req, res, next) => {
 
         const appointmentID = req.params.id;
 
-        const appointment = await appointmentsService.checkIn(appointmentID);
+        const room = req.body.room
+
+        const appointment = await appointmentsService.checkIn(appointmentID, room);
 
         return res.status(200).json({
             success: true,
@@ -198,12 +200,32 @@ export const callAppointment = async (req, res, next) => {
         next(error);
     }
 };
+
 export const finalizeAppointment = async (req, res, next) => {
     try {
 
         const appointmentID = req.params.id;
 
         const appointment = await appointmentsService.finalize(appointmentID);
+
+        return res.status(200).json({
+            success: true,
+            data: appointment
+        });
+
+    } catch (error) {
+        next(error);
+    }
+};
+
+export const changeStatusAppointment = async (req, res, next) => {
+    try {
+
+        const appointmentID = req.params.id;
+
+        const status = req.body.status
+
+        const appointment = await appointmentsService.changeStatus(appointmentID, status);
 
         return res.status(200).json({
             success: true,

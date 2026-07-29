@@ -90,3 +90,13 @@ export const validateUpdateAppointment = [
   ...validateAppointmentData
 ];
 
+
+export const validateChangeStatusAppointment = [
+  body("status")
+  .exists()
+  .notEmpty()
+  .isString()
+  .isIn(["confirmed", "noshow", "rescheduled", "cancel"]).withMessage("El estado debe ser confirmed, noShow, rescheduled o cancel"),
+  validate //middleware
+];
+

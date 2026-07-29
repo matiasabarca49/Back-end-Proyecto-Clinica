@@ -428,7 +428,7 @@ export default class AppointmentsService extends BaseService {
   /**
    * Método para cambiar el estado de una cita a "waiting" (check-in)
   */
-  async checkIn(appointmentID) {
+  async checkIn(appointmentID, room = false) {
     const appointment = await this.repository.findByFilter({ _id: appointmentID });
 
     if (!appointment) {
@@ -441,13 +441,18 @@ export default class AppointmentsService extends BaseService {
       );
     }
 
-    const updateAppointment = await this.repository.update(appointmentID, {status: "waiting"}) 
+    const fields = {status: "waiting"}
+    //Cambio de room
+    if(room) fields.room = room
+
+    const updateAppointment = await this.repository.update(appointmentID, fields) 
 
     if (updateAppointment.modifiedCount === 0) {
       throw new AppError("No se pudo actualizar el turno", 500);
     }
 
     appointment.status = "waiting"
+    appointment.room = room
 
     //Eliminar cache o invalidad contenido
     this.deleteCacheAppointment()
@@ -529,6 +534,44 @@ async finalize(appointmentID) {
     return appointmentDTO;
   }
 
+
+  /**
+   * Método para cambiar el estado de una cita a "personalizado"
+  */
+  async changeStatus(appointmentID, status) {
+    const appointment = await this.repository.findByFilter({ _id: appointmentID });
+
+    if (!appointment) {
+      throw new NotFoundError("Appointment", appointmentID);
+    }
+
+    const notValid = ["called", "waiting", "finalized" ]
+
+    if (notValid.includes(status)) {
+      throw new ValidationError(
+        "No se permite modificar turnos en estado called, waiting y finalized",
+      );
+    }
+
+    const updateAppointment = await this.repository.update(appointmentID, {status: status}) 
+
+    if (updateAppointment.modifiedCount === 0) {
+      throw new AppError("No se pudo actualizar el turno", 500);
+    }
+
+    appointment.status = status
+    
+    //Eliminar cache o invalidar contenido
+    this.deleteCacheAppointment()
+
+    const appointmentDTO = this.toShortDTO(appointment);
+
+    //Notificar al doctor. Es asincronico pero no se rompe el flujo
+    void notificationService.notifyChangeStatusApp(appointmentDTO);
+      
+    return appointmentDTO;
+}
+
   /**
    * Cache
    */
@@ -545,14 +588,14 @@ async finalize(appointmentID) {
       return null
     }
 
-    console.log(`Citas de hoy ${todayString} obtenidas de cache`);
+    //console.log(`Citas de hoy ${todayString} obtenidas de cache`);
     return cachedAppointments;
   }
 
   //Guardar en Cache
   async saveCacheAppointment(appointments){
     const todayString = getTodaySTR()
-    console.log(`Guardando citas de hoy ${todayString} en cache por 10 minutos`);
+    //console.log(`Guardando citas de hoy ${todayString} en cache por 10 minutos`);
     await this.cacheService.set(
       `appointments:${todayString}`,
       appointments,
@@ -564,7 +607,7 @@ async finalize(appointmentID) {
   async deleteCacheAppointment(){
     const todayString = getTodaySTR()
     const todayKey = `appointments:${todayString}`;
-    console.log(`Invalidando caché del día ${todayString}`)
+    //console.log(`Invalidando caché del día ${todayString}`)
     await this.cacheService.del(todayKey);
   } 
 

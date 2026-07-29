@@ -101,6 +101,29 @@ class NotificationService {
             );
         }
     }
+
+    /**
+     * Método para notificar a recepcion un cambio de estado
+     * 
+     * Emite el evento mediate socket
+     * 
+     * @param {Object} appointment 
+     */
+    async notifyChangeStatusApp(appointment){
+        try{
+            
+            this.socketProvider.emitToReception(
+                "appointment.change",
+                 appointment
+            )
+
+        }catch(error){
+            console.warn(
+                "⚠️ [Warning] No se pudo notificar a recepcion ni al dashboard sobre el turno llamado:",
+                error.message,
+            );
+        }
+    }
 }
 
 export default new NotificationService()

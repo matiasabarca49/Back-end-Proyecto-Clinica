@@ -27,7 +27,7 @@ class AuthService extends BaseService {
 
         //Obtenemos los tokens. accessToken y refreshToken
         const tokens = generateTokens(user);
-        const { _id, email, rol } = user;
+        const { _id, email, rol, name, lastName } = user;
 
         // Guardar el refresh token en Redis con una expiración de 7 días
         await this.sessionRepository.saveRefreshToken(_id.toString(), tokens.refreshToken, 7 * 24 * 60 * 60);
@@ -41,7 +41,7 @@ class AuthService extends BaseService {
         // Actualizar la fecha de última conexión sin modificar timestamps
         await this.repository.updateWhioutTStamp(_id, { lastLogintAt: new Date() });
 
-        return { accessToken: tokens.accessToken, refreshToken: tokens.refreshToken, id: _id, email, rol };
+        return { accessToken: tokens.accessToken, refreshToken: tokens.refreshToken, user: { id: _id, email, rol, name, lastName}};
     }
 
     async login2factor(email) {

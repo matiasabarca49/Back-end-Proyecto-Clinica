@@ -1,7 +1,9 @@
 import AuthService from "../service/auth/auth.service.js";
+import UsersService from "../service/user.service.js";
 
 
 const authService = new AuthService();
+const userService = new UsersService()
 
 // =======================
 // LOGIN ORIGINAL (SIN 2FA)
@@ -23,7 +25,7 @@ export const loginUser = async (req,res, next)=>{
             maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días
         });
 
-       return res.status(200).json({ success: true , data: loginData});
+       return res.status(200).json({ success: true , data: loginData.user});
 
     } catch (error) {
         next(error)
@@ -105,8 +107,9 @@ export const currentUser = async (req, res, next) => {
 
       if(!req.user) throw new UnauthorizedError('Usuario no autenticado');
     
+      const user = await userService.findById(req.user.id)
     
-      return res.status(200).json({ success: true, data: req.user })
+      return res.status(200).json({ success: true, data: user })
          
     } catch (error) { 
         next(error)
