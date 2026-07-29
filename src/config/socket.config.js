@@ -37,6 +37,11 @@ export const setupSocket = (server) =>{
 
         
         //ingresar en la sala correcta
+        if (user.rol === "dashboard") {
+            client.join(`dashboard`);
+            console.log(`${user.email} ingreso a la sala dashboard`)
+        }
+
         if (user.rol === "doctor") {
             client.join(`doctor:${user.id}`);
             console.log(`${user.email} ingreso a la sala doctor`)

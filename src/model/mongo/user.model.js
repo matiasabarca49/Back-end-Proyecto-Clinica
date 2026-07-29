@@ -23,7 +23,7 @@ const userSchema = new mongoose.Schema(
     },
     rol: {
       type: String,
-      enum: ["admin", "doctor", "employee"],
+      enum: ["admin", "doctor", "employee", "dashboard"],
       required: true,
     },
     status: {

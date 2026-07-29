@@ -35,7 +35,7 @@ router.get("/filter/", authToken, authRoles("admin"), searchUsers)
  * @middleware authToken, authRoles
  * @returns {Object} Usuario con el ID especificado.
  */
-router.get("/:id", authToken, authRoles("admin","employee", "doctor"), getUserByID)
+router.get("/:id", authToken, authRoles("admin","employee", "doctor", "dashboard"), getUserByID)
 
 /**
  * @route POST /api/users/

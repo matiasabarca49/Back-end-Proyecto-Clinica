@@ -18,6 +18,11 @@ class NotificationService {
     async notifyPatientWaiting(appointment) {
 
         try{
+            this.socketProvider.emitToDashBoard(
+                "appointment.waiting",
+                 appointment
+            );
+
             this.socketProvider.emitToDoctor(
                 appointment.doctorID.id,
                 "appointment.waiting",

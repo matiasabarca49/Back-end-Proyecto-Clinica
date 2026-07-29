@@ -25,7 +25,7 @@ router.get("/", authToken, authRoles("admin", "employee", "doctor"), validateGet
  * @middleware auth y authRoles
  * @return {Array} Lista de turnos para el día de hoy
  */
-router.get("/today", authToken, authRoles("admin", "employee", "doctor"),getTodayAppointments);
+router.get("/today", authToken, authRoles("admin", "employee", "doctor", "dashboard"),getTodayAppointments);
 
 /**
  * Obtener turnos disponibles para un doctor específico
