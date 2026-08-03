@@ -13,15 +13,8 @@ class PatientsService extends BaseService {
         super(repository);
     }
 
-    async findAll(userSession) {
-        let patients;
-
-        if (userSession?.rol === "doctor") {
-            patients = await super.findManyByFilter({ idDoctor: userSession.id });
-        } else {
-            patients = await super.findAll();
-        }
-
+    async findAll(filters = {}) {
+        const patients = await super.findAll(filters);
         return this.toManyDTO(patients);
     }
 
@@ -37,12 +30,11 @@ class PatientsService extends BaseService {
         return patient.dentalStatus 
     }
 
-    async paginatePatients(search, sex, limit, page, sort, userSession) {
+    async paginatePatients(filters = {}, limit, page, sort) {
 
-        let filter = {};
-        if(search){
-            const regex = new RegExp(search, "i");
-            filter = {
+        if(filters.search){
+            const regex = new RegExp(filters.search, "i");
+            filters = {...filters,
                 $or: [
                     { name: regex },
                     { lastName: regex },
@@ -52,20 +44,16 @@ class PatientsService extends BaseService {
 
                 ]
             };
-        }
-        if(sex){
-            filter.sex = sex;
-        }
 
+            delete filters.search; // Eliminar la propiedad search del objeto filters
+        }
+        
         //Default sort: fecha de creación descendente
         const defaultSort = sort ? {lastName: parseInt(sort)} : {lastName: -1}
         
-        if (userSession?.rol === "doctor") {
-            dftQuery = { ...dftQuery, idDoctor: userSession.id };
-        }
-
-        const result = await this.repository.findPaginate(filter, limit, page, defaultSort);
+        const result = await this.repository.findPaginate(filters, limit, page, defaultSort);
         result.docs = this.toManyDTO(result.docs);
+        
         return result;
     }
 

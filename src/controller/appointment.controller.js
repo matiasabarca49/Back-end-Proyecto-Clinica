@@ -11,13 +11,17 @@ const appointmentsService = new AppointmentsService();
  */
 export const getAppointments = async (req, res, next) => {
     try {
+        let filters = {}
+
+        if(req.user?.rol === "doctor"){
+            filters.doctorID = req.user.id
+        }
+
         let appointmentsGetted;
         if(!Object.keys(req.query).length){
-            appointmentsGetted = await appointmentsService.findAll();
+            appointmentsGetted = await appointmentsService.findAll(filters);
         }else{
             const {doctor, patient,  from, to, room, typeAppointment, status, limit, page, sort} = req.query;
-
-            let filters = {}
 
             if(doctor && req.user?.rol !== "doctor") filters.doctor= doctor
             if(patient) filters.patient= patient
@@ -26,11 +30,6 @@ export const getAppointments = async (req, res, next) => {
             if(room) filters.room= room
             if(typeAppointment) filters.typeAppointment= typeAppointment
             if(status) filters.status= status
-
-            //Si el usuario tiene rol doctor, solo puede ver sus citas
-            if(req.user?.rol === "doctor"){
-                filters.doctorID = req.user.id
-            }
 
             appointmentsGetted = await appointmentsService.paginateAppointments(filters, limit, page, sort);
         }

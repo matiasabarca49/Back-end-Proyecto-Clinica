@@ -5,9 +5,9 @@ class BaseService{
         this.repository = repository
     }
 
-    async findAll(){
+    async findAll(filters = {}){
         //Llama al Repository
-        return await this.repository.findAll()
+        return await this.repository.findAll(filters)
     }
 
     

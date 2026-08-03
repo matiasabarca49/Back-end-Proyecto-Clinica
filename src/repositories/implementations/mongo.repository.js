@@ -8,9 +8,9 @@ class MongoRepository extends IRepository{
     }
 
     //"Model" hace referencia al "Schema" de una colección
-    async findAll(){
+    async findAll(filters = {}){
         //Si la respuesta tiene exito, devuelve los documentos encontrados
-        return await this.model.find()
+        return await this.model.find(filters)
             //Si hay un error, lo muestra por consola y lo lanza para que lo capte la capa superior(Controlador/Servicio)
             .catch(error =>{
                 console.log(error)

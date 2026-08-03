@@ -42,8 +42,8 @@ export default class AppointmentsService extends BaseService {
     this.cacheService = new CacheService();
   }
 
-  async findAll() {
-    const appointment = await super.findAll();
+  async findAll(filters = {}) {
+    const appointment = await super.findAll(filters);
     return this.toManyShortDTO(appointment);
   }
 

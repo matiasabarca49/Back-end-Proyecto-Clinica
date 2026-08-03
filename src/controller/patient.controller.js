@@ -25,12 +25,25 @@ const patientsService = new PatientsService();
  */
 export const getPatients = async (req, res, next) => {
     try {
-        const {search, sex, sort, page, limit } = req.query;
+        
+        
+        let filters = {};
+
+        if(req.user?.rol === "doctor"){
+            filters.idDoctor = req.user.id;
+        }
+
         let patientsGetted;
-        if(!page && !limit){
-            patientsGetted = await patientsService.findAll();
+        if(!Object.keys(req.query).length){
+            patientsGetted = await patientsService.findAll(filters);
         }else{
-            patientsGetted = await patientsService.paginatePatients(search, sex, limit, page, sort);
+
+            const {search, sex, sort, page, limit } = req.query;
+
+            if(search) filters.search = search;
+            if(sex) filters.sex = sex;
+
+            patientsGetted = await patientsService.paginatePatients(filters, limit, page, sort);
         }
 
         return res.status(200).json({ success: true, message: "Pacientes obtenidos correctamente", data: patientsGetted})
