@@ -19,13 +19,18 @@ export const getAppointments = async (req, res, next) => {
 
             let filters = {}
 
-            if(doctor) filters.doctor= doctor
+            if(doctor && req.user?.rol !== "doctor") filters.doctor= doctor
             if(patient) filters.patient= patient
             if(from) filters.from= from
             if(to) filters.to= to
             if(room) filters.room= room
             if(typeAppointment) filters.typeAppointment= typeAppointment
             if(status) filters.status= status
+
+            //Si el usuario tiene rol doctor, solo puede ver sus citas
+            if(req.user?.rol === "doctor"){
+                filters.doctorID = req.user.id
+            }
 
             appointmentsGetted = await appointmentsService.paginateAppointments(filters, limit, page, sort);
         }

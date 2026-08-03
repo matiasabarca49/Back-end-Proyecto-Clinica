@@ -60,6 +60,7 @@ export class CreateUserRequestDTO {
             if(user.professionalLicense) this.professionalLicense = user.professionalLicense;
             if(user.schedules) this.schedules = user.schedules
             if(user.color) this.color = user.color
+            if(user.frequency) this.frequency = user.frequency
         }
     }
 

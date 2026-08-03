@@ -20,6 +20,7 @@ import { AppointmentDTO } from "../dto/appointment.dto.js";
 import { determineSearchType } from "../utils/utils.js";
 import {
   getAvailableSlots,
+  getTotalSlots,
   slotsToHours,
   slotsToRanges,
 } from "../utils/slots.helper.js";
@@ -63,8 +64,7 @@ export default class AppointmentsService extends BaseService {
    * @param {Number} sort Filtrar por fecha y slots
    * @returns {Object} Objeto con pagínas de turnos
    */
-  async paginateAppointments(filters = {}, limit = 10, page = 1, sort = 1) {
-    
+  async paginateAppointments(filters = {}, limit = 10, page = 1, sort = 1){    
     //Verificar si es ID o nombre de Doctor
     if(filters.doctor){
       if (mongoose.Types.ObjectId.isValid(filters.doctor)) {
@@ -203,6 +203,32 @@ export default class AppointmentsService extends BaseService {
   async create(newAppointment) {
     const { date, doctorID, patientID, slots } = newAppointment;
 
+    //Corroborrar que el doctor y paciente existan
+    const doctorExists = await doctorsService.findById(doctorID);
+    if (!doctorExists) {
+      throw new NotFoundError("Doctor", doctorID);
+    }
+
+    const patientExists = await patientsService.findById(patientID);
+    if (!patientExists) {
+      throw new NotFoundError("Paciente", patientID);
+    }
+
+    //Corroborrar que se respeten la cantidad de slot para el doctor especifico
+    const totalSlots = getTotalSlots(
+      "09:00",
+      "18:00",
+      doctorExists.frequency
+    );
+
+    const hasInvalidSlot = slots.some(slot => slot >= totalSlots);
+
+    if (hasInvalidSlot) {
+      throw new ValidationError(
+        "Los slots están fuera del rango permitido para este profesional."
+      );
+    }
+
     // Verificar conflictos de horarios para el doctor y el paciente
     const turnoFounded = await this.repository.findByFilter({
       date: date,
@@ -227,20 +253,15 @@ export default class AppointmentsService extends BaseService {
       }
     }
 
-    //Corroborrar que el doctor y paciente existan
-    const doctorExists = await doctorsService.findById(doctorID);
-    if (!doctorExists) {
-      throw new NotFoundError("Doctor", doctorID);
-    }
-
-    const patientExists = await patientsService.findById(patientID);
-    if (!patientExists) {
-      throw new NotFoundError("Paciente", patientID);
-    }
-
     // Crear la nueva cita
     const newAppointmentFormated = new AppointmentDTO(newAppointment);
     const appointmentAdded = await super.create(newAppointmentFormated);
+
+    //Como mongo nos devuelve solo el ID. Lo cambiamos por el doctor completo
+    //Transformar de documento de Mongoose a objeto
+    const objAppointment = appointmentAdded.toObject()
+    objAppointment.doctorID = doctorExists
+    objAppointment.patientID = patientExists
 
     //Invalidar cache de citas de hoy si la cita creada es para el día actual
     const todayString = getTodaySTR()
@@ -300,7 +321,7 @@ export default class AppointmentsService extends BaseService {
       }
     }
 
-    return this.toDTO(appointmentAdded);
+    return this.toShortDTO(objAppointment);
   }
 
   /**
@@ -344,33 +365,45 @@ export default class AppointmentsService extends BaseService {
     return this.toDTO(updatedAppointment);
   }
 
+  /**
+   * Obtener los turnos disponibles de un doctor en un dia especifico
+   * @param {*} idDoctor 
+   * @param {*} day 
+   * @returns 
+   */
   async getAvailableAppointments(idDoctor, day) {
+    //Validar el id del Doctor
+    const doctor = await doctorsService.findById(idDoctor)
+
     // Obtener todos los turnos del doctor en la fecha dada
     const appointments = await this.repository.findManyByFilter({
-      doctorID: idDoctor,
+      doctorID: doctor.id,
       date:day,
     });
 
     let success;
 
     if (!appointments) {
-      success = false;
-      return { success: false };
+      throw new AppError("Error al obtener turnos")
     }
+
+    //Obtener cantidad de slots
+    const cantSlots = getTotalSlots("09:00", "18:00", doctor.frequency)
 
     if (appointments && appointments.length === 0) {
       // Si no hay citas, todos los slots están disponibles
-      return { success: true, data: Array.from({ length: 18 }, (_, i) => i) };
-    } else {
-      // Obtener todos los slots ocupados
-      const occupiedSlots = appointments.reduce((acc, appointment) => {
-        acc = [...acc, ...appointment.slots];
-        return acc;
-      }, []);
-      // Con los ocupados, obtener los slots disponibles
-      const availableSlots = getAvailableSlots(occupiedSlots);
-      return { success: true, data: availableSlots };
-    }
+      return { success: true, data: getAvailableSlots([], cantSlots)};
+    } 
+
+    // Obtener todos los slots ocupados
+    const occupiedSlots = appointments.reduce((acc, appointment) => {
+      acc = [...acc, ...appointment.slots];
+      return acc;
+    }, []);
+
+    // Con los ocupados, obtener los slots disponibles
+    const availableSlots = getAvailableSlots(occupiedSlots, cantSlots);
+    return { success: true, data: availableSlots };
   }
 
   /**
@@ -379,7 +412,11 @@ export default class AppointmentsService extends BaseService {
    * @param {Number} totalSlots Cantidad de slots disponibles del doctor
    * @returns {Object}
    */
-  async getNearestAppointments(idDoctor, totalSlots = 18) {
+  async getNearestAppointments(idDoctor) {
+
+    //Validar el id del Doctor
+    const doctor = await doctorsService.findById(idDoctor)
+
     // Obtener la fecha actual y sumarle 1 dia
     const today = new Date();
     const nextDay = new Date(today);
@@ -396,7 +433,7 @@ export default class AppointmentsService extends BaseService {
     do {
       // Obtener los turnos disponibles para el doctor en la fecha actual
       const availableAppointments = await this.getAvailableAppointments(
-        idDoctor,
+        doctor.id,
         nextDayStr,
       );
 
@@ -410,7 +447,7 @@ export default class AppointmentsService extends BaseService {
         return {
           success: true,
           date: nextDayStr,
-          slots: slotsToHours(availableAppointments.data),
+          slots: slotsToHours(availableAppointments.data, "09:00", doctor.frequency),
         };
       } else {
         // Si no hay citas, todos los slots están ocupados. Pasar al siguiente día

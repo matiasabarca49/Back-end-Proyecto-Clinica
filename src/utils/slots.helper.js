@@ -52,7 +52,7 @@ const minutesToHHMM = (minutes) => {
  * @param {number} slotDuration - Duración de cada slot en minutos, default 30
  * @returns {string[]} Ej: ["09:00 - 10:30", "15:00 - 15:30"]
  */
-export const slotsToRanges = (slots, startHour = "09:00", slotDuration = 30) => {
+export const slotsToRanges = (slots, slotDuration = 30, startHour = "09:00") => {
   // Si no hay slots, devolver array vacío
   if (!slots || slots.length === 0) return [];
 
@@ -125,5 +125,20 @@ export const getAvailableSlots = (occupiedSlots, totalSlots = 18) => {
   const allSlots = Array.from({ length: totalSlots }, (_, i) => i); // [0, 1, 2, ..., 17]
   const occupiedSet = new Set(occupiedSlots); // Convertir a Set para búsqueda rápida
   return allSlots.filter(slot => !occupiedSet.has(slot)); // Filtrar los slots ocupados
+}
+
+
+/**
+ * Calcular la cantidad de slots
+ * 
+ */
+export function getTotalSlots(startHour ="09:00", endHour = "18:00", appointmentDuration){
+  const [startH, startM] = startHour.split(":").map(Number);
+  const [endH, endM] = endHour.split(":").map(Number);
+
+  const start = startH * 60 + startM;
+  const end = endH * 60 + endM;
+
+  return (end - start) / appointmentDuration;
 }
 

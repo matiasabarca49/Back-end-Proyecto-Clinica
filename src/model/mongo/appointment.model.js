@@ -12,7 +12,7 @@ const appointmentSchema = new mongoose.Schema({
         required: true,
         validate: {
             validator: function(slots) {
-                return slots.every(s => s >= 0 && s <= 17); // 18 slots en total
+                return slots.every(s => s >= 0 && s <= 53); // slots mayor a 0(cero)
             },
             message: "Los slots deben estar entre 0 y 17"
             }

@@ -203,6 +203,7 @@ class UsersService extends BaseService{
         if(toUpdate.professionalLicense) updatedFields.professionalLicense = toUpdate.professionalLicense;
         if(toUpdate.color) updatedFields.color = toUpdate.color;
         if(toUpdate.schedules) updatedFields.schedules = toUpdate.schedules;
+        if(toUpdate.frequency) updatedFields.frequency = toUpdate.frequency;
         const updatedDoctor = new DoctorDTO(updatedFields);
         const doctorService = new DoctorService();
         await doctorService.update(userID, updatedDoctor);

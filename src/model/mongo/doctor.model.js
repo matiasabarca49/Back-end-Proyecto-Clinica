@@ -101,7 +101,11 @@ const doctorSchema = new mongoose.Schema({
     color: {
         type: String,
         default: "#8f897fff"
-    }
+    },
+    frequency: {
+        type: Number,
+        default: 30
+    },
 },{ timestamps: { createdAt: 'created', updatedAt: 'lastChange' }});
 mongoose.plugin(mongoosePaginate)
 

@@ -20,7 +20,8 @@ export class DoctorDTO {
             friday: { start: "09:00", end: "18:00" },
             saturday: { start: "09:00", end: "18:00" },
         },
-        this.color = doctor.color || "#8f897fff"
+        this.color = doctor.color || "#8f897fff";
+        this.frequency = doctor.frequency || 30;
 
     }
 
@@ -42,6 +43,7 @@ export class DoctorDTO {
             phone: doctor.phone,
             schedules: doctor.schedules,
             color: doctor.color,
+            frequency: doctor.frequency,
             created: doctor.created,
             lastChange: doctor.lastChange
         };
@@ -55,6 +57,7 @@ export class DoctorDTO {
         if (doctor.professionalLicense) updatedDoctor.professionalLicense = doctor.professionalLicense;
         if (doctor.email) updatedDoctor.email = doctor.email.toLowerCase();
         if (doctor.phone) updatedDoctor.phone = doctor.phone;
+        if (doctor.frequency) updatedDoctor.frequency = doctor.frequency;
         return updatedDoctor;
     }
 }
@@ -73,6 +76,7 @@ export class CreateDoctorDTO {
         this.status = doctor.status;
         this.schedules = doctor.schedules;
         this.color = doctor.color;
+        this.frequency= doctor.frequency;
     }
 
     normalize(str){
@@ -90,6 +94,7 @@ export class DoctorScheduleResponseDTO {
         this.id = doctor._id || doctor.id;
         this.name = `${doctor.name} ${doctor.lastName}`;
         this.schedules = doctor.schedules;
-        this.color = doctor.color
+        this.color = doctor.color;
+        this.frequency = doctor.frequency;
     }
 }

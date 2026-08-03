@@ -63,7 +63,7 @@ export const validateAppointmentData= [
       return true;
     }),
   body('slots.*')
-    .isInt({ min: 0, max: 17 }).withMessage('Cada slot debe ser un número entre 0 y 17')
+    .isInt({ min: 0, max: 53 }).withMessage('Cada slot debe ser un número entre 0 y 53')
     .toInt(),
   body('typeAppointment')
     .exists().withMessage('Atributo requerido')

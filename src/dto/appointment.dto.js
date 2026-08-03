@@ -28,7 +28,7 @@ export class AppointmentDTO{
             id: appointment._id,
             date: appointment.date,
             slots: appointment.slots,
-            slotsText: slotsToRanges(appointment.slots),
+            slotsText: slotsToRanges(appointment.slots, appointment.doctorID.frequency),
             typeAppointment: appointment.typeAppointment,
             room: appointment.room,
             doctorID: appointment.doctorID,
@@ -45,10 +45,10 @@ export class AppointmentDTO{
             id: appointment._id,
             date: appointment.date,
             slots: appointment.slots,
-            slotsText: slotsToRanges(appointment.slots),
+            slotsText: slotsToRanges(appointment.slots, appointment.doctorID.frequency),
             typeAppointment: appointment.typeAppointment,
             room: appointment.room,
-            doctorID: { id: appointment.doctorID.id, name: appointment.doctorID.name, lastName: appointment.doctorID.lastName, email: appointment.doctorID.email,dni: appointment.doctorID.dni, phone: appointment.doctorID.phone },
+            doctorID: { id: appointment.doctorID.id, name: appointment.doctorID.name, lastName: appointment.doctorID.lastName, email: appointment.doctorID.email,dni: appointment.doctorID.dni, phone: appointment.doctorID.phone, frequency: appointment.doctorID.frequency},
             patientID: { id: appointment.patientID.id, name: appointment.patientID.name, lastName: appointment.patientID.lastName, email: appointment.patientID.email, dni: appointment.patientID.dni, phone: appointment.patientID.phone },
             status: appointment.status
         };
