@@ -48,7 +48,9 @@ describe('API de Appointments', () => {
                 rol: 'doctor',
                 dni: '1234567',
                 phone: '1234567890',
-                professionalLicense: 'MP12345'
+                professionalLicense: 'MP12345',
+                frequency: 30,
+
             };
         
         const responseUser = await request(app)
@@ -105,9 +107,8 @@ describe('API de Appointments', () => {
         expect(responseTurno.body.data).toHaveProperty('slotsText');
         expect(responseTurno.body.data).toHaveProperty('patientID');
         expect(responseTurno.body.data).toHaveProperty('doctorID');
-        expect(responseTurno.body.data).toHaveProperty('created');
-        expect(responseTurno.body.data.patientID).toBe(patientId);
-        expect(responseTurno.body.data.doctorID).toBe(idUser);
+        expect(responseTurno.body.data.patientID.id).toBe(patientId);
+        expect(responseTurno.body.data.doctorID.id).toBe(idUser);
     });
 
 
