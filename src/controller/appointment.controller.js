@@ -53,7 +53,14 @@ export const getAppointments = async (req, res, next) => {
 export const getTodayAppointments = async (req, res, next) => {
     try{
 
-        const appointmentsGetted = await appointmentsService.findToday();
+        //En caso de que el usuario sea doctor, se filtran las citas por su ID
+        let filters = {}
+
+        if(req.user?.rol === "doctor"){
+            filters.doctorID = req.user.id
+        }
+
+        const appointmentsGetted = await appointmentsService.findToday(filters);
         
         return res.status(200).json({ success: true , data: appointmentsGetted })
 

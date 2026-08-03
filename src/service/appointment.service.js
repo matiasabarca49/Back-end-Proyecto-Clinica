@@ -169,16 +169,18 @@ export default class AppointmentsService extends BaseService {
    * 
    * @returns {Object} Páginas con turnos
    */
-  async findToday() {
+  async findToday(filters = {}) {
     //Buscar en cache
-    const cachedAppointments = await this.getCacheAppointment()
-    if (cachedAppointments) return cachedAppointments;
+    const cachedAppointments = await this.getCacheAppointment(filters.doctorID ? true : false, filters.doctorID || null);
+    if (cachedAppointments)  return cachedAppointments;
     
-    //En caso de no estar en cache, lo traemos de la DB
+    //En caso de no estar en cache, o ser un usuario con rol doctor, lo traemos de la DB
     const todayString = getTodaySTR()
-
+    
+    filters.date = todayString
+    
     const appointments = await this.repository.findPaginate(
-      { date: todayString },
+      filters,
       10,
       1,
       { date: 1, slots: 1 },
@@ -189,8 +191,10 @@ export default class AppointmentsService extends BaseService {
 
     appointments.docs = this.toManyShortDTO(appointments.docs);
 
-    //Guardar en cache por 10 minutos
-    this.saveCacheAppointment(appointments)
+    //Guardar en cache por 10 minutos. En caso de que no sea un doctor.
+    if(!filters.doctorID) {
+      this.saveCacheAppointment(appointments)
+    }
 
     return appointments;
   }
@@ -614,7 +618,7 @@ async finalize(appointmentID) {
    */
 
   //Obtener de Cache
-  async getCacheAppointment(){
+  async getCacheAppointment(isDoctor = false, doctorID = null){
     const todayString = getTodaySTR()
     const todayKey = `appointments:${todayString}`;
     const cachedAppointments = await this.cacheService.get(
@@ -624,8 +628,17 @@ async finalize(appointmentID) {
     if(!cachedAppointments) {
       return null
     }
+    
+    if(isDoctor && !doctorID) {
+      throw new ValidationError("Se requiere el ID del doctor para filtrar las citas")
+    }
+    
+    if(isDoctor && doctorID) {
+      cachedAppointments.docs = cachedAppointments.docs.filter(appointment => appointment.doctorID.id === doctorID);
+      return cachedAppointments;
+    }
 
-    //console.log(`Citas de hoy ${todayString} obtenidas de cache`);
+    //console.log(`Todas las citas de hoy ${todayString} obtenidas de cache`);
     return cachedAppointments;
   }
 
