@@ -46,6 +46,7 @@ app.use(generalLimit);
 /**
  * ROUTES
 */
+//rutas datos
 import routeUser from './routes/user.router.js';
 import routePatient from './routes/patient.router.js';
 import routeDoctor from './routes/doctor.router.js';
@@ -58,6 +59,8 @@ import { errorHandler, notFoundHandler } from './middlewares/errors.middleware.j
 //Autenticación Google
 import { validateEnvVars } from './utils/dotenv.helper.js';
 import routeAuth from './routes/passports/google.passport.router.js';
+//Health check
+import healthRouter from './modules/health/health.router.js';
 
 
 //Raiz
@@ -80,6 +83,9 @@ if(validateEnvVars("google")){
     app.use("/api/auth",routeAuth);
     googleAuth = true;
 }
+
+//health check
+app.use("/api/health", healthRouter);
 
 //Docs
 //Documentación Swagger
