@@ -1,4 +1,8 @@
 import packageJson from "../../../package.json" with { type: "json" };
+import { queueCheck } from "./checks/queue.check.js";
+import { mongoCheck } from "./checks/mongo.check.js";
+import { redisCheck } from "./checks/redis.check.js";
+import { systemCheck } from "./checks/systemc.check.js";
 
 const APP_VERSION = packageJson.version;
 
@@ -23,6 +27,14 @@ class HealthService {
             const environment = process.env.NODE_ENV || "development";
             //status
             const status = "UP";
+
+            //services
+            const services = {
+                API: await systemCheck(),
+                mongo: await mongoCheck(),
+                redis: await redisCheck(),
+                bullmq: await queueCheck(), 
+            };
             return {
                 service: process.env.APP_NAME || "clinic-api",
                 status,
@@ -30,8 +42,7 @@ class HealthService {
                 uptime,
                 version,
                 environment,
-                services: {
-                }
+                services
             };
         }
 
