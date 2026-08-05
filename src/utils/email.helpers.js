@@ -172,11 +172,11 @@ export const send2FACode = async (email, name, code) => {
     </div>
   `;
 
-  return await sendEmail({
+  return await emailQueue.add("sendEmail",{
     to: email,
     subject: `🔐 Tu código de verificación: ${code}`,
     html: emailTemplate(content, COLORS.primary),
-  });
+  })
 };
 
 /**
@@ -214,11 +214,12 @@ export const sendLoginSuccessNotification = async (email, name) => {
     </p>
   `;
 
-  return await sendEmail({
+  
+  return await emailQueue.add("sendEmail",{
     to: email,
     subject: "✅ Inicio de sesión exitoso",
     html: emailTemplate(content, COLORS.success),
-  });
+  })
 };
 
 /**
@@ -359,9 +360,9 @@ export const sendAppointmentConfirmation = async (
   `;
 
   return await emailQueue.add("sendEmail", {
-                to: patientEmail,
-                subject: `✅ Turno Confirmado - ${formattedDate}`,
-                html: emailTemplate(content, COLORS.success)
+      to: patientEmail,
+      subject: `✅ Turno Confirmado - ${formattedDate}`,
+      html: emailTemplate(content, COLORS.success)
   });
 
   /* return await sendEmail({
