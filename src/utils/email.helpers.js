@@ -4,7 +4,7 @@
  */
 
 import transporter from "../config/mailer.config.js";
-import { emailQueue } from "../queues/email.queue.js";
+import { emailQueue } from "../core/queues/email.queue.js";
 
 const SENDER_NAME = "Clínica Odontológica";
 const EMAIL_USER = process.env.EMAIL_USER;

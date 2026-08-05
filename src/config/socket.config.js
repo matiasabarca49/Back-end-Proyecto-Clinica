@@ -1,7 +1,7 @@
 import { Server } from 'socket.io'
-import { verifyAccessToken } from '../service/auth/jwt.service.js';
+import { verifyAccessToken } from '../core/services/jwt.service.js';
 import cookie from "cookie";
-import { AppError } from '../exceptions/index.js';
+import { AppError } from '../core/exceptions/index.js';
 
 let io;
 

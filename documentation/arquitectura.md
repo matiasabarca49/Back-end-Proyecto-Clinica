@@ -4,7 +4,8 @@
 
 Este proyecto corresponde a un **Sistema de Gestión para Clínica Odontológica**, cuyo objetivo es administrar información relacionada con pacientes, doctores, turnos e historias clínicas odontológicas.
 
-El sistema fue diseñado utilizando una **arquitectura monolítica basada en capas**, permitiendo organizar la lógica del sistema de forma clara y mantenible.
+El sistema fue diseñado utilizando una **arquitectura monolítica modular**, organizada por funcionalidades (**feature-based**) y estructurada internamente mediante una **arquitectura por capas**. Este enfoque permite mantener una clara separación de responsabilidades, favoreciendo la escalabilidad, la mantenibilidad y la evolución del sistema sin incrementar la complejidad arquitectónica.
+
 
 ---
 
@@ -20,15 +21,21 @@ Frontend → API REST → Lógica de negocio → Base de datos
 
 ---
 
-## 3. Arquitectura por Capas
+## 3. Arquitectura Feature-Based
 
-El backend está organizado siguiendo el patrón **MVC (Model - View - Controller)** junto con una separación adicional en capas para mantener el desacoplamiento entre componentes.
+El proyecto adopta una arquitectura **feature-based**, donde cada funcionalidad del sistema se encapsula en un módulo independiente. Cada módulo agrupa todos los componentes necesarios para implementar una característica específica del negocio, favoreciendo la cohesión, el desacoplamiento y la escalabilidad de la aplicación.
 
-Estructura de capas:
+Internamente, cada módulo se organiza siguiendo una **arquitectura por capas**, donde cada capa posee una responsabilidad bien definida:
 
-Controller → Service → Repository → Model → Database
+```text
+Routes → Controller → Service → Repository → Model → Database
+```
 
-### 3.1 - Controller
+Los componentes compartidos que no pertenecen a una funcionalidad específica, como el sistema de caché, colas, sockets, correo electrónico, servicios genéricos y demás infraestructura, se ubican en la carpeta `core`, permitiendo que los módulos permanezcan enfocados exclusivamente en la lógica del negocio.
+
+### 3.1 Responsabilidades de cada capa
+
+#### 3.1.1 - Controller
 
 Responsabilidades:
 
@@ -41,7 +48,7 @@ Los controladores no contienen lógica de negocio.
 
 ---
 
-### 3.2 - Service
+#### 3.1.2 - Service
 
 Responsabilidades:
 
@@ -53,7 +60,7 @@ Esta capa actúa como intermediaria entre los controladores y el acceso a datos.
 
 ---
 
-### 3.3 - Repository
+#### 3.1.3 - Repository
 
 Responsabilidades:
 
@@ -65,7 +72,7 @@ Esto permite aislar la lógica de acceso a datos del resto del sistema.
 
 ---
 
-### 3.4 - Model
+#### 3.1.4 - Model
 
 Los modelos representan las **entidades del sistema** y definen la estructura de los datos almacenados en la base de datos.
 
@@ -73,7 +80,7 @@ Los modelos se definen utilizando **Mongoose**, permitiendo mapear documentos de
 
 ---
 
-### 3.5 - DTO (Data Transfer Object)
+#### 3.1.5 - DTO (Data Transfer Object)
 
 Los **DTO** se utilizan para definir las estructuras de datos que se envían o reciben a través de la API.
 
@@ -85,7 +92,7 @@ Su uso permite:
 
 ---
 
-## 3.6 - Persistencia de Datos
+### 3.2 - Persistencia de Datos
 
 El sistema utiliza **MongoDB** como base de datos.
 

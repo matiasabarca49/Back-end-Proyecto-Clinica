@@ -43,9 +43,22 @@ npm install
 
 # 5. Configurar variables de entorno
 
-Crear un archivo .env en la raíz del proyecto.
+Crear un archivo .env en la raíz del proyecto según el entorno a ejecutar:
+
+- .env.development
+- .env.production
+
+La API buscará el archivo del entorno especificado en la variable NODE_ENV:
 
 ```
+NODE_ENV=<environment>
+```
+**NOTA:** Los valores posibles son: development, production o test. En caso de no especificar el entorno, se buscará por defecto un archivo llamado **.env.delopment**  
+
+Ejemplo de archivo env:
+
+```
+NODE_ENV=development
 DATABASE_URL=mongodb://<IP_SERVIDOR_DB o localhost>/clinica_odontologica
 SECRET_SESSIONS=UNA_CLAVE_SECRETA_PARA_LAS_SESIONES
 PORT=PUERTO_PARA_ACCEDER_A_LA_API
@@ -65,6 +78,8 @@ EMAIL_PASS=CLAVE_PARA_APIS
 **NOTA:** No es necesario contar con credenciales de Google ni Emails para probar la API. En caso de no proporcionarlas, la API desactivará esas caracteristicas.
 
 La API puede funcionar sin autenticación con Google ni envio de emails.
+
+## 5.1 Bloqueo CORS
 
 Por otra parte puede indicar el origen del Frontend para evitar el bloqueo de CORS de su Front:
 
@@ -100,7 +115,7 @@ http://<IP_SERVIDOR O localhost>:<PORT O 8080>
 
 Los endpoints se encuentran protegidos con credenciales. En el momento de levantar el servidor por primera vez no tendrá un usuario administrador. Puede crear uno con el siguiente comando:
 
-Con el servidor levantado aplique el siguiente comando:
+Con el servidor levantado o no aplique el siguiente comando:
 
 ```
 npm run create-admin -- -e <email> -p <password> -n <nombre_usuario>

@@ -133,7 +133,8 @@ Representa a los profesionales que trabajan en la clínica.
   "status": "active",
   "color": "#1f3aa8",
   "created": "date",
-  "lastChange": "date"
+  "lastChange": "date",
+  "frequency": 60
 }
 ```
 

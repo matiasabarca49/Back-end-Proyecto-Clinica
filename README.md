@@ -11,7 +11,7 @@ El sistema permite gestionar:
 - Autenticación y autorización de usuarios.
 - Gestión de pacientes.
 - Gestión de profesionales y sus horarios de atención.
-- Gestión de turnos con control de disponibilidad y seguimiento con calendario.
+- Gestión de turnos en tiempo real, con control de disponibilidad y seguimiento con calendario.
 - Historia clínica digital con odontograma.
 - Administración de usuarios del sistema.
 
@@ -21,8 +21,9 @@ El sistema permite gestionar:
 - **Gestión de sesiones y caché** para optimizar el rendimiento de la aplicación.
 - **Procesamiento de tareas en segundo plano** para ejecutar operaciones asíncronas.
 - **Búsqueda automática del próximo turno disponible** según la agenda de cada profesional.
+- **Manejos de turnos del dia en tiempo real para doctores y recepcionistas** según el estado de cada turno.
 - **Documentación interactiva de la API** para facilitar el desarrollo y las integraciones.
-- **Arquitectura por capas y stateless** para favorecer la escalabilidad y el mantenimiento del sistema.
+- **Arquitectura feature-based, organizada por capas y stateless** para favorecer la escalabilidad y el mantenimiento del sistema.
 
 ## Tecnologías
 
@@ -38,37 +39,48 @@ El sistema permite gestionar:
 
 ## Arquitectura
 
-El proyecto sigue una arquitectura por capas para separar responsabilidades y facilitar el mantenimiento.
+La aplicación sigue una arquitectura **feature-based**, donde el código se organiza por funcionalidades (módulos), y cada módulo implementa una **arquitectura por capas** para separar responsabilidades y facilitar la escalabilidad y el mantenimiento.
+
+Cada módulo sigue el siguiente flujo:
 
 ```text
-Router -> Controller -> Service -> Repository -> DB
+Routes → Controller → Service → Repository → Database
 ```
+
+Esta organización permite que cada funcionalidad sea independiente y cohesiva, mientras que los componentes compartidos e infraestructura (como cache, colas, sockets y servicios reutilizables) se agrupan en la carpeta `core`.
+
 
 ---
 
 ## Estructura del proyecto
 
-```
+```text
 src/
-├── cache/          # Configuración de servicios que manejan el cache
-├── config/         # Configuración general del sistema
-├── controllers/    # Manejo de requests y responses HTTP
-├── docs/           # Documentación endpoints swagger
-├── dto/            # Transferencia y normalización de datos
-├── exceptions/     # Excepciones personalizadas
-├── middlewares/    # Middlewares de Express
-├── model/          # Definiciones relacionadas a persistencia
-├── public/         # Recursos estáticos
-├── queue/          # Gestión de colas y procesamiento asíncrono
-├── repositories/   # Acceso a datos
-├── routes/         # Definición de rutas
-├── services/       # Lógica de negocio
-├── utils/          # utilidades para el código
-├── validation/     # Validaciones de entrada
-├── workers/        # Procesamiento de tareas en segundo plano
-├── app.js
-└── server.js
+├── config/            # Configuración de la aplicación(Mongo, redis, sokets, etc)
+│
+├── core/              # Componentes compartidos e infraestructura (cache, colas, correo, etc)
+│
+├── docs/              # Documentación de Swagger
+│
+├── middlewares/       # Middlewares de Express
+│
+├── modules/           # Módulos de negocio organizados por funcionalidad
+│   └── document/
+│       ├── document.controller.js   # Maneja las solicitudes HTTP
+│       ├── document.service.js      # Contiene la lógica de negocio
+│       ├── document.repository.js   # Acceso y operaciones sobre la base de datos
+│       ├── document.routes.js       # Definición de las rutas del módulo
+│       ├── document.validation.js   # Validaciones de entrada
+│       └── document.dto.js          # Objetos de transferencia de datos (DTO)
+│
+├── public/            # Archivos estáticos accesibles públicamente
+│
+├── utils/             # Funciones auxiliares reutilizables
+│
+├── app.js             # Configuración e inicialización de la aplicación Express
+└── server.js          # Punto de entrada de la aplicación e inicio del servidor
 ```
+
 
 ## Documentación
 

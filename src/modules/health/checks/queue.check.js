@@ -1,4 +1,4 @@
-import { emailQueue } from "../../../queues/email.queue.js";
+import { emailQueue } from "../../../core/queues/email.queue.js";
 
 export const queueCheck = async () => {
     try {

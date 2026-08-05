@@ -7,7 +7,7 @@
  * 3. Maneja errores operacionales vs errores de sistema
  */
 
-import AppError from '../exceptions/AppErrors.js';
+import AppError from '../core/exceptions/AppErrors.js';
 
 /**
  * Middleware principal de errores

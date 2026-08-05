@@ -1,0 +1,691 @@
+import mongoose from "mongoose";
+//Model
+import { Appointment } from "./appointment.model.js";
+//Base Service
+import BaseService from "../../core/services/base.service.js";
+//Patients Service
+import PatientsService from "../patient/patient.service.js";
+const patientsService = new PatientsService();
+//Doctors Service
+import DoctorsService from "../doctor/doctor.service.js";
+const doctorsService = new DoctorsService();
+//notification service
+import appointmentNotificationService from "./appointment.socket.js";
+
+//Repository
+import MongoRepository from "../../core/repositories/implementations/mongo.repository.js";
+//DTO
+import { AppointmentDTO } from "./appointment.dto.js";
+//utils and helpers
+import { determineSearchType } from "../../utils/utils.js";
+import {
+  getAvailableSlots,
+  getTotalSlots,
+  slotsToHours,
+  slotsToRanges,
+} from "../../utils/slots.helper.js";
+import {
+  NotFoundError,
+  ValidationError,
+} from "../../core/exceptions/index.js";
+import { sendAppointmentConfirmation } from "../../utils/email.helpers.js";
+import { validateEnvVars } from "../../utils/dotenv.helper.js";
+import AppError from "../../core/exceptions/AppErrors.js";
+import CacheService from "../../core/services/cache.service.js";
+import { dateNotHours, getTodaySTR } from "../../utils/dates.helper.js";
+
+export default class AppointmentsService extends BaseService {
+  constructor() {
+    const repository = new MongoRepository(Appointment);
+    super(repository);
+
+    this.cacheService = new CacheService();
+  }
+
+  async findAll(filters = {}) {
+    const appointment = await super.findAll(filters);
+    return this.toManyShortDTO(appointment);
+  }
+
+  async findById(id) {
+    const appointment = await super.findById(id);
+    if (!appointment) throw new NotFoundError("Appointment", id);
+    return this.toDTO(appointment);
+  }
+
+  /**
+   * Obtener turnos mediate filtros de busqueda
+   * 
+   * Esto metodo devuelve los turnos por páginas
+   * 
+   * @param {Object} filters Filtros de Busqueda[from, to, doctor, patient, status, typeAppointmet, room]
+   * @param {Number} limit Cantidad de documentos a devolver
+   * @param {Number} page Numero de página
+   * @param {Number} sort Filtrar por fecha y slots
+   * @returns {Object} Objeto con pagínas de turnos
+   */
+  async paginateAppointments(filters = {}, limit = 10, page = 1, sort = 1){    
+    //Verificar si es ID o nombre de Doctor
+    if(filters.doctor){
+      if (mongoose.Types.ObjectId.isValid(filters.doctor)) {
+        filters.doctorID = filters.doctor;
+      } else if (typeof filters.doctor === "string" && filters.doctor.length > 1) {
+        const searchRegex = new RegExp(filters.doctor, "i");
+        //Buscando doctores que coincidan con la persona
+        const doctorsFounded = await doctorsService.searchPaginate(searchRegex);
+        //Usamos un conjunto de concidencias para un campo. En este caso [_id, _id, _id, _id]
+        if (!doctorsFounded.docs.length > 0) {
+          return {
+                  "docs": [],
+                  "totalDocs": 0,
+                  "limit": 10,
+                  "page": 1,
+                  "totalPages": 0,
+                  "hasNextPage": false,
+                  "hasPrevPage": false
+              }
+        } else{
+          filters.doctorID = { $in: doctorsFounded.docs.map((d) => d.id) }
+        }
+      }
+
+      delete filters.doctor
+    }
+
+    if(filters.patient){
+
+      if (mongoose.Types.ObjectId.isValid(filters.patient)) {
+        filters.patientID = filters.patient;
+      } else if (typeof filters.patient === "string" && filters.patient.length > 1) {
+        const searchRegex = new RegExp(filters.patient, "i");
+        //Buscando Pacientes que coincidan con la persona
+        const patientsFounded = await patientsService.searchPaginate(searchRegex);
+        //Usamos un conjunto de concidencias para un campo. En este caso [_id, _id, _id, _id]
+        if (!patientsFounded.docs.length > 0) {
+            return {
+                  "docs": [],
+                  "totalDocs": 0,
+                  "limit": 10,
+                  "page": 1,
+                  "totalPages": 0,
+                  "hasNextPage": false,
+                  "hasPrevPage": false
+              }
+        }else{
+          filters.patientID = { $in: patientsFounded.docs.map((d) => d.id) }
+        }
+      }
+
+      delete filters.patient
+    }  
+  
+    if(filters.from){
+      filters.date = {$gte: filters.from, ...filters.date}
+      delete filters.from
+    }
+
+    if(filters.to){
+      filters.date = {...filters.date, $lte: filters.to, }
+      delete filters.to
+    }
+
+    if(filters.typeAppointment){
+      const searchRegex = new RegExp(filters.typeAppointment, "i");
+      filters.typeAppointment = searchRegex 
+    }
+
+    if(filters.room){
+      const searchRegex = new RegExp(filters.room, "i");
+      filters.room = searchRegex 
+    }
+
+    if (filters.status) {
+      filters.status = filters.status;
+    }
+
+    switch (parseInt(sort)) {
+      case -1:
+        sort = { date: -1, slots: -1 };
+        break;
+      default:
+        sort = { date: 1, slots: 1 };
+        break;
+    }
+
+    const appointmentsFounded = await this.repository.findPaginate(filters,limit,page,sort);
+
+    if (appointmentsFounded) {
+      appointmentsFounded.docs = this.toManyShortDTO(appointmentsFounded.docs);
+    }
+    return appointmentsFounded || [];
+  }
+
+  /**
+   * Retornar los turnos de hoy
+   * 
+   * Este método utiliza cache. La ventana de los datos es de 10min
+   * 
+   * Primero se consulta si los datos estan en cache. Si no lo estan se guarda para la próxima consulta
+   * 
+   * @returns {Object} Páginas con turnos
+   */
+  async findToday(filters = {}) {
+    //Buscar en cache
+    const cachedAppointments = await this.getCacheAppointment(filters.doctorID ? true : false, filters.doctorID || null);
+    if (cachedAppointments)  return cachedAppointments;
+    
+    //En caso de no estar en cache, o ser un usuario con rol doctor, lo traemos de la DB
+    const todayString = getTodaySTR()
+    
+    filters.date = todayString
+    
+    const appointments = await this.repository.findPaginate(
+      filters,
+      10,
+      1,
+      { date: 1, slots: 1 },
+    );
+
+    if (!appointments)
+      throw new AppError("Error al obtener las citas de hoy", 500);
+
+    appointments.docs = this.toManyShortDTO(appointments.docs);
+
+    //Guardar en cache por 10 minutos. En caso de que no sea un doctor.
+    if(!filters.doctorID) {
+      this.saveCacheAppointment(appointments)
+    }
+
+    return appointments;
+  }
+
+  /**
+   * Crear un turno nuevo
+   * @param {*} newAppointment 
+   * @returns {Object}
+   */
+  async create(newAppointment) {
+    const { date, doctorID, patientID, slots } = newAppointment;
+
+    //Corroborrar que el doctor y paciente existan
+    const doctorExists = await doctorsService.findById(doctorID);
+    if (!doctorExists) {
+      throw new NotFoundError("Doctor", doctorID);
+    }
+
+    const patientExists = await patientsService.findById(patientID);
+    if (!patientExists) {
+      throw new NotFoundError("Paciente", patientID);
+    }
+
+    //Corroborrar que se respeten la cantidad de slot para el doctor especifico
+    const totalSlots = getTotalSlots(
+      "09:00",
+      "18:00",
+      doctorExists.frequency
+    );
+
+    const hasInvalidSlot = slots.some(slot => slot >= totalSlots);
+
+    if (hasInvalidSlot) {
+      throw new ValidationError(
+        "Los slots están fuera del rango permitido para este profesional."
+      );
+    }
+
+    // Verificar conflictos de horarios para el doctor y el paciente
+    const turnoFounded = await this.repository.findByFilter({
+      date: date,
+      slots: { $in: slots },
+      $or: [
+        { doctorID: doctorID }, // El doctor ya tiene turno
+        { patientID: patientID }, // El paciente ya tiene turno
+      ],
+    });
+
+    if (turnoFounded) {
+      // Determinar qué conflicto existe
+      if (turnoFounded.doctorID._id.toString() === doctorID) {
+        throw new ValidationError(
+          "El doctor ya tiene un turno reservado en ese horario",
+        );
+      }
+      if (turnoFounded.patientID._id.toString() === patientID) {
+        throw new ValidationError(
+          "El paciente ya tiene un turno reservado en ese horario",
+        );
+      }
+    }
+
+    // Crear la nueva cita
+    const newAppointmentFormated = new AppointmentDTO(newAppointment);
+    const appointmentAdded = await super.create(newAppointmentFormated);
+
+    //Como mongo nos devuelve solo el ID. Lo cambiamos por el doctor completo
+    //Transformar de documento de Mongoose a objeto
+    const objAppointment = appointmentAdded.toObject()
+    objAppointment.doctorID = doctorExists
+    objAppointment.patientID = patientExists
+
+    //Invalidar cache de citas de hoy si la cita creada es para el día actual
+    const todayString = getTodaySTR()
+
+    const appointmentDate = dateNotHours(new Date(date));
+
+    if (appointmentDate === todayString) {
+      this.deleteCacheAppointment()
+    }
+
+    if (!validateEnvVars("email")) {
+      console.warn(
+        "⚠️ [Info] Email de confirmación no enviado: variables de entorno para email no definidas",
+      );
+    } else {
+      //Enviar email de confirmación al paciente
+      const patient = patientExists;
+
+      // Verificar que tengamos los datos necesarios y que el populate haya funcionado
+      if (!patient) {
+        console.warn("⚠️ No se pudo enviar email: patientID es null");
+      } else if (
+        typeof patient === "string" ||
+        patient.constructor?.name === "ObjectId"
+      ) {
+        console.warn("⚠️ No se pudo enviar email: patientID no está populado");
+      } else if (!patient.email) {
+        console.warn("⚠️ No se pudo enviar email: el paciente no tiene email");
+      } else if (
+        !appointmentAdded.slots ||
+        appointmentAdded.slots.length === 0
+      ) {
+        console.warn("⚠️ No se pudo enviar email: no hay slots");
+      } else {
+        //enviar email
+        const patientFullName = `${patient.name} ${patient.lastName}`;
+
+        // Usar el helper de slots existente para formatear el horario
+        const timeRanges = slotsToRanges(appointmentAdded.slots, doctorExists.frequency);
+        const appointmentTime =
+          timeRanges.join(", ") || "Horario no especificado";
+
+        const emailSent = await sendAppointmentConfirmation(
+          patient.email,
+          patientFullName,
+          appointmentAdded.date,
+          appointmentTime,
+        );
+
+        if (emailSent) {
+          console.log(`✉️ Email de confirmación enviado a ${patient.email}`);
+        } else {
+          console.warn(
+            `⚠️ Error al enviar email a ${patient.email} (problema con el transporter)`,
+          );
+        }
+      }
+    }
+
+    return this.toShortDTO(objAppointment);
+  }
+
+  /**
+   * Borrar un turno
+   */
+  async delete(appointmentID) {
+    const deletedAppointment = await super.delete(appointmentID);
+
+    //Invalidar cache de citas de hoy si la cita eliminada es para el día actual
+    const todayString = getTodaySTR()
+
+    const appointmentDate = dateNotHours(new Date(deletedAppointment.date));
+
+    if (appointmentDate === todayString) {
+      this.deleteCacheAppointment()
+    }
+
+    return this.toDTO(deletedAppointment);
+  }
+
+  /**
+   * Actualizar un turno
+   */
+  async update(appointmentID, toUpdate) {
+    const updatedAppointment = await this.repository.updateByFilter(
+      { _id: appointmentID },
+      toUpdate,
+    );
+
+    if (!updatedAppointment)
+      throw new NotFoundError("Appointment", appointmentID);
+
+    //Invalidar cache de citas de hoy si la cita actualizada es para el día actual
+    const todayString = getTodaySTR()
+
+    const appointmentDate = dateNotHours(new Date(updatedAppointment.date));
+
+    if (appointmentDate === todayString) {
+      this.deleteCacheAppointment()
+    }
+    return this.toDTO(updatedAppointment);
+  }
+
+  /**
+   * Obtener los turnos disponibles de un doctor en un dia especifico
+   * @param {*} idDoctor 
+   * @param {*} day 
+   * @returns 
+   */
+  async getAvailableAppointments(idDoctor, day) {
+    //Validar el id del Doctor
+    const doctor = await doctorsService.findById(idDoctor)
+
+    // Obtener todos los turnos del doctor en la fecha dada
+    const appointments = await this.repository.findManyByFilter({
+      doctorID: doctor.id,
+      date:day,
+    });
+
+    let success;
+
+    if (!appointments) {
+      throw new AppError("Error al obtener turnos")
+    }
+
+    //Obtener cantidad de slots
+    const cantSlots = getTotalSlots("09:00", "18:00", doctor.frequency)
+
+    if (appointments && appointments.length === 0) {
+      // Si no hay citas, todos los slots están disponibles
+      return { success: true, data: getAvailableSlots([], cantSlots)};
+    } 
+
+    // Obtener todos los slots ocupados
+    const occupiedSlots = appointments.reduce((acc, appointment) => {
+      acc = [...acc, ...appointment.slots];
+      return acc;
+    }, []);
+
+    // Con los ocupados, obtener los slots disponibles
+    const availableSlots = getAvailableSlots(occupiedSlots, cantSlots);
+    return { success: true, data: availableSlots };
+  }
+
+  /**
+   * Obtener los turnos disponibles más cercanos para un doctor especifico
+   * @param {String} idDoctor Identificador de doctor
+   * @param {Number} totalSlots Cantidad de slots disponibles del doctor
+   * @returns {Object}
+   */
+  async getNearestAppointments(idDoctor) {
+
+    //Validar el id del Doctor
+    const doctor = await doctorsService.findById(idDoctor)
+
+    // Obtener la fecha actual y sumarle 1 dia
+    const today = new Date();
+    const nextDay = new Date(today);
+    nextDay.setDate(today.getDate() + 1);
+
+    const month = nextDay.getMonth() + 1
+    const year = nextDay.getFullYear()
+    const day = nextDay.getDate()
+
+    const nextDayStr = `${year}-${month.toString().padStart(2,'0')}-${day.toString().padStart(2,'0')}`
+
+    let dayFounded = false;
+
+    do {
+      // Obtener los turnos disponibles para el doctor en la fecha actual
+      const availableAppointments = await this.getAvailableAppointments(
+        doctor.id,
+        nextDayStr,
+      );
+
+      if (
+        availableAppointments.success &&
+        availableAppointments.data.length > 0
+      ) {
+        // Si hay citas disponibles, devolver la primera encontrada
+        dayFounded = true;
+        //console.log("Citas disponibles encontradas para el día:", nextDay);
+        return {
+          success: true,
+          date: nextDayStr,
+          slots: slotsToHours(availableAppointments.data, "09:00", doctor.frequency),
+        };
+      } else {
+        // Si no hay citas, todos los slots están ocupados. Pasar al siguiente día
+        nextDay.setDate(nextDay.getDate() + 1);
+        //console.log("No hay citas disponibles. Buscando en el siguiente día:", nextDay);
+      }
+    } while (!dayFounded);
+    return { success: false };
+  }
+
+  /**
+   * Eventos
+   */
+
+  /**
+   * Método para cambiar el estado de una cita a "waiting" (check-in)
+  */
+  async checkIn(appointmentID, room = false) {
+    const appointment = await this.repository.findByFilter({ _id: appointmentID });
+
+    if (!appointment) {
+      throw new NotFoundError("Appointment", appointmentID);
+    }
+
+    if (appointment.status.toLowerCase() !== "confirmed" && appointment.status.toLowerCase() !== "called") {
+      throw new ValidationError(
+        "Solo los turnos confirmados pueden pasar a espera.",
+      );
+    }
+
+    const fields = {status: "waiting"}
+    //Cambio de room
+    if(room) fields.room = room
+
+    const updateAppointment = await this.repository.update(appointmentID, fields) 
+
+    if (updateAppointment.modifiedCount === 0) {
+      throw new AppError("No se pudo actualizar el turno", 500);
+    }
+
+    appointment.status = "waiting"
+    appointment.room = room
+
+    //Eliminar cache o invalidad contenido
+    this.deleteCacheAppointment()
+
+    const appointmentDTO = this.toShortDTO(appointment);
+
+    //Notificar al doctor. Es asincronico pero no se rompe el flujo
+    void appointmentNotificationService.notifyPatientWaiting(appointmentDTO);
+      
+    return appointmentDTO;
+}
+
+/**
+ * Método que maneja a traves de eventos los turnos en estado de espera
+ */
+async call(appointmentID) {
+    const appointment = await this.repository.findByFilter({ _id: appointmentID });
+
+    if (!appointment) {
+        throw new NotFoundError("Appointment", appointmentID);
+    }
+
+    if (appointment.status.toLowerCase() !== "waiting") {
+        throw new ValidationError(
+            "Solo los turnos en espera pueden ser llamados."
+        );
+    }
+
+    const updatedAppointment = await this.repository.update(
+        appointmentID,
+        { status: "called" }
+    );
+
+    if (updatedAppointment.modifiedCount === 0) {
+        throw new AppError("No se pudo actualizar el turno", 500);
+    }
+
+    appointment.status = "called";
+    //Eliminar cache o invalidar contenido
+    this.deleteCacheAppointment()
+
+    const appointmentDTO = this.toShortDTO(appointment);
+
+    void appointmentNotificationService.notifyPatientCalled(appointmentDTO);
+
+    return appointmentDTO;
+}
+
+async finalize(appointmentID) {
+    const appointment = await this.repository.findByFilter({ _id: appointmentID });
+
+    if (!appointment) {
+        throw new NotFoundError("Appointment", appointmentID);
+    }
+
+    if (appointment.status.toLowerCase() !== "called") {
+        throw new ValidationError(
+            "Solo los turnos llamados pueden finalizarse."
+        );
+    }
+
+    const updatedAppointment = await this.repository.update(
+        appointmentID,
+        { status: "finalized" }
+    );
+
+    if (updatedAppointment.modifiedCount === 0) {
+        throw new AppError("No se pudo actualizar el turno", 500);
+    }
+
+    appointment.status = "finalized";
+    //Eliminar cache o invalidar contenido
+    this.deleteCacheAppointment()
+
+    const appointmentDTO = this.toShortDTO(appointment);
+
+    void appointmentNotificationService.notifyPatientFinalized(appointmentDTO);
+
+    return appointmentDTO;
+  }
+
+
+  /**
+   * Método para cambiar el estado de una cita a "personalizado"
+  */
+  async changeStatus(appointmentID, status) {
+    const appointment = await this.repository.findByFilter({ _id: appointmentID });
+
+    if (!appointment) {
+      throw new NotFoundError("Appointment", appointmentID);
+    }
+
+    const notValid = ["called", "waiting", "finalized" ]
+
+    if (notValid.includes(status)) {
+      throw new ValidationError(
+        "No se permite modificar turnos en estado called, waiting y finalized",
+      );
+    }
+
+    const updateAppointment = await this.repository.update(appointmentID, {status: status}) 
+
+    if (updateAppointment.modifiedCount === 0) {
+      throw new AppError("No se pudo actualizar el turno", 500);
+    }
+
+    appointment.status = status
+    
+    //Eliminar cache o invalidar contenido
+    this.deleteCacheAppointment()
+
+    const appointmentDTO = this.toShortDTO(appointment);
+
+    //Notificar al doctor. Es asincronico pero no se rompe el flujo
+    void appointmentNotificationService.notifyChangeStatusApp(appointmentDTO);
+      
+    return appointmentDTO;
+}
+
+  /**
+   * Cache
+   */
+
+  //Obtener de Cache
+  async getCacheAppointment(isDoctor = false, doctorID = null){
+    const todayString = getTodaySTR()
+    const todayKey = `appointments:${todayString}`;
+    const cachedAppointments = await this.cacheService.get(
+      `appointments:${todayString}`,
+    );
+
+    if(!cachedAppointments) {
+      return null
+    }
+    
+    if(isDoctor && !doctorID) {
+      throw new ValidationError("Se requiere el ID del doctor para filtrar las citas")
+    }
+    
+    if(isDoctor && doctorID) {
+      cachedAppointments.docs = cachedAppointments.docs.filter(appointment => appointment.doctorID.id === doctorID);
+      return cachedAppointments;
+    }
+
+    //console.log(`Todas las citas de hoy ${todayString} obtenidas de cache`);
+    return cachedAppointments;
+  }
+
+  //Guardar en Cache
+  async saveCacheAppointment(appointments){
+    const todayString = getTodaySTR()
+    //console.log(`Guardando citas de hoy ${todayString} en cache por 10 minutos`);
+    await this.cacheService.set(
+      `appointments:${todayString}`,
+      appointments,
+      600,
+    ); //600 segundos = 10 minutos
+  }
+
+  //Borrar turnos del cache
+  async deleteCacheAppointment(){
+    const todayString = getTodaySTR()
+    const todayKey = `appointments:${todayString}`;
+    //console.log(`Invalidando caché del día ${todayString}`)
+    await this.cacheService.del(todayKey);
+  } 
+
+  //Métodos de mapeo DTO
+  toFormatDTO(appointmentData) {
+    return new AppointmentDTO(appointmentData);
+  }
+
+  toDTO(appointment) {
+    return AppointmentDTO.toResponse(appointment);
+  }
+
+  toShortDTO(appointment) {
+    return AppointmentDTO.toShortResponse(appointment);
+  }
+
+  toManyDTO(appointments) {
+    return appointments.map((appointment) =>
+      AppointmentDTO.toResponse(appointment),
+    );
+  }
+
+  toManyShortDTO(appointments) {
+    return appointments
+      .filter(
+        (appointment) =>
+          appointment.patientID !== null && appointment.doctorID !== null,
+      )
+      .map((appointment) => AppointmentDTO.toShortResponse(appointment));
+  }
+}

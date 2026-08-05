@@ -47,18 +47,17 @@ app.use(generalLimit);
  * ROUTES
 */
 //rutas datos
-import routeUser from './routes/user.router.js';
-import routePatient from './routes/patient.router.js';
-import routeDoctor from './routes/doctor.router.js';
-import routeAppointments from './routes/appointment.router.js';
-import routeSession from './routes/session.router.js';
-import routeFailure from './routes/failure.router.js';
-import routeNotices from './routes/notice.router.js';
+import routeUser from './modules/user/user.router.js';
+import routePatient from './modules/patient/patient.router.js';
+import routeDoctor from './modules/doctor/doctor.router.js';
+import routeAppointments from './modules/appointment/appointment.router.js';
+import routeAuth from './modules/auth/auth.router.js';
+import routeNotices from './modules/notice/notice.router.js';
 //Manejo de errores y excepciones
 import { errorHandler, notFoundHandler } from './middlewares/errors.middleware.js';
 //Autenticación Google
 import { validateEnvVars } from './utils/dotenv.helper.js';
-import routeAuth from './routes/passports/google.passport.router.js';
+import routeAuthGoogle from './modules/auth/passports/google.auth.router.js';
 //Health check
 import healthRouter from './modules/health/health.router.js';
 
@@ -73,14 +72,13 @@ app.use("/api/users", routeUser);
 app.use("/api/patients", routePatient);
 app.use("/api/doctors", routeDoctor);
 app.use("/api/appointments", routeAppointments);
-app.use("/api/sessions", routeSession);
-app.use("/api/fails", routeFailure);
+app.use("/api/sessions", routeAuth);
 app.use("/api/notices", routeNotices);
 
 //Autenticación Google
 let googleAuth = false;
 if(validateEnvVars("google")){
-    app.use("/api/auth",routeAuth);
+    app.use("/api/auth", routeAuthGoogle);
     googleAuth = true;
 }
 

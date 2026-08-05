@@ -1,7 +1,7 @@
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
 import bcrypt from 'bcrypt'; //
-import { User } from '../src/model/mongo/user.model'; 
+import { User } from '../src/modules/user/user.model.js'; 
 import jwt from 'jsonwebtoken';
 import { getRedisClient } from '../src/config/redis.config';
 

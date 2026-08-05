@@ -1,0 +1,17 @@
+import express from 'express';
+import passport from 'passport';
+import { authGoogle } from './google.auth.controller.js';
+//impo { verificarJWT } from '../utils/middlewares.js';
+
+const router = express.Router();
+
+router.get('/google',
+passport.authenticate('google', { scope: ['profile', 'email'], prompt: 'select_account' })
+);
+
+router.get('/google/callback',
+passport.authenticate('google', { session: false }),
+authGoogle
+);
+
+export default router;
