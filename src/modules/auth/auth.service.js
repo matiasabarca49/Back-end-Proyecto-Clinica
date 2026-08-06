@@ -1,4 +1,4 @@
-import {AppError, InvalidCredentialsError, NotFoundError} from "../../core/exceptions/index.js";
+import {AppError, InvalidCredentialsError, NotFoundError, ValidationError} from "../../core/exceptions/index.js";
 import { generateTokens } from "../../core/services/jwt.service.js";
 import { User } from "../user/user.model.js";
 import MongoRepository from "../../core/repositories/implementations/mongo.repository.js";
@@ -74,7 +74,10 @@ class AuthService extends BaseService {
         return { success: true, message: "Código de verificación enviado correctamente", key: key };
     }
 
-    async verify2factor(userId, emailU, code) {
+    async verify2factor(userId, code) {
+
+        if (!userId || !code) throw new ValidationError("Debes realizar unar solitud de ingreso")
+
         const pending = this.pendingCodes.get(userId);
         if (!pending) {
             throw new AppError('No hay un código pendiente para este usuario o ha expirado', 498);
@@ -93,32 +96,30 @@ class AuthService extends BaseService {
         // Código correcto, eliminar del mapa
         this.pendingCodes.delete(userId);
 
-        // Generar token JWT
-        let user;
-        if (emailU) {
-            user = await this.repository.findByFilter({ email: emailU });
-        } else {
-            user = await super.findById(userId);
-        }
-
+        //Buscar usuario
+        const user = await super.findById(userId);;
         if (!user) throw new NotFoundError("Usuario", userId);
-
+        
+        // Generar token JWT
         const tokens = generateTokens(user);
-        const { _id, email, rol } = user;
+        const { id, email, name, lastName, rol } = user;
+
+        // Guardar el refresh token en Redis con una expiración de 7 días
+        await this.sessionRepository.saveRefreshToken(id.toString(), tokens.refreshToken, 7 * 24 * 60 * 60);
 
         //Guardar usuario en redis que expira en 1h
         this.sessionRepository.create({
-            userId: _id.toString(),
-            expiration: 3600 // 1 hora en segundos
+            userId: id.toString(),
+            expiration: 7 * 24 * 60 * 60 // 7 días en segundos
         });
 
         // Actualizar la fecha de última conexión sin modificar timestamps
-        await this.repository.updateWhioutTStamp(_id, { lastLogintAt: new Date() });
+        await this.repository.updateWhioutTStamp(id, { lastLogintAt: new Date() });
 
         sendLoginSuccessNotification(user.email, user.name)
               .catch(err => console.warn("Aviso de login exitoso falló:", err.message || err));
 
-        return { accessToken: tokens.accessToken, refreshToken: tokens.refreshToken, id: _id, email, rol };
+        return { accessToken: tokens.accessToken, refreshToken: tokens.refreshToken, user: {id, email, name, lastName, rol }};
 
     }
 
@@ -153,6 +154,7 @@ class AuthService extends BaseService {
 
         //Eliminar el refresh token del usuario en Redis
         const isDeleted = await this.sessionRepository.deleteRefreshToken(refreshToken);
+        
         if(!isDeleted) throw new AppError("No se pudo eliminar el token de refresco", 500)
 
         return deleted;

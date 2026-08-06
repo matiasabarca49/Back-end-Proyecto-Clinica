@@ -61,9 +61,9 @@ export const loginUser2fa = async (req, res, next) => {
 // =======================
 export const verify2FA = async (req, res, next) => {
   try {
-    const { userId, email, code } = req.body;
+    const { userId, code } = req.body;
     
-    const loginVerification = await authService.verify2factor(userId, email, code);
+    const loginVerification = await authService.verify2factor(userId, code);
 
     //Generar cookie con el accessToken y refreshToken
     res.cookie('accessToken', loginVerification.accessToken, {
@@ -78,7 +78,7 @@ export const verify2FA = async (req, res, next) => {
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días
     });
 
-    return res.status(200).json({ success: true , data: loginVerification});
+    return res.status(200).json({ success: true , data: loginVerification.user});
 
   } catch (error) {
     next(error)
