@@ -1,3 +1,4 @@
+name: backend-clinica-dev
 services:
   # ==========================================
   # SESIONES (REDIS)
@@ -37,7 +38,7 @@ services:
     restart: unless-stopped
     env_file:
       - .env.development  # Carga las variables automáticamente en el contenedor
-    command: npm run dev
+    command: pnpm dev
     volumes:
       - ../:/app
       - /app/node_modules

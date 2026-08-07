@@ -1,9 +1,10 @@
 # Despliegue con Docker
 
-El proyecto cuenta con dos configuraciones de Docker:
+El proyecto cuenta con tres configuraciones de Docker:
 
 - **Development**: entorno de desarrollo con hot reload mediante `nodemon`.
 - **Production**: entorno preparado para ejecutar la aplicación en un ambiente productivo.
+- **Services**: Levantar unicamente los servicios necesarios para poder utilizar el sistema.
 
 ## Estructura Docker
 
@@ -13,6 +14,7 @@ docker/
 ├── Dockerfile.prod
 ├── docker-compose.dev.yml
 ├── docker-compose.prod.yml
+├── docker-compose.services.yml
 ├── .env.development
 └── .env.production
 ```
@@ -57,16 +59,43 @@ No se utiliza `localhost` para comunicación entre contenedores.
 
 # Despliegue
 
-## Desarrollo
-
-### Requisitos
+## Requisitos
 
 - Docker Desktop o Docker Engine
 - Docker Compose
 
-El entorno de desarrollo utiliza:
+## Opcion Services
+
+Para levantar únicamente estos servicios mediante Docker Compose:
+
+Desde la raíz del proyecto ejecutar:
+
+```bash
+docker compose -f docker/docker-compose.services.yml up -d
+```
+
+## Opcion Desarrollo
+
+```
+                 Docker Network (bridge)
+ ┌───────────────────────────────────────────────┐
+ │                                               │
+ │   app_clinica  ─────► mongo_clinica           │
+ │         │                 │                   │
+ │         └────────► redis_clinica              │
+ │                                               │
+ └───────────────────────────────────────────────┘
+
+                 ↑
+          localhost:8080
+```
+
+Todos viven en la misma red.
 
 ### Variables de entorno
+
+El entorno de desarrollo utiliza:
+
 
 ```
 docker/.env.development
@@ -118,7 +147,114 @@ Modificar código -> Volumen sincroniza cambios -> Nodemon detecta cambios -> Re
 
 ---
 
-## Producción
+## Opcion Producción
+
+El entorno de producción está diseñado para ofrecer una arquitectura escalable y tolerante a fallos mediante contenedores Docker.
+
+## Arquitectura
+
+La infraestructura está compuesta por los siguientes servicios:
+
+- **Nginx** como reverse proxy y balanceador de carga.
+- **2 instancias de la API** Node.js ejecutando la aplicación.
+- **MongoDB Replica Set** compuesto por un nodo Primary y dos nodos Secondary.
+- **Redis** utilizado para sesiones, caché y colas de trabajo.
+
+```text
+                    Cliente
+                       │
+                http://localhost
+                       │
+                Nginx(Round Robin)
+                       │
+                  ┌─────────┐
+                  │         │
+            app_node_1    app_node_2
+                  │         │
+                  └────┬────┘
+                       │
+                Mongo Replica Set
+          ┌─────────────┬───────────────┐
+          │             │               │
+        Primary     Secondary       Secondary
+                        │
+                      Redis
+```
+
+## Componentes
+
+### Nginx
+
+Nginx actúa como punto de entrada de la aplicación.
+
+Sus responsabilidades son:
+
+- Recibir todas las solicitudes HTTP.
+- Distribuir las peticiones entre las distintas instancias de la API.
+- Ocultar la infraestructura interna al cliente.
+- Permitir futuras configuraciones de HTTPS, compresión, cache y otras funcionalidades.
+
+El balanceo de carga utiliza el algoritmo **Round Robin**, que distribuye automáticamente las solicitudes entre ambas instancias de la API.
+
+### API Node.js
+
+La aplicación se ejecuta en **dos contenedores independientes**.
+
+Ambas instancias comparten:
+
+- La misma base de datos MongoDB.
+- El mismo servidor Redis.
+- La misma configuración de entorno.
+
+Esto permite distribuir la carga entre múltiples procesos y mantener el servicio disponible si una instancia deja de responder.
+
+### MongoDB Replica Set
+
+La base de datos está configurada como un **Replica Set**, compuesto por tres nodos.
+
+- **Primary**: recibe todas las operaciones de escritura.
+- **Secondary 1**: replica los datos del nodo principal.
+- **Secondary 2**: replica los datos del nodo principal.
+
+En caso de fallo del nodo Primary, MongoDB realiza automáticamente una nueva elección y promueve uno de los nodos Secondary como nuevo Primary, permitiendo que la aplicación continúe funcionando sin intervención manual.
+
+La aplicación se conecta utilizando la cadena de conexión del Replica Set para que el driver detecte automáticamente los cambios de Primary.
+
+### Redis
+
+Redis es utilizado para:
+
+- Almacenamiento de sesiones.
+- Caché de datos.
+- Gestión de colas mediante BullMQ.
+
+Todas las instancias de la API utilizan el mismo servidor Redis.
+
+## Balanceo de carga
+
+El tráfico HTTP sigue el siguiente flujo:
+
+```text
+Cliente
+    │
+    ▼
+Nginx
+    │
+    ├────────► API 1
+    │
+    └────────► API 2
+```
+
+Las solicitudes se distribuyen utilizando el algoritmo **Round Robin**, enviando cada nueva petición a una instancia diferente.
+
+## Alta disponibilidad
+
+La infraestructura incorpora mecanismos básicos de alta disponibilidad:
+
+- Dos instancias de la API permiten continuar atendiendo solicitudes si una deja de responder.
+- MongoDB Replica Set garantiza redundancia de datos y elección automática de un nuevo nodo Primary.
+- Redis mantiene la información compartida entre todas las instancias de la aplicación.
+- Nginx centraliza el acceso a la infraestructura y distribuye las solicitudes entre las distintas instancias del backend.
 
 ### Variables de entorno
 
@@ -128,91 +264,33 @@ El entorno productivo utiliza:
 docker/.env.production
 ```
 
-NOTA: Las variables son las mismas que en el entorno de desarrollo. 
+**NOTA:** Las variables son las mismas que en el entorno de desarrollo solo hay que cambiar la url de mongo para que utilice el replica-set.
 
-Desde la raíz del proyecto:
+```
+DATABASE_URL=mongodb://mongo_primary:27017,mongo_secondary_1:27017,mongo_secondary_2:27017/clinica_odontologica?replicaSet=rs0
+```
+
+---
+
+## Inicio del entorno
+
+Desde la carpeta `docker` ejecutar:
 
 ```bash
-docker compose -f docker/docker-compose.prod.yml up --build
+docker compose -f docker-compose.prod.yml up -d --build
 ```
 
----
+Para detener el entorno:
 
-### Características del entorno de producción
-
-La imagen de producción:
-
-- Instala únicamente dependencias necesarias.
-- No utiliza nodemon.
-- Ejecuta directamente Node.js.
-- Mantiene el código dentro de la imagen.
-- Utiliza variables de entorno de producción.
-
-Ejemplo de ejecución:
-
-```dockerfile
-CMD ["node", "src/server.js"]
+```bash
+docker compose -f docker-compose.prod.yml down
 ```
 
----
+Para reconstruir únicamente las instancias de la API:
 
-# Servicios utilizados
-
-Ambos entornos levantan los siguientes servicios:
-
-## Backend Node.js
-
-Puerto expuesto:
-
+```bash
+docker compose -f docker-compose.prod.yml up -d --build app_node_1 app_node_2
 ```
-8080
-```
-
----
-
-## MongoDB
-
-Servicio:
-
-```
-mongo_clinica
-```
-
-Puerto:
-
-```
-27017
-```
-
-Persistencia mediante volumen:
-
-```
-mongo_clinica_data
-```
-
----
-
-## Redis
-
-Servicio:
-
-```
-redis_clinica
-```
-
-Puerto interno:
-
-```
-6379
-```
-
-Persistencia mediante volumen:
-
-```
-redis_data
-```
-
----
 
 # Comandos útiles
 

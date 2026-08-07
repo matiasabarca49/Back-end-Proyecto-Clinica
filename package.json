@@ -1,6 +1,7 @@
 {
   "name": "sistema-clinica-backend",
   "version": "1.0.0",
+  "packageManager": "pnpm@11.20.0",
   "description": "",
   "type": "module",
   "main": "src/server.js",

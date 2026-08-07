@@ -11,7 +11,7 @@ Este documento describe los pasos necesarios para instalar y ejecutar la API de 
 Antes de ejecutar el proyecto, es necesario tener instaladas las siguientes herramientas:
 
 - Node.js (versión 20 o superior)
-- npm
+- pnpm (version 10 o superior)
 - MongoDB Atlas o una instancia local de MongoDB
 - Git
 - Servidor Redis levantado.
@@ -21,6 +21,39 @@ Opcional:
 - Docker
 - Kubernetes (para despliegue en contenedores)
 
+El sistema requiere una instancia de MongoDB y un servidor Redis para su funcionamiento. Para facilitar la configuración del entorno de desarrollo, estos servicios pueden levantarse mediante Docker Compose. 
+
+Revisa la guía [despliegue en docker](despliegue-docker.md) para levantar los servicios necesarios. 
+
+---
+
+Node.js se puede descargar desde su página oficial:
+
+[Node JS](https://nodejs.org/en)
+
+O desde la terminal de linux:
+
+```
+sudo apt install nodejs
+```
+
+El instalador de Node.js incluye la herramienta **npm**, que permite gestionar paquetes de JavaScript. En este proyecto se utiliza **pnpm** como gestor de paquetes.
+
+## Instalación de pnpm
+
+Una vez instalado Node.js, pnpm puede instalarse utilizando Corepack, una herramienta incluida con Node.js:
+
+```
+corepack enable
+corepack prepare pnpm@latest --activate
+```
+**NOTA:** Puede que necesite permisos de administrador  
+
+Verificar instalación:
+```
+pnpm -v
+```
+
 ---
 
 # 3. Clonar el repositorio
@@ -28,7 +61,7 @@ Opcional:
 Clonar el repositorio del proyecto:
 
 ```bash
-git clone <URL_Repositorio>
+git clone https://github.com/matiasabarca49/Back-end-Proyecto-Clinica.git
 ```
 
 Ingresar al directorio del proyecto -> cd /Back-end-Proyecto-Clinica
@@ -38,7 +71,7 @@ Ingresar al directorio del proyecto -> cd /Back-end-Proyecto-Clinica
 Instalar las dependencias del proyecto:
 
 ```
-npm install
+pnpm install
 ```
 
 # 5. Configurar variables de entorno
@@ -96,13 +129,13 @@ Si no la incluye, por defecto será http://localhost:5173
 Ejecutar el servidor en desarrollo:
 
 ```
-npm run dev
+pnpm dev
 ```
 
 Para ejecutar en modo producción:
 
 ```
-npm start
+pnpm start
 ```
 
 Una vez iniciado, el servidor estará disponible en:
@@ -118,7 +151,7 @@ Los endpoints se encuentran protegidos con credenciales. En el momento de levant
 Con el servidor levantado o no aplique el siguiente comando:
 
 ```
-npm run create-admin -- -e <email> -p <password> -n <nombre_usuario>
+pnpm create-admin -e <email> -p <password> -n <nombre_usuario>
 ``` 
 
 **NOTA:** En caso de querer probar los endpoints en el navegador, en la raíz del servidor se encuentra un formulario de autenticación.

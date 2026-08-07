@@ -1,3 +1,4 @@
+name: backend-clinica-prod
 services:
   # ==========================================
   # SESIONES (REDIS)
@@ -12,15 +13,78 @@ services:
       - network_backend_clinica
 
   # ==========================================
-  # BASE DE DATOS PRINCIPAL (Mongo)
+  # MONGO PRIMARY
   # ==========================================
-  mongo_clinica:
+  mongo_primary:
     image: mongo:8
     restart: unless-stopped
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
     volumes:
-      - mongo_clinica_data:/data/db
-    ports:
-      - "27017:27017"
+      - mongo_primary_data:/data/db
+    networks:
+      - network_backend_clinica
+
+  # ==========================================
+  # MONGO SECONDARY 1
+  # ==========================================
+  mongo_secondary_1:
+    image: mongo:8
+    restart: unless-stopped
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    volumes:
+      - mongo_secondary_1_data:/data/db
+    networks:
+      - network_backend_clinica
+
+  # ==========================================
+  # MONGO SECONDARY 2
+  # ==========================================
+  mongo_secondary_2:
+    image: mongo:8
+    restart: unless-stopped
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    volumes:
+      - mongo_secondary_2_data:/data/db
+    networks:
+      - network_backend_clinica
+
+  # ==========================================
+  # MONGO REPLICA SET INIT
+  # ==========================================
+  mongo_setup:
+    image: mongo:8
+    restart: "no"
+
+    depends_on:
+      - mongo_primary
+      - mongo_secondary_1
+      - mongo_secondary_2
+
+    entrypoint:
+      - bash
+      - -c
+      - |
+        echo "Esperando a MongoDB..."
+
+        until mongosh --host mongo_primary --eval "db.adminCommand('ping')" >/dev/null 2>&1; do
+          sleep 2
+        done
+
+        echo "Inicializando Replica Set..."
+
+        mongosh --host mongo_primary --eval '
+          rs.initiate({
+            _id: "rs0",
+            members: [
+              { _id: 0, host: "mongo_primary:27017", priority: 2 },
+              { _id: 1, host: "mongo_secondary_1:27017", priority: 1 },
+              { _id: 2, host: "mongo_secondary_2:27017", priority: 1 }
+            ]
+          });
+        '
+
+        echo "Replica Set inicializado."
+
     networks:
       - network_backend_clinica
 
@@ -28,21 +92,46 @@ services:
   # ==========================================
   # MONOLITO NODE (CONTENEDOR 1)
   # ==========================================
-  app_node:
-    ports:
-      - "8080:8080"
+  app_node_1:
     build:
-      context: ..      # Sube un nivel a la raíz para encontrar el código
-      dockerfile: docker/dockerfile.prod  # Ruta al Dockerfile desde la raíz
-    restart: unless-stopped
+      context: ..
+      dockerfile: docker/dockerfile.prod
+    environment:
+      INSTANCE_NAME: app_node_1
     env_file:
-      - .env.production  # Carga las variables automáticamente en el contenedor
+      - .env.production
     depends_on:
+      - mongo_setup
       - redis_clinica
-      - mongo_clinica
     networks:
-      - network_backend_clinica # Para hablar con la DB y Redis
+      - network_backend_clinica
 
+
+  app_node_2:
+    build:
+      context: ..
+      dockerfile: docker/dockerfile.prod
+    environment:
+      INSTANCE_NAME: app_node_2
+    env_file:
+      - .env.production
+    depends_on:
+      - mongo_setup
+      - redis_clinica
+    networks:
+      - network_backend_clinica
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - app_node_1
+      - app_node_2
+    networks:
+      - network_backend_clinica
 
 # ==========================================
 # CONFIGURACIÓN DE REDES Y VOLÚMENES
@@ -53,4 +142,6 @@ networks:
 
 volumes:
   redis_data:
-  mongo_clinica_data:
+  mongo_primary_data:
+  mongo_secondary_1_data:
+  mongo_secondary_2_data:

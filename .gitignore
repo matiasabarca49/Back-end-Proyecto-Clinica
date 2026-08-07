@@ -15,6 +15,11 @@ node_modules
 /docker/.env.production
 /docker/.env.test
 
-
 #errores
 errors.log
+
+.pnpm-store/
+
+#build
+/dist
+coverage/

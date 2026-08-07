@@ -1,15 +1,17 @@
-FROM node:20-alpine
+FROM node:24-alpine
 
 WORKDIR /app
 
 ENV NODE_ENV=development
 
-COPY package*.json ./
+RUN corepack enable
 
-RUN npm ci
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+
+RUN pnpm install --config.confirmModulesPurge=false
 
 COPY . .
 
 EXPOSE 8080
 
-CMD ["npm", "run", "dev"]
+CMD ["pnpm", "dev"]

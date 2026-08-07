@@ -3,6 +3,7 @@ import { queueCheck } from "./checks/queue.check.js";
 import { mongoCheck } from "./checks/mongo.check.js";
 import { redisCheck } from "./checks/redis.check.js";
 import { systemCheck } from "./checks/systemc.check.js";
+import { instance } from "./health.controller.js";
 
 const APP_VERSION = packageJson.version;
 
@@ -37,6 +38,7 @@ class HealthService {
             };
             return {
                 service: process.env.APP_NAME || "clinic-api",
+                instance: process.env.INSTANCE_NAME || "Not instance",
                 status,
                 timestamp: time,
                 uptime,

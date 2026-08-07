@@ -1,0 +1,6 @@
+allowBuilds:
+  '@scarf/scarf': false
+  bcrypt: true
+  mongodb-memory-server: true
+  msgpackr-extract: true
+  unrs-resolver: true

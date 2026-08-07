@@ -124,31 +124,16 @@ Para obtener información detallada sobre el proyecto, consulte la documentació
 
 # Instalación y puesta en marcha
 
-**NOTA**: Existe la opcion de desplegar con docker -> [Ver documentacion Docker](documentation/despliegue-docker.md)
+**NOTA**: 
+* Puedo ver una guía de instalación completa ->[Ver documentación de instalación](documentation/instalacion.md)
+* Existe la opcion de desplegar con docker -> [Ver documentacion Docker](documentation/despliegue-docker.md)
 
 ###### Requisitos para la instalación:
 
 - **Node.js** Entorno de ejecucion.
-- **NPM** Para instalar las librerías necesarias
+- **PNPM** Para instalar las librerías necesarias
 - **Terminal Linux/cmd Windows** Para su instalación
 - **Servidor Redis** Para su ejecución
-
-Node.js se puede descargar de su página oficial -> https://nodejs.org/en
-El paquete de instalación de Node.js tambien instala la herramienta **npm**
-
-En linux se puede instalar mediante la ejecución del comando:
-
-```
-sudo apt install nodejs
-```
-
-Para descargar la ultima version de npm, en una terminal podemos ejecutar:
-
-```
-npm install -g npm
-npm install -g npm@latest
-```
-NOTA: Es posible que se requiera permisos de administrador para ejecutar los comandos anteriores
 
 ## Descarga o clonación del repositorio
 
