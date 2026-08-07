@@ -43,6 +43,14 @@ const consoleFormat = combine(
             message += ` | Status: ${info.statusCode}`;
         }
 
+        if (info.duration) {
+            message += ` | ${info.duration}`;
+        }
+
+        if (info.requestId) {
+            message += ` | requestId: ${info.requestId}`;
+        }
+
         return message;
     }),
 
@@ -67,9 +75,18 @@ const fileFormat = combine(
             message += ` | Status: ${info.statusCode}`;
         }
 
+        if (info.duration) {
+            message += ` | ${info.duration}`;
+        }
+
+        if (info.requestId) {
+            message += ` | requestId: ${info.requestId}`;
+        }   
+
         if (info.stack) {
             message += `\n${info.stack}`;
         }
+        
 
         return message;
     })

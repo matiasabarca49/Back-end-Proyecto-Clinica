@@ -41,6 +41,10 @@ app.set('trust proxy', 1);
 import { generalLimit } from './middlewares/rateLimit.middleware.js';
 app.use(generalLimit);
 
+//Logger de Rutas
+import httpLogger from "./middlewares/httpLogger.middleware.js";
+app.use(httpLogger);
+
 
 /**
  * ROUTES
