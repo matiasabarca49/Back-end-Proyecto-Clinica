@@ -6,6 +6,7 @@ import RedisRepository from "../../core/repositories/implementations/redis.repos
 import { send2FACode, sendLoginSuccessNotification } from "../../utils/email.helpers.js";
 import { createhash, isValidPassword} from "../../utils/utils.js";
 import BaseService from "../../core/services/base.service.js";
+import logger from "../../core/logger/logger.js";
 
 class AuthService extends BaseService {
 
@@ -40,6 +41,9 @@ class AuthService extends BaseService {
         
         // Actualizar la fecha de última conexión sin modificar timestamps
         await this.repository.updateWhioutTStamp(_id, { lastLogintAt: new Date() });
+
+        //registrar inicio de session
+        logger.info(`Inicio local exitoso | user: ${_id}`)
 
         return { accessToken: tokens.accessToken, refreshToken: tokens.refreshToken, user: { id: _id, email, rol, name, lastName}};
     }
@@ -117,7 +121,15 @@ class AuthService extends BaseService {
         await this.repository.updateWhioutTStamp(id, { lastLogintAt: new Date() });
 
         sendLoginSuccessNotification(user.email, user.name)
-              .catch(err => console.warn("Aviso de login exitoso falló:", err.message || err));
+              .catch(err => logger.error({
+                    message: "Aviso de login exitoso falló",
+                    error: err.message || err,
+                    stack: err.stack
+                })
+        );
+
+        //registrar inicio de session
+        logger.info(`Inicio con código exitoso | user: ${id}`)
 
         return { accessToken: tokens.accessToken, refreshToken: tokens.refreshToken, user: {id, email, name, lastName, rol }};
 
@@ -142,6 +154,9 @@ class AuthService extends BaseService {
         // Actualizar la fecha de última conexión sin modificar timestamps
         await this.repository.updateWhioutTStamp(id, { lastLogintAt: new Date() });
 
+        //registrar inicio de session
+        logger.info(`Inicio con google exitoso | user: ${id}`)
+
         return { accessToken: tokens.accessToken, refreshToken: tokens.refreshToken, id, email, rol };
     }
 
@@ -156,6 +171,9 @@ class AuthService extends BaseService {
         const isDeleted = await this.sessionRepository.deleteRefreshToken(refreshToken);
         
         if(!isDeleted) throw new AppError("No se pudo eliminar el token de refresco", 500)
+
+        //registrar inicio de session
+        logger.info(`usuario desconectado | user: ${userId}`)
 
         return deleted;
     }
@@ -191,7 +209,6 @@ class AuthService extends BaseService {
         const userUpdated = await super.update(userSession.id, user)
 
         return userUpdated
-
     }
 
     async refreshSession(userId, refreshToken) {

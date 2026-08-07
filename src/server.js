@@ -5,6 +5,10 @@ import MongoManager from './config/mongoDB.config.js';
 import { initCronJobs } from './core/jobs/cronScheduler.js';
 import { createServer } from 'node:http'
 import app from './app.js';
+//logger
+import logger from "./core/logger/logger.js";
+//performance
+import { performance } from "node:perf_hooks";
 
 const server = createServer(app)
 
@@ -14,6 +18,9 @@ import "./core/queues/email.worker.js";
 
 async function startServer() {
     try {
+        //Medir el tiempo en que arranca el servidor
+        const start = performance.now();
+
         // Redis
         await getRedisClient();
 
@@ -24,18 +31,20 @@ async function startServer() {
         initCronJobs();
 
         // Mongo
-        console.log("━ Conectando a MongoDB...");
         await MongoManager.connect();
 
         const portSelected = process.env.PORT || 8080;
 
         server.listen(portSelected, () => {
-            console.log(`✅ Servidor corriendo en puerto ${portSelected}`);
-            console.log('-'.repeat(50));
-            console.log("🟢 [STATUS] Servidor Backend Clínica UP");
-            console.log('-'.repeat(50))
-            console.timeEnd("Servidor levantado en");
-            console.log('━'.repeat(50));
+
+            const end = performance.now();
+
+            logger.info(`Servidor corriendo en puerto ${portSelected}`);
+            console.log('-'.repeat(60));
+            logger.info("[STATUS SERVER] Backend Clínica UP");
+            console.log('-'.repeat(60))
+            logger.info(`Servidor iniciado correctamente ${(end - start).toFixed(2)} ms`);
+            console.log('━'.repeat(60));
         });
 
 
@@ -44,9 +53,13 @@ async function startServer() {
         await closeRedis();
         await MongoManager.disconnect();
         
-        console.error("🔴 [Error] Error al iniciar el servidor:", error.message);
+        logger.error({
+            message: "Error al iniciar el servidor",
+            error: err.message,
+            stack: err.stack
+        });
         console.log('-'.repeat(50))
-        console.log("🔴 [Error] Servidor Backend Clínica DOWN");
+        logger.error("[STATUS SERVER] Backend Clínica DOWN");
         console.log('-'.repeat(50));
 
         process.exit(1);

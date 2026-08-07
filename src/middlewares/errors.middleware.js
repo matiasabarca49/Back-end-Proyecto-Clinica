@@ -8,6 +8,7 @@
  */
 
 import AppError from '../core/exceptions/AppErrors.js';
+import logger from "../core/logger/logger.js";
 
 /**
  * Middleware principal de errores
@@ -16,12 +17,13 @@ import AppError from '../core/exceptions/AppErrors.js';
 
 const errorHandler = (err, req, res, next) => {
   
-  //Log del error para debugging
-  console.error('❌ Error capturado:', {
+  logger.error({
     message: err.message,
+    stack: err.stack,
     statusCode: err.statusCode,
     path: req.path,
-    method: req.method
+    method: req.method,
+    ip: req.ip
   });
 
   //Si es un error operacional (AppError), responder con su info

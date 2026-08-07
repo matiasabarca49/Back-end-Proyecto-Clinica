@@ -1,6 +1,7 @@
 import { Appointment } from "./appointment.model.js";
 import { sendAppointmentReminder } from "../../utils/email.helpers.js";
 import { slotsToRanges } from "../../utils/slots.helper.js";
+import logger from "../../core/logger/logger.js";
 
 /**
  * Función que envía recordatorios de turnos para el día actual
@@ -8,7 +9,7 @@ import { slotsToRanges } from "../../utils/slots.helper.js";
  */
 export const sendDailyAppointmentReminders = async () => {
   try {
-    console.log("🔔 Iniciando envío de recordatorios de turnos...");
+    logger.info("Iniciando envío de recordatorios de turnos...");
     
     // ========================================
     // CREAR FECHAS EN UTC (como están en la DB)
@@ -24,8 +25,8 @@ export const sendDailyAppointmentReminders = async () => {
     const todayStart = new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
     const todayEnd = new Date(Date.UTC(year, month, day, 23, 59, 59, 999));
     
-    console.log(`📅 Buscando turnos para: ${today.toLocaleDateString('es-AR')}`);
-    console.log(`🕐 Rango UTC: ${todayStart.toISOString()} a ${todayEnd.toISOString()}`);
+    logger.info(`Buscando turnos para: ${today.toLocaleDateString('es-AR')}`);
+    logger.info(`Rango UTC: ${todayStart.toISOString()} a ${todayEnd.toISOString()}`);
     
     // Buscar todos los turnos confirmados de hoy usando Mongoose directamente
     // Necesitamos populate para obtener datos del paciente y doctor
@@ -41,18 +42,11 @@ export const sendDailyAppointmentReminders = async () => {
     .lean();  // Convertir a objeto plano de JS para mejor performance
     
     if (!appointments || appointments.length === 0) {
-      console.log("ℹ️ No hay turnos para hoy");
-      console.log("🔍 Query utilizada:", {
-        date: {
-          $gte: todayStart.toISOString(),
-          $lte: todayEnd.toISOString()
-        },
-        status: { $in: ["Confirmed", "Pending"] }
-      });
+      logger.info("No hay turnos para hoy");
       return;
     }
     
-    console.log(`📊 Se encontraron ${appointments.length} turno(s) para hoy`);
+    logger.info(`Se encontraron ${appointments.length} turno(s) para hoy`);
     
     // Enviar email a cada paciente
     let successCount = 0;
@@ -65,13 +59,13 @@ export const sendDailyAppointmentReminders = async () => {
         
         // Verificar que tengamos los datos necesarios
         if (!patient || !patient.email) {
-          console.warn(`⚠️ Turno ${appointment._id}: paciente sin email`);
+          logger.error(`Turno ${appointment._id}: paciente sin email`);
           errorCount++;
           continue;
         }
         
         if (!doctor) {
-          console.warn(`⚠️ Turno ${appointment._id}: doctor no encontrado`);
+          logger.info(`⚠️ Turno ${appointment._id}: doctor no encontrado`);
           errorCount++;
           continue;
         }
@@ -104,27 +98,34 @@ export const sendDailyAppointmentReminders = async () => {
         );
         
         if (emailSent) {
-          console.log(`  ✅ Recordatorio enviado a ${patient.email} (${patientFullName})`);
           successCount++;
         } else {
-          console.warn(`  ❌ Error al enviar a ${patient.email}`);
+          logger.error(` Error al enviar a ${patient.email}`);
           errorCount++;
         }
         
         // Pequeña pausa entre emails para no saturar el servidor SMTP
         await new Promise(resolve => setTimeout(resolve, 1000));
         
-      } catch (emailError) {
-        console.error(`  ❌ Error procesando turno ${appointment._id}:`, emailError.message);
+      } catch (err) {
+        logger.error({
+            message: `Error procesando turno ${appointment._id}`,
+            error: err.message,
+            stack: err.stack
+        });
         errorCount++;
       }
     }
     
-    console.log(`✅ Recordatorios enviados: ${successCount}`);
-    console.log(`❌ Errores: ${errorCount}`);
-    console.log("🔔 Proceso de recordatorios finalizado\n");
+    logger.info(`Recordatorios enviados: ${successCount}`);
+    logger.info(`Errores: ${errorCount}`);
+    logger.info("Proceso de recordatorios finalizado\n");
     
-  } catch (error) {
-    console.error("❌ Error general en sendDailyAppointmentReminders:", error);
+  } catch (err) {
+    logger.error({
+      message: "Error al enviar confirmacion de turnos",
+      error: err.message,
+      stack: err.stack
+    });
   }
 };

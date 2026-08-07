@@ -33,6 +33,7 @@ import { validateEnvVars } from "../../utils/dotenv.helper.js";
 import AppError from "../../core/exceptions/AppErrors.js";
 import CacheService from "../../core/services/cache.service.js";
 import { dateNotHours, getTodaySTR } from "../../utils/dates.helper.js";
+import logger from "../../core/logger/logger.js";
 
 export default class AppointmentsService extends BaseService {
   constructor() {
@@ -277,54 +278,41 @@ export default class AppointmentsService extends BaseService {
     }
 
     if (!validateEnvVars("email")) {
-      console.warn(
-        "⚠️ [Info] Email de confirmación no enviado: variables de entorno para email no definidas",
-      );
-    } else {
-      //Enviar email de confirmación al paciente
-      const patient = patientExists;
+      logger.info("Email de confirmación omitido: configuración de correo no disponible.");
+      return this.toShortDTO(objAppointment)
+    } 
 
-      // Verificar que tengamos los datos necesarios y que el populate haya funcionado
-      if (!patient) {
-        console.warn("⚠️ No se pudo enviar email: patientID es null");
-      } else if (
-        typeof patient === "string" ||
-        patient.constructor?.name === "ObjectId"
-      ) {
-        console.warn("⚠️ No se pudo enviar email: patientID no está populado");
-      } else if (!patient.email) {
-        console.warn("⚠️ No se pudo enviar email: el paciente no tiene email");
-      } else if (
-        !appointmentAdded.slots ||
-        appointmentAdded.slots.length === 0
-      ) {
-        console.warn("⚠️ No se pudo enviar email: no hay slots");
-      } else {
-        //enviar email
-        const patientFullName = `${patient.name} ${patient.lastName}`;
+    //Enviar email de confirmación al paciente
+    //Verificar que esten los datos correctos para enviar el mail
+    const emailValidationError = this.validateAppointmentEmailData(patientExists, appointmentAdded);
 
-        // Usar el helper de slots existente para formatear el horario
-        const timeRanges = slotsToRanges(appointmentAdded.slots, doctorExists.frequency);
-        const appointmentTime =
-          timeRanges.join(", ") || "Horario no especificado";
-
-        const emailSent = await sendAppointmentConfirmation(
-          patient.email,
-          patientFullName,
-          appointmentAdded.date,
-          appointmentTime,
-        );
-
-        if (emailSent) {
-          console.log(`✉️ Email de confirmación enviado a ${patient.email}`);
-        } else {
-          console.warn(
-            `⚠️ Error al enviar email a ${patient.email} (problema con el transporter)`,
-          );
-        }
-      }
+    if (emailValidationError) {
+      logger.warn(`Email de confirmación no enviado: ${emailValidationError}.`);
+      return this.toShortDTO(objAppointment);
     }
 
+    //enviar email
+    const patientFullName = `${patient.name} ${patient.lastName}`;
+
+    // Usar el helper de slots existente para formatear el horario
+    const timeRanges = slotsToRanges(appointmentAdded.slots, doctorExists.frequency);
+    const appointmentTime = timeRanges.join(", ") || "Horario no especificado";
+
+    const emailSent = await sendAppointmentConfirmation(
+      patient.email,
+      patientFullName,
+      appointmentAdded.date,
+      appointmentTime,
+    );
+
+    if (emailSent) {
+      logger.info(`Email de confirmación enviado a ${patient.email}`);
+    } else {
+      logger.error(
+        `Error al enviar email a ${patient.email} (problema con el transporter)`,
+      );
+    }
+  
     return this.toShortDTO(objAppointment);
   }
 
@@ -447,7 +435,7 @@ export default class AppointmentsService extends BaseService {
       ) {
         // Si hay citas disponibles, devolver la primera encontrada
         dayFounded = true;
-        //console.log("Citas disponibles encontradas para el día:", nextDay);
+        
         return {
           success: true,
           date: nextDayStr,
@@ -456,7 +444,7 @@ export default class AppointmentsService extends BaseService {
       } else {
         // Si no hay citas, todos los slots están ocupados. Pasar al siguiente día
         nextDay.setDate(nextDay.getDate() + 1);
-        //console.log("No hay citas disponibles. Buscando en el siguiente día:", nextDay);
+        
       }
     } while (!dayFounded);
     return { success: false };
@@ -638,14 +626,14 @@ async finalize(appointmentID) {
       return cachedAppointments;
     }
 
-    //console.log(`Todas las citas de hoy ${todayString} obtenidas de cache`);
+    
     return cachedAppointments;
   }
 
   //Guardar en Cache
   async saveCacheAppointment(appointments){
     const todayString = getTodaySTR()
-    //console.log(`Guardando citas de hoy ${todayString} en cache por 10 minutos`);
+    
     await this.cacheService.set(
       `appointments:${todayString}`,
       appointments,
@@ -657,9 +645,32 @@ async finalize(appointmentID) {
   async deleteCacheAppointment(){
     const todayString = getTodaySTR()
     const todayKey = `appointments:${todayString}`;
-    //console.log(`Invalidando caché del día ${todayString}`)
+    
     await this.cacheService.del(todayKey);
   } 
+
+  validateAppointmentEmailData(patient, appointment) {
+      if (!patient) {
+        return "patient es null";
+      }
+
+      if (
+        typeof patient === "string" ||
+        patient.constructor?.name === "ObjectId"
+      ) {
+        return "patient no está populado";
+      }
+
+      if (!patient.email) {
+        return "patient no tiene email";
+      }
+
+      if (!appointment.slots?.length) {
+        return "no hay slots";
+      }
+
+      return null;
+  }
 
   //Métodos de mapeo DTO
   toFormatDTO(appointmentData) {

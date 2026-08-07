@@ -1,3 +1,4 @@
+import logger from "../../core/logger/logger.js";
 import socketProvider  from "../../core/socket/socketProvider.js";
 
 class AppointmentNotificationService {
@@ -33,13 +34,12 @@ class AppointmentNotificationService {
                  appointment
             )
         }catch(error){
-            console.warn(
-                "⚠️ [Warning] No se pudo notificar al doctor sobre el turno en espera:",
-                error.message,
-            );
+            logger.error({
+                message: "No se pudo notificar sobre el turno en espera",
+                error: error.message,
+                stack: error.stack
+            });
         }
-
-
     }
 
     /**
@@ -68,10 +68,11 @@ class AppointmentNotificationService {
             )
 
         }catch(error){
-            console.warn(
-                "⚠️ [Warning] No se pudo notificar a recepcion ni al dashboard sobre el turno llamado:",
-                error.message,
-            );
+            logger.error({
+                message: "No se pudo notificar sobre el turno llamado",
+                error: error.message,
+                stack: error.stack
+            });
         }
     }
 
@@ -94,10 +95,11 @@ class AppointmentNotificationService {
             )
 
         }catch(error){
-            console.warn(
-                "⚠️ [Warning] No se pudo notificar a recepcion ni al dashboard sobre el turno llamado:",
-                error.message,
-            );
+            logger.error({
+                message: "No se pudo notificar sobre el turno finalizado",
+                error: error.message,
+                stack: error.stack
+            });
         }
     }
 
@@ -117,10 +119,11 @@ class AppointmentNotificationService {
             )
 
         }catch(error){
-            console.warn(
-                "⚠️ [Warning] No se pudo notificar a recepcion ni al dashboard sobre el turno llamado:",
-                error.message,
-            );
+            logger.error({
+                message: "No se pudo notificar sobre el cambio de estado del turno",
+                error: error.message,
+                stack: error.stack
+            });
         }
     }
 }

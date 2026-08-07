@@ -1,4 +1,6 @@
 import mongoose from 'mongoose'
+import logger from '../core/logger/logger.js';
+import AppError from '../core/exceptions/AppErrors.js';
 
 class MongoManager {
     constructor(url) {
@@ -11,38 +13,51 @@ class MongoManager {
             await mongoose.connect(this.url);
 
             this.setupListeners();
-            console.log("✅ [OK] Conexión a la DB: ÉXITO");
-        } catch (error) {
-            throw new Error("No se pudo conectar a la base de datos.");
+
+            logger.info("MongoDB conectado");
+        } catch (err) {
+            logger.error({
+                message: "Error al conectador con  MongoDB",
+                error: err.message,
+                stack: err.stack
+            });
+
+            process.exit(1);
         }
     }
 
     async disconnect() {
         try {
             await mongoose.disconnect();
-            console.log("🛑 [info] Desconectado de MongoDB");
-        } catch (error) {
-            console.error("🔴 [Error] Error al desconectar de MongoDB:", error.message);
+            logger.info("Desconectado de MongoDB");
+        } catch (err) {
+            logger.error({
+                message: "Error al desconectar MongoDB",
+                error: err.message,
+                stack: err.stack
+            });
         }
     }
 
     // Configura los listeners para eventos de conexión de MongoDB
     setupListeners() {
         mongoose.connection.on("connected", () => {
-            console.log("✅ [OK] Mongo conectado nuevamente");
+            logger.info("Mongo conectado nuevamente");
         });
 
         mongoose.connection.on("disconnected", () => {
-            console.error("🔴 [Error] MongoDB se ha desconectado inesperadamente.");
+            logger.error("MongoDB se ha desconectado inesperadamente.");
         });
 
         mongoose.connection.on("error", err => {
-            throw new Error("Error en la conexión de MongoDB: " + err.message);
+            logger.error({
+                message: "Error al conectador con  MongoDB",
+                error: err.message,
+                stack: err.stack
+            });
         });
     }
 }
-
-
 
 //ÚNICA instancia SINGLETON
 const mongoManagerInstance = new MongoManager(process.env.DATABASE_URL || "mongodb://localhost:27017/clinica_odontologica");

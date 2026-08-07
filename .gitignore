@@ -17,6 +17,7 @@ node_modules
 
 #errores
 errors.log
+logs/
 
 .pnpm-store/
 

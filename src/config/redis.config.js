@@ -9,6 +9,7 @@
 */
 
 import { createClient } from 'redis';
+import logger from '../core/logger/logger.js';
 
 // Variable global para almacenar la única instancia del cliente.
 let redisClientInstance = null; 
@@ -20,12 +21,8 @@ let redisClientInstance = null;
 export async function getRedisClient() {
     // 1. Verificar si la instancia ya existe
     if (redisClientInstance && redisClientInstance.isOpen) {
-       /*  console.log('✅ Usando la instancia existente de Redis.'); */
         return redisClientInstance;
     }
-
-    //Si no existe, crear una nueva instancia y conectar
-    console.log('⏳ Creando y conectando una nueva instancia de Redis...');
 
     //Usamos la función importada 'createClient'
     const client = createClient({
@@ -36,28 +33,36 @@ export async function getRedisClient() {
         }
     });
 
-    client.on('error', async (err) => {
-        console.error("🔴 [Error] Error en el Cliente Redis: " + err.message);
+    client.on('error', (err) => {
+        logger.error({
+            message: "Error en el cliente Redis",
+            error: err.message,
+            stack: err.stack
+        });
     });
 
     client.on("reconnecting", () => {
-        console.log("🟠 [info] Reconectando Redis...");
+        logger.warn("Reconectando Redis...");
     });
 
     client.on("ready", () => {
-        console.log("✅ [OK] Redis nuevamente disponible");
+        logger.info("Redis conectado");
     });
 
     try {
         await client.connect();
         redisClientInstance = client; // Almacena la instancia conectada
-        console.log('✅ [OK] Conexión a Redis establecida.');
         return redisClientInstance;
 
     } catch (error) {
-        console.error('🔴 [Error] No se pudo conectar a Redis:');
+        logger.error({
+            message: "No se puedo conectar a Redis",
+            error: err.message,
+            stack: err.stack
+        });
         await closeRedis(); // Cierra la conexión si hay un error
-        throw new Error("Falló al conectar el cliente Redis");
+        
+        process.exit(1);
     }
 }
 
@@ -65,10 +70,10 @@ export const closeRedis = async () => {
   if (redisClientInstance) {
     await redisClientInstance.quit();
     redisClientInstance = null;
-    console.log("🛑 [info] Redis cerrado");
+    logger.info("Redis cerrado");
   }
   else{
-    console.log("⚠️ [info] No hay una instancia de Redis para cerrar.");
+    logger.error("No hay una instancia de Redis para cerrar.");
   }
 };
 

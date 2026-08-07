@@ -37,7 +37,6 @@ export const getAppointments = async (req, res, next) => {
         return res.status(200).json({ success: true , data: appointmentsGetted })
             
     } catch (error) {
-        console.log(error)
         next(error)
     }
 };
@@ -83,8 +82,6 @@ export const getAppointmentById = async (req, res, next) => {
         return res.status(200).json({ success: true, data: appointmentGetted })
             
     } catch (error) {
-        console.log("enpoint ID")
-        console.log(error)
         next(error)
     }
 };
@@ -107,7 +104,6 @@ export const createAppointment = async (req, res, next) => {
         return res.status(201).json({ success: true, data: appointmentCreated });
         
     } catch (error) {
-        console.log(error)
         next(error)
     }
 };
@@ -192,7 +188,6 @@ export const checkInAppointment = async (req, res, next) => {
         });
 
     } catch (error) {
-        console.error(error)
         next(error);
     }
 };

@@ -9,6 +9,7 @@ import BaseService from "../../core/services/base.service.js";
 import MongoRepository from "../../core/repositories/implementations/mongo.repository.js";
 import { NoticeDTO } from "./notice.dto.js";
 import { NotFoundError, ValidationError } from "../../core/exceptions/index.js";
+import logger from "../../core/logger/logger.js";
 
 export default class NoticesService extends BaseService {
   constructor() {
@@ -23,7 +24,7 @@ export default class NoticesService extends BaseService {
     let query = {};
 
     if (!user) {
-      console.warn("⚠️ No se recibió 'user' en getNotices.");
+      logger.warn("No se recibió 'user' en getNotices.");
     } else if (user.rol === "Doctor") {
       // Los doctores ven avisos generales o dirigidos a ellos
       query = {
@@ -67,8 +68,6 @@ export default class NoticesService extends BaseService {
     }
 
     noticesGetted = await this.repository.findPaginate(dQuery, dLimit, dPage, dSort);
-
-    console.log(noticesGetted)
     
     if (noticesGetted) {
       noticesGetted.docs = this.toManyDTO(noticesGetted.docs).map(enrichNoticeData);

@@ -1,5 +1,4 @@
 import express from 'express';
-console.time("Servidor levantado en");
 
 const app = express();
 
@@ -7,7 +6,7 @@ const app = express();
 app.use(express.json());
 //recibir datos complejos del navegador
 app.use(express.urlencoded({extended: true}));
-console.log(process.env.PORT);
+
 //Obtener la ruta actual
 import path from 'path';
 import { fileURLToPath } from 'url';

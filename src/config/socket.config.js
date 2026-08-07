@@ -2,6 +2,7 @@ import { Server } from 'socket.io'
 import { verifyAccessToken } from '../core/services/jwt.service.js';
 import cookie from "cookie";
 import { AppError } from '../core/exceptions/index.js';
+import logger from '../core/logger/logger.js';
 
 let io;
 
@@ -22,8 +23,6 @@ export const setupSocket = (server) =>{
             return next(new AppError("TOKEN_EXPIRED"));
         }
 
-        console.log("Usuario conectado para eventos: ", user)
-
         socket.data.user = user;
 
         next();
@@ -31,30 +30,26 @@ export const setupSocket = (server) =>{
 
     //Se ejecuta cada vez que un cliente realiza una conexión
     io.on('connection', async client => {
-        //console.log("Cliente conectado: ", client.id)
-
+        
         const user = client.data.user
-
+        
+        logger.info(`Cliente socket conectado: ${user.id}`)
         
         //ingresar en la sala correcta
         if (user.rol === "dashboard") {
             client.join(`dashboard`);
-            console.log(`${user.email} ingreso a la sala dashboard`)
         }
 
         if (user.rol === "doctor") {
             client.join(`doctor:${user.id}`);
-            console.log(`${user.email} ingreso a la sala doctor`)
         }
         
         if (user.rol === "employee" || user.rol === "admin") {
             client.join("reception");
-            console.log(`${user.email} ingreso a la sala recepcion`)
         }
 
         client.on('disconnect', (reason) => {
-            console.log("Cliente desconectado: ", client.id)
-            console.log("Motivo:", reason);
+            logger.info(`Cliente socket desconectado: ${client.data.user.id} | Motivo${reason}`)
         });
 
     });

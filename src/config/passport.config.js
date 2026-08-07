@@ -44,6 +44,11 @@ if(validateEnvVars('google')){
                 return done(null, userFound);
             }
         } catch (error) {
+            logger.error({
+                message: "Error al ingresar con google",
+                error: error.message,
+                stack: error.stack
+            }); 
             return done(error, false);
         }
     }));

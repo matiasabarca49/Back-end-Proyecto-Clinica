@@ -17,7 +17,6 @@ export const getNotices = async (req, res, next) => {
         }
         return res.status(200).json({ success: true, data: noticesGetted });
     } catch (error) {
-        console.error("Error en getNotices:", error);
         next(error);
     }
 };
@@ -34,7 +33,6 @@ export const getNoticeById = async (req, res, next) => {
         const noticeGetted = await noticesService.findById(noticeID);
         return res.status(200).json({ success: true, data: noticeGetted });
     } catch (error) {
-        console.error("Error en getNoticeById:", error);
         next(error);
     }
 };
@@ -51,7 +49,6 @@ export const createNotice = async (req, res, next) => {
         const noticeCreated = await noticesService.create(notice, req.user);
         return res.status(201).json({ success: true, data: noticeCreated });
     } catch (error) {
-        console.error("Error en createNotice:", error);
         next(error);
     }
 };
@@ -68,7 +65,6 @@ export const deleteNotice = async (req, res, next) => {
         const noticeDeleted = await noticesService.delete(noticeID, req.user);
         return res.status(200).json({ success: true, data: noticeDeleted });
     } catch (error) {
-        console.error("Error en deleteNotice:", error);
         next(error);
     }
 };
@@ -87,7 +83,6 @@ export const updateNotice = async (req, res, next) => {
         const noticeUpdated = await noticesService.update(idNotice, noticeData, req.user);
         return res.status(200).json({ success: true, data: noticeUpdated });
     } catch (error) {
-        console.error("Error en updateNotice:", error);
         next(error);
     }
 };

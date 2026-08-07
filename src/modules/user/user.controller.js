@@ -1,4 +1,5 @@
 import { getRedisClient } from "../../config/redis.config.js";
+import logger from "../../core/logger/logger.js";
 import { CreateUserRequestDTO } from "./user.dto.js";
 import UsersService from "./user.service.js";
 const usersService = new UsersService();
@@ -120,7 +121,7 @@ export const deleteUser = async (req, res, next) => {
         const isActive = await redisClient.get(`session:${userID}`)
 
         if(isActive){
-            console.log(`El usuario ${userID} no se puede eliminar porque tiene una sesión activa`)
+            logger.warn(`El usuario ${userID} no se puede eliminar porque tiene una sesión activa`)
             return res.status(403).json({ success: false, message: "El usuario tiene una sesión activa" });
         } 
 
