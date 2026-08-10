@@ -5,6 +5,13 @@
  * 1. Captura todos los errores de la app
  * 2. Los convierte en respuestas JSON
  * 3. Maneja errores operacionales vs errores de sistema
+ * 
+ *  ValidationError / 400  → 🟡 WARN
+ *  Unauthorized / 401     → 🟡 WARN
+ *  Forbidden / 403        → 🟡 WARN
+ *  NotFound / 404         → 🟡 WARN
+ *  Conflict / 409         → 🟡 WARN
+ *  500+                   → 🔴 ERROR
  */
 
 import AppError from '../core/exceptions/AppErrors.js';
@@ -16,8 +23,8 @@ import logger from "../core/logger/logger.js";
  */
 
 const errorHandler = (err, req, res, next) => {
-  
-  logger.error({
+
+  logger.log(err.statusCode>= 400 && err.statusCode < 500? "warn": "error",{
     message: err.message,
     stack: err.stack,
     statusCode: err.statusCode,

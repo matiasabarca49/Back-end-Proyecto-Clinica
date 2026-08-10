@@ -1,5 +1,7 @@
 import winston from "winston";
 import fs from "node:fs";
+import DailyRotateFile from "winston-daily-rotate-file";
+import { getRequestId } from "../request-context/requestContext.js";
 
 const { combine, timestamp, printf, colorize } = winston.format;
 
@@ -47,8 +49,11 @@ const consoleFormat = combine(
             message += ` | ${info.duration}`;
         }
 
-        if (info.requestId) {
-            message += ` | requestId: ${info.requestId}`;
+        //Obtenemos el requestID
+        const requestId = getRequestId();
+
+        if (requestId) {
+            message += ` | requestId: ${requestId}`;
         }
 
         return message;
@@ -59,9 +64,8 @@ const consoleFormat = combine(
     })
 );
 
-
-// Formato para archivos (producción)
-const fileFormat = combine(
+// Formato para archivos (development)
+const developmentFileFormat = combine(
     timestamp(),
     printf((info) => {
 
@@ -79,27 +83,51 @@ const fileFormat = combine(
             message += ` | ${info.duration}`;
         }
 
-        if (info.requestId) {
-            message += ` | requestId: ${info.requestId}`;
-        }   
+        //Obtenemos el requestID
+        const requestId = getRequestId();
+
+        if (requestId) {
+            message += ` | requestId: ${requestId}`;
+        }  
 
         if (info.stack) {
             message += `\n${info.stack}`;
         }
         
-
         return message;
     })
 );
 
+const fileFormat = process.env.NODE_ENV === "production" ? winston.format.json() : developmentFileFormat;
+
+//Transporte para la rotacion de archivos
+const fileTransportApp = new DailyRotateFile({
+    filename: "logs/application-%DATE%.log", //logs por fechas
+    datePattern: "YYYY-MM-DD",
+    maxSize: "20m", //Tamaño maximo por acrhivo archivo. Se creará otro si se pasa
+    maxFiles: "30d", //archivo viejo maximo 30 dias atras
+    zippedArchive: true, //Comprime los archivos viejos
+    format: fileFormat //Segun el entorno es el formato
+});
+
+const errorTransport = new DailyRotateFile({
+    filename: "logs/error-%DATE%.log",
+    datePattern: "YYYY-MM-DD",
+    maxSize: "20m",
+    maxFiles: "30d",
+    zippedArchive: true,
+    level: "error",
+    format: fileFormat
+});
+
+//levels segun entorno. En desarrollo veremos debug y en producción solamente info+
+const levels = process.env.NODE_ENV === "production" ? "info" : "debug"
+
 
 const logger = winston.createLogger({
 
-    // En desarrollo veremos debug,
-    // en producción solamente info+
-    level: process.env.NODE_ENV === "production"
-        ? "info"
-        : "debug",
+    
+    level: levels,
 
     transports: [
 
@@ -109,19 +137,12 @@ const logger = winston.createLogger({
         }),
 
 
-        // Todos los logs
-        new winston.transports.File({
-            filename: "logs/app.log",
-            format: fileFormat
-        }),
+        // Todos los logs app
+        fileTransportApp,
 
 
         // Solo errores
-        new winston.transports.File({
-            filename: "logs/error.log",
-            level: "error",
-            format: fileFormat
-        })
+        errorTransport
 
     ]
 

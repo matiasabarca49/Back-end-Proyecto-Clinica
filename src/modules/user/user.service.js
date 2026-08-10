@@ -11,6 +11,8 @@ import DoctorService from "../doctor/doctor.service.js";
 //Repository
 import MongoRepository from "../../core/repositories/implementations/mongo.repository.js";
 import { NotFoundError, ValidationError } from "../../core/exceptions/index.js";
+import logger from "../../core/logger/logger.js";
+import { getRequestId } from "../../core/request-context/requestContext.js";
 
 class UsersService extends BaseService{
 
@@ -114,6 +116,7 @@ class UsersService extends BaseService{
         // Validar datos de Doctor si corresponde
         if (isDoctor) {
             createDoctor = this._validateDoctorData(newUser);
+            if(!createDoctor) throw new ValidationError("Error al crear Usuario: Campos de doctor faltantes")
         }
 
         //Encriptar la contraseña, definir status y formatear datos del usuario
@@ -131,26 +134,32 @@ class UsersService extends BaseService{
         //DTO de dominio
         const userFormated = new UserDTO(newUser);
 
-        //Crear el usuario principal
         const userAdded = await super.create(userFormated);
 
-        // Crear registro Doctor, si es necesario
-        if (isDoctor && createDoctor) {
-            //Asignar el ID del usuario creado al doctor para relacion
-            const newDoctor = {...newUser};
-            newDoctor.id = userAdded._id;
-            newDoctor.status = 'active';
-            const formatedDoctor  =  new DoctorDTO(newDoctor);
-            const doctorService = new DoctorService();
-            const doctorAdded = await doctorService.create(formatedDoctor); 
-            if (!doctorAdded) {
-                //Borrar usuario creado
-                await super.delete(userAdded._id);
-                throw new Error("Error al crear el Doctor");
-            }
+        //retornar si no es doctor
+        if (!isDoctor) {
+            return this.toDTO(userAdded);
         }
-        
-        //Éxito
+
+        // Crear registro Doctor
+        const newDoctor = {
+            ...newUser,
+            id: userAdded._id,
+            status: "active"
+        };
+
+        const formattedDoctor = new DoctorDTO(newDoctor);
+
+        const doctorService = new DoctorService();
+
+        const doctorAdded = await doctorService.create(formattedDoctor);
+
+        if (!doctorAdded) {
+            await super.delete(userAdded._id);
+
+            throw new Error("Error al crear el Doctor");
+        }
+
         return this.toDTO(userAdded);
     }
 
@@ -241,14 +250,14 @@ class UsersService extends BaseService{
      * Extrae los datos necesarios para crear un Doctor
      */
     _validateDoctorData(newUser) {
-        const fields = ["dni", "phone", "professionalLicense"];
+        const fields = ["dni", "phone", "professionalLicense", "frequency"];
 
         const emptyField = [];
 
         fields.forEach(field => {
             if (!newUser[field]) {
                 emptyField.push(field);
-            }})
+        }})
 
         if (emptyField.length > 0) {
             return false;
