@@ -250,7 +250,7 @@ class UsersService extends BaseService{
      * Extrae los datos necesarios para crear un Doctor
      */
     _validateDoctorData(newUser) {
-        const fields = ["dni", "phone", "professionalLicense", "frequency"];
+        const fields = ["dni", "phone", "professionalLicense", "frequency", "color"];
 
         const emptyField = [];
 

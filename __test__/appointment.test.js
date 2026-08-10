@@ -49,6 +49,7 @@ describe('API de Appointments', () => {
                 dni: '1234567',
                 phone: '1234567890',
                 professionalLicense: 'MP12345',
+                color: "#b0464611",
                 frequency: 30,
 
             };
@@ -122,7 +123,9 @@ describe('API de Appointments', () => {
                     rol: 'doctor',
                     dni: '12345678',
                     phone: '1234567890',
-                    professionalLicense: 'MP12345'
+                    professionalLicense: 'MP12345',
+                    color: "#b4c12311",
+                    frequency: 30
                 };
             
             const responseUser = await request(app)

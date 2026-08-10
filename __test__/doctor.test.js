@@ -44,7 +44,9 @@ describe('API de Doctores', () => {
         rol: 'doctor',
         dni: '12345678',
         phone: '1234567890',
-        professionalLicense: 'MP12345'
+        professionalLicense: 'MP12345',
+        color: '#ff5733',
+        frequency: 60
       };
 
       const response = await request(app)
@@ -78,7 +80,8 @@ describe('API de Doctores', () => {
           friday: { start: '8:00', end: '14:00' },
           saturday: { start: '9:00', end: '13:00' }
         },
-        color: '#ff5733'
+        color: '#ff5733',
+        frequency: 60
       };
 
       const response = await request(app)
@@ -116,7 +119,9 @@ describe('API de Doctores', () => {
         rol: 'doctor',
         dni: '1234567',
         phone: '1234567890',
-        professionalLicense: 'MP11111'
+        professionalLicense: 'MP11111',
+        color: "#1111",
+        frequency: 60
       };
 
       await request(app)
@@ -133,7 +138,9 @@ describe('API de Doctores', () => {
         rol: 'doctor',
         dni: '1234567', // DNI duplicado
         phone: '1166778899',
-        professionalLicense: 'MP22222'
+        professionalLicense: 'MP22222',
+        color: "#1131",
+        frequency: 60
       };
 
       const response = await request(app)
@@ -154,7 +161,9 @@ describe('API de Doctores', () => {
         rol: 'doctor',
         dni: '22222222',
         phone: '1234567890',
-        professionalLicense: 'MP99999'
+        professionalLicense: 'MP99999',
+        color: "#1111",
+        frequency: 60
       };
 
       await request(app)
@@ -171,7 +180,9 @@ describe('API de Doctores', () => {
         rol: 'doctor',
         dni: '33333333',
         phone: '1234567890',
-        professionalLicense: 'MP99999' // Matrícula duplicada
+        professionalLicense: 'MP99999', // Matrícula duplicada
+        color: "#cf155311",
+        frequency: 60
       };
 
       const response = await request(app)
@@ -196,7 +207,9 @@ describe('API de Doctores', () => {
         status: 'active',
         dni: '44444444',
         phone: '1234567890',
-        professionalLicense: 'MP33333'
+        professionalLicense: 'MP33333',
+        color: "#acd22111",
+        frequency: 60
       };
 
       const crearResponse = await request(app)
@@ -229,7 +242,9 @@ describe('API de Doctores', () => {
         status: 'active',
         dni: '55555555',
         phone: '1234567890',
-        professionalLicense: 'MP44444'
+        professionalLicense: 'MP44444',
+        color: "#5714c211",
+        frequency: 60
       };
 
       const crearResponse = await request(app)
