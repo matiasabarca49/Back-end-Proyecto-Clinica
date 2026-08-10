@@ -41,6 +41,9 @@ app.set('trust proxy', 1);
 import { generalLimit } from './middlewares/rateLimit.middleware.js';
 app.use(generalLimit);
 
+//Metricas
+app.use(metricsMiddleware);
+
 //Logger de Rutas
 import httpLogger from "./middlewares/httpLogger.middleware.js";
 app.use(httpLogger);
@@ -63,6 +66,8 @@ import { validateEnvVars } from './utils/dotenv.helper.js';
 import routeAuthGoogle from './modules/auth/passports/google.auth.router.js';
 //Health check
 import healthRouter from './modules/health/health.router.js';
+//metrics
+import metricsRouter from './modules/metrics/metrics.router.js'
 
 
 //Raiz
@@ -88,11 +93,16 @@ if(validateEnvVars("google")){
 //health check
 app.use("/api/health", healthRouter);
 
+//metrics
+app.use("/api/metrics", metricsRouter);
+
+
 //Docs
 //Documentación Swagger
 import SwaggerJsdoc from 'swagger-jsdoc'
 import SwaggerUIExpress from 'swagger-ui-express'
 import { swaggerOption, swaggerOpts } from './config/swagger.config.js'
+import { metricsMiddleware } from './middlewares/metrics.middleware.js';
 const specs = SwaggerJsdoc(swaggerOption)
 app.use('/api/docs', SwaggerUIExpress.serve, SwaggerUIExpress.setup(specs, swaggerOpts));
 
