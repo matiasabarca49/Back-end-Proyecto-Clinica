@@ -1,0 +1,10 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: clinic-backend
+    metrics_path: /api/metrics
+    static_configs:
+      - targets:
+          - "app_node_1:8080"
+          - "app_node_2:8080"

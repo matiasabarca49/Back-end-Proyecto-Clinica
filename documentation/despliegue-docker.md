@@ -159,6 +159,8 @@ La infraestructura está compuesta por los siguientes servicios:
 - **2 instancias de la API** Node.js ejecutando la aplicación.
 - **MongoDB Replica Set** compuesto por un nodo Primary y dos nodos Secondary.
 - **Redis** utilizado para sesiones, caché y colas de trabajo.
+- **Prometheus** para la captura y almacenamiento de métricas.
+- **Grafana** Análisis y Gráficos de Métricas.
 
 ```text
                     Cliente
@@ -194,7 +196,7 @@ Sus responsabilidades son:
 - Ocultar la infraestructura interna al cliente.
 - Permitir futuras configuraciones de HTTPS, compresión, cache y otras funcionalidades.
 
-El balanceo de carga utiliza el algoritmo **Round Robin**, que distribuye automáticamente las solicitudes entre ambas instancias de la API.
+El balanceo de carga utiliza Sticky Sessions. Una vez que un cliente es enviado a una instancia del backend, intentamos que las siguientes solicitudes de ese cliente vuelvan a esa misma instancia.
 
 ### API Node.js
 
@@ -245,7 +247,62 @@ Nginx
     └────────► API 2
 ```
 
-Las solicitudes se distribuyen utilizando el algoritmo **Round Robin**, enviando cada nueva petición a una instancia diferente.
+Las solicitudes se distribuyen utilizando ip hash, cada cliente tiende a permanecer asociado al mismo backend.
+
+Esto fue actualizado de Roun Robin a Sticky sessionsIP cuando se agregó web sockets. Para permitir que un cliente permanezca asociado al mismo servidor/backend detrás del balanceador.
+
+## Observabilidad
+
+El entorno de producción incorpora Prometheus y Grafana para monitorear el comportamiento del backend.
+
+La arquitectura de observabilidad es:  
+
+```
+Node.js API
+    │
+    │ /api/metrics
+    ▼
+Prometheus
+    │
+    │ PromQL
+    ▼
+Grafana
+    │
+    ▼
+Dashboards
+```
+
+### Prometheus
+
+Prometheus se ejecuta como un servicio independiente dentro del Docker Compose de producción.
+
+Su responsabilidad es recolectar y almacenar las métricas expuestas por las instancias del backend.
+
+* Las métricas son expuestas en: **/api/metrics**
+* Métricas HTTP y métricas de runtime de la API.
+* Prometheus realiza scraping cada 15 segundos.
+
+En producción, Prometheus consulta directamente las instancias del backend mediante la red interna de Docker:  
+
+```
+app_node_1:8080
+app_node_2:8080  
+```  
+Configuración de Prometheus:
+
+```yaml
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: clinic-backend
+    metrics_path: /api/metrics
+    static_configs:
+      - targets:
+          - "app_node_1:8080"
+          - "app_node_2:8080"
+
+```
 
 ## Alta disponibilidad
 

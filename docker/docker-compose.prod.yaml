@@ -16,7 +16,7 @@ services:
   # MONGO PRIMARY
   # ==========================================
   mongo_primary:
-    image: mongo:8
+    image: mongo:7
     restart: unless-stopped
     command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
     volumes:
@@ -28,7 +28,7 @@ services:
   # MONGO SECONDARY 1
   # ==========================================
   mongo_secondary_1:
-    image: mongo:8
+    image: mongo:7
     restart: unless-stopped
     command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
     volumes:
@@ -40,7 +40,7 @@ services:
   # MONGO SECONDARY 2
   # ==========================================
   mongo_secondary_2:
-    image: mongo:8
+    image: mongo:7
     restart: unless-stopped
     command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
     volumes:
@@ -52,7 +52,7 @@ services:
   # MONGO REPLICA SET INIT
   # ==========================================
   mongo_setup:
-    image: mongo:8
+    image: mongo:7
     restart: "no"
 
     depends_on:
@@ -121,6 +121,40 @@ services:
     networks:
       - network_backend_clinica
 
+  # ==========================================
+  # PROMETHEUS
+  # ==========================================
+
+  prometheus:
+    image: prom/prometheus:latest
+    restart: unless-stopped
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    networks:
+      - network_backend_clinica
+
+
+  # ==========================================
+  # GRAFANA
+  # ==========================================
+
+  grafana:
+    image: grafana/grafana:latest
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+    depends_on:
+      - prometheus
+    networks:
+      - network_backend_clinica
+
+  # ==========================================
+  # NGINX(Balanceador)
+  # ==========================================
+
   nginx:
     image: nginx:alpine
     ports:
@@ -145,3 +179,5 @@ volumes:
   mongo_primary_data:
   mongo_secondary_1_data:
   mongo_secondary_2_data:
+  prometheus_data:
+  grafana_data:

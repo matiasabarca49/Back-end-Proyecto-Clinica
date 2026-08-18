@@ -49,6 +49,15 @@ Routes → Controller → Service → Repository → Database
 
 Esta organización permite que cada funcionalidad sea independiente y cohesiva, mientras que los componentes compartidos e infraestructura (como cache, colas, sockets y servicios reutilizables) se agrupan en la carpeta `core`.
 
+---
+
+## Observabilidad y monitoreo
+
+El backend cuenta con una infraestructura de observabilidad que permite monitorear su estado mediante health checks, analizar eventos mediante logs estructurados y medir el comportamiento de la aplicación mediante métricas recolectadas por Prometheus y visualizadas en Grafana.
+
+* Health checks para aplicación, MongoDB, Redis y BullMQ.
+* Logging estructurado con Winston y requestId.
+* Métricas HTTP y de runtime compatibles con Prometheus.
 
 ---
 

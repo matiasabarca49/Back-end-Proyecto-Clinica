@@ -4,6 +4,10 @@ import logger from "../core/logger/logger.js";
 
 const httpLogger = (req, res, next) => {
 
+    if (req.path === '/api/metrics') {
+        return next();
+    }
+
     const start = process.hrtime.bigint();
 
     const requestId = crypto.randomUUID();
