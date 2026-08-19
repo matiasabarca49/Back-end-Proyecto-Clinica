@@ -93,6 +93,28 @@ class PatientsService extends BaseService {
         return updated;
     }
 
+    async getPDF(patientId){
+        const patient = await super.findById(patientId);
+
+        if (!patient) throw new NotFoundError("Paciente", patientId);
+
+         const response = await fetch(
+            `${process.env.PDF_SERVICE_URL}/generate-pdf`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(patient)
+            }
+        );
+
+        const pdfBuffer = Buffer.from(await response.arrayBuffer());
+
+
+        return pdfBuffer;
+    }
+
     async addObservation(patientId, observation){
         const patientUpdated = await this.repository.updateByFilter(
             {_id: patientId},

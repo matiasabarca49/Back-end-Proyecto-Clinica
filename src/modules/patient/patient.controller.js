@@ -157,6 +157,31 @@ export const updatePatient = async (req, res, next) => {
 
 /**
  * Actualizar el campo de observaciones del paciente (agregar una nueva observación al array)
+ * POST /api/patients/pdf/:id
+ * */ 
+export const getPDF = async (req, res, next) => {
+        try {
+            const patientId = req.params.id.trim();
+            const observation = new AddRequestObservationDTO(req.body);
+
+            const pdf = await patientsService.getPDF(patientId);
+
+
+            res.setHeader("Content-Type", "application/pdf");
+            res.setHeader(
+                "Content-Disposition",
+                "attachment; filename=historia-clinica.pdf"
+            );
+
+            return res.send(pdf);
+
+        } catch (error) {
+            next(error);
+        }
+};
+
+/**
+ * Actualizar el campo de observaciones del paciente (agregar una nueva observación al array)
  * POST /api/patients/:id/observations
  * Body: { observation: "Texto de la observación" }
  * */ 
