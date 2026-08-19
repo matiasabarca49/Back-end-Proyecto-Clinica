@@ -24,3 +24,9 @@ logs/
 #build
 /dist
 coverage/
+
+#python
+.venv/
+__pycache__/
+*.pyc
+.env
