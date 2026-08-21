@@ -111,8 +111,19 @@ class PatientsService extends BaseService {
 
         const pdfBuffer = Buffer.from(await response.arrayBuffer());
 
+        //capturár el nombre generado por el microservicio de PDF
+        const contentDisposition = response.headers.get("content-disposition");
 
-        return pdfBuffer;
+        let filename = "historia-clinica.pdf"; // fallback por si algo falla
+        
+        if (contentDisposition) {
+            const match = contentDisposition.match(/filename="?([^"]+)"?/);
+            if (match) {
+                filename = match[1];
+            }
+        }
+
+        return { filename, pdfBuffer };
     }
 
     async addObservation(patientId, observation){

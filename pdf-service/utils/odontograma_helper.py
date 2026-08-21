@@ -309,3 +309,5 @@ def dibujar_odontograma(c, x0, y0, dientes_json=None, size=26, gap=4, espacio_me
         dibujar_diente(c, x, y_sup, size=size, numero=num, **d)
         x += paso
 
+    return y_sup - 15
+

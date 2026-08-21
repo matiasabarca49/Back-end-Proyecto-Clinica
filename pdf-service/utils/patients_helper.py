@@ -1,9 +1,17 @@
 from reportlab.lib.colors import HexColor
+from utils.pages_helper import verificar_salto_pagina
 
 COLOR_PRIMARIO = HexColor("#1f2667")
 COLOR_TEXTO = HexColor("#2c3e50")
 COLOR_LABEL = HexColor("#8a8f9c")
 COLOR_DIVISOR = HexColor("#dcdde1")
+
+ETIQUETA_GENERO = {
+    "male": "Hombre",
+    "female": "Mujer",
+    "another": "Otro",
+    "other": "Otros",
+}
 
 
 def dibujar_informacion_paciente(c, x, y, patient, ancho_contenido):
@@ -69,7 +77,7 @@ def dibujar_informacion_paciente(c, x, y, patient, ancho_contenido):
         ("Fecha de nacimiento", patient.birth),
         ("Tipo de DNI", patient.typeDNI),
         ("DNI", patient.dni),
-        ("Sexo", patient.sex),
+        ("Sexo", ETIQUETA_GENERO.get(patient.sex, "Desconocido")),
     ])
 
     # --- Contacto ---
@@ -92,5 +100,201 @@ def dibujar_informacion_paciente(c, x, y, patient, ancho_contenido):
         ("Cobertura", patient.medicalCoverage),
         ("Número de afiliado", patient.nAffiliate),
     ])
+
+    return y
+
+""" 
+TRATAMIENTOS
+"""
+
+COLOR_ESTADO = {
+    "progress": HexColor("#e67e22"),      # en progreso - naranja
+    "completed": HexColor("#27ae60"),     # completado - verde
+    "pending": HexColor("#7f8c8d"),       # pendiente - gris
+    "cancelled": HexColor("#c0392b"),
+    "finalized": HexColor("#27ae60")     # finalizado - verde
+}
+
+ETIQUETA_ESTADO = {
+    "progress": "En progreso",
+    "completed": "Completado",
+    "pending": "Pendiente",
+    "cancelled": "Cancelado",
+    "finalized": "Finalizado",
+}
+
+
+def dibujar_tratamientos(c, x, y, treatments, ancho_contenido,  page_height, fila_alto=26):
+    """
+    Dibuja la sección "Tratamientos" a partir de un array de objetos:
+    [{"name": ..., "dateStart": ..., "dateEnd": ..., "status": ..., "_id": {...}}, ...]
+
+    Arranca en (x, y) como esquina superior izquierda del bloque.
+    Retorna el nuevo valor de `y` (cursor), libre para lo que siga.
+    """
+    treatments = treatments or []
+
+    altura_necesaria = 28 - 8 - fila_alto
+    
+    y = verificar_salto_pagina(c, y, alto_necesario= altura_necesaria, page_height = page_height)
+
+    # --- Título de sección (mismo estilo que el resto de la ficha) ---
+    c.setFillColor(COLOR_PRIMARIO)
+    c.rect(x, y - 3, 4, 15, fill=1, stroke=0)
+
+    c.setFont("Helvetica-Bold", 13)
+    c.setFillColor(COLOR_PRIMARIO)
+    c.drawString(x + 12, y, "Tratamientos")
+
+    c.setStrokeColor(COLOR_DIVISOR)
+    c.setLineWidth(0.6)
+    c.line(x, y - 10, x + ancho_contenido, y - 10)
+
+    y -= 28
+
+    if not treatments:
+        c.setFont("Helvetica-Oblique", 10)
+        c.setFillColor(COLOR_LABEL)
+        c.drawString(x, y, "Sin tratamientos registrados.")
+        return y - 20
+
+    # --- Encabezado de columnas ---
+    col_nombre = x
+    col_inicio = x + ancho_contenido * 0.48
+    col_fin = x + ancho_contenido * 0.66
+    col_estado = x + ancho_contenido * 0.84
+
+    c.setFont("Helvetica-Bold", 8)
+    c.setFillColor(COLOR_LABEL)
+    c.drawString(col_nombre, y, "TRATAMIENTO")
+    c.drawString(col_inicio, y, "INICIO")
+    c.drawString(col_fin, y, "FIN")
+    c.drawString(col_estado, y, "ESTADO")
+
+    y -= 8
+    c.setStrokeColor(COLOR_DIVISOR)
+    c.setLineWidth(0.4)
+    c.line(x, y, x + ancho_contenido, y)
+    y -= fila_alto - 8
+
+    # --- Filas ---
+    for tratamiento in treatments:
+        #Verificamos el espacio
+        y = verificar_salto_pagina(c, y, fila_alto, page_height = page_height)
+
+        nombre = tratamiento.get("name", "—")
+        inicio = tratamiento.get("dateStart") or "—"
+        fin = tratamiento.get("dateEnd") or "—"
+        status = tratamiento.get("status", "pending")
+
+        c.setFont("Helvetica", 10)
+        c.setFillColor(COLOR_TEXTO)
+        c.drawString(col_nombre, y, nombre)
+        c.drawString(col_inicio, y, inicio)
+        c.drawString(col_fin, y, fin)
+
+        # Badge de estado
+        color_badge = COLOR_ESTADO.get(status, COLOR_LABEL)
+        texto_badge = ETIQUETA_ESTADO.get(status, status.capitalize())
+
+        c.setFont("Helvetica-Bold", 7.5)
+        ancho_texto = c.stringWidth(texto_badge, "Helvetica-Bold", 7.5)
+        pad = 5
+        badge_w = ancho_texto + pad * 2
+        badge_h = 12
+
+        c.setFillColor(color_badge)
+        c.roundRect(col_estado, y - 2, badge_w, badge_h, radius=3, fill=1, stroke=0)
+
+        c.setFillColor(COLOR_DIVISOR)
+        c.drawString(col_estado + pad, y + 1.5, texto_badge)
+
+        y -= fila_alto
+
+    return y
+
+ESTADO_OBSERVACION_COLOR = {
+    "finalized": HexColor("#27ae60"),   # finalizada - verde
+    "pending": HexColor("#7f8c8d"),     # pendiente - gris
+    "urgent": HexColor("#c0392b"),      # urgente - rojo
+}
+
+ETIQUETA_OBSERVACION = {
+    "finalized": "Finalizada",
+    "pending": "Pendiente",
+    "urgent": "Urgente",
+}
+
+
+
+def dibujar_observaciones(c, x, y, observations, ancho_contenido, page_height, fila_alto=22):
+    """
+    Dibuja la sección "Observaciones" a partir de un array de objetos:
+    [{"name": ..., "date": ..., "status": ..., "_id": {...}}, ...]
+
+    Arranca en (x, y) como esquina superior izquierda del bloque.
+    Retorna el nuevo valor de `y` (cursor), libre para lo que siga.
+    """
+    observations = observations or []
+
+    altura_necesaria = 28 - fila_alto
+
+    y = verificar_salto_pagina(c, y, alto_necesario= altura_necesaria, page_height = page_height)
+
+
+    c.setFillColor(COLOR_PRIMARIO)
+    c.rect(x, y - 3, 4, 15, fill=1, stroke=0)
+
+    c.setFont("Helvetica-Bold", 13)
+    c.setFillColor(COLOR_PRIMARIO)
+    c.drawString(x + 12, y, "Observaciones")
+
+    c.setStrokeColor(COLOR_DIVISOR)
+    c.setLineWidth(0.6)
+    c.line(x, y - 10, x + ancho_contenido, y - 10)
+
+    y -= 28
+
+    if not observations:
+        c.setFont("Helvetica-Oblique", 10)
+        c.setFillColor(COLOR_LABEL)
+        c.drawString(x, y, "Sin observaciones registradas.")
+        return y - 20
+
+    col_fecha = x
+    col_texto = x + 65
+    col_estado = x + ancho_contenido * 0.82
+
+    for obs in observations:
+        y = verificar_salto_pagina(c, y, fila_alto, page_height = page_height)
+
+        nombre = obs.get("name", "—")
+        fecha = obs.get("date") or "—"
+        status = obs.get("status", "pending")
+
+        c.setFont("Helvetica-Bold", 9)
+        c.setFillColor(COLOR_LABEL)
+        c.drawString(col_fecha, y, fecha)
+
+        c.setFont("Helvetica", 10)
+        c.setFillColor(COLOR_TEXTO)
+        # el texto de la observación puede ser largo -> lo recortamos con "..."
+        max_ancho = col_estado - col_texto - 10
+        texto = nombre
+        while c.stringWidth(texto, "Helvetica", 10) > max_ancho and len(texto) > 3:
+            texto = texto[:-4] + "..."
+        c.drawString(col_texto, y, texto)
+
+        color_badge = ESTADO_OBSERVACION_COLOR.get(status, COLOR_LABEL)
+        texto_badge = ETIQUETA_OBSERVACION.get(status, status.capitalize())
+        c.setFont("Helvetica-Bold", 7)
+        ancho_texto = c.stringWidth(texto_badge, "Helvetica-Bold", 7)
+        pad = 5
+        c.setFillColor(color_badge)
+        c.roundRect(col_estado, y - 2, ancho_texto + pad * 2, 11, radius=3, fill=1, stroke=0)
+        c.setFillColor(COLOR_DIVISOR)
+        c.drawString(col_estado + pad, y + 1, texto_badge)
+
+        y -= fila_alto
 
     return y

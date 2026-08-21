@@ -162,18 +162,16 @@ export const updatePatient = async (req, res, next) => {
 export const getPDF = async (req, res, next) => {
         try {
             const patientId = req.params.id.trim();
-            const observation = new AddRequestObservationDTO(req.body);
 
             const pdf = await patientsService.getPDF(patientId);
-
 
             res.setHeader("Content-Type", "application/pdf");
             res.setHeader(
                 "Content-Disposition",
-                "attachment; filename=historia-clinica.pdf"
+                `attachment; filename="${pdf.filename}"`
             );
 
-            return res.send(pdf);
+            return res.send(pdf.pdfBuffer);
 
         } catch (error) {
             next(error);
