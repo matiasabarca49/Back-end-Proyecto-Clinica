@@ -18,6 +18,21 @@ services:
     volumes:
       - redis_data:/data
 
+  # ==========================================
+  # MICROSERVICIO PDF
+  # ==========================================
+  pdf-service:
+    build:
+      context: ../pdf-service
+      dockerfile: Dockerfile
+    container_name: clinic-pdf-service
+    volumes:
+      - ../pdf-service:/app
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+
 volumes:
   mongo_data:
   redis_data:

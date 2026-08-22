@@ -16,7 +16,7 @@ services:
   # BASE DE DATOS PRINCIPAL (Mongo)
   # ==========================================
   mongo_clinica:
-    image: mongo:8
+    image: mongo:7
     restart: unless-stopped
     volumes:
       - mongo_clinica_data:/data/db
@@ -27,7 +27,7 @@ services:
 
 
   # ==========================================
-  # MONOLITO NODE (CONTENEDOR 1)
+  # MONOLITO NODE 
   # ==========================================
   app_clinica:
     ports:
@@ -47,6 +47,23 @@ services:
       - mongo_clinica
     networks:
       - network_backend_clinica # Para hablar con la DB y Redis
+
+  # ==========================================
+  # MICROSERVICIO PDF 
+  # ==========================================
+  pdf-service:
+    build:
+      context: ../pdf-service
+      dockerfile: Dockerfile
+    container_name: clinic-pdf-service
+    volumes:
+      - ../pdf-service:/app
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+    networks:
+      - network_backend_clinica
 
 
 # ==========================================

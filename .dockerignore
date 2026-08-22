@@ -8,3 +8,5 @@ dist
 npm-debug.log
 pnpm-debug.log
 logs
+pdf-service/
+docker/

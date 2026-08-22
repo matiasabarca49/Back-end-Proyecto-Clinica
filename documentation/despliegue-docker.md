@@ -30,11 +30,11 @@ Ejemplo:
 ```env
 NODE_ENV=development
 ORIGIN_FRONTEND=<URL_FRONTEND>
-DATABASE_URL=mongodb://mongo_clinica:27017/clinica_odontologica
+DATABASE_URL=mongodb://<localhost o mongo_clinica>:27017/clinica_odontologica
 SECRET_SESSIONS=your_secret_sessions_key
 PORT=8080
 PORT_REDIS=6379
-HOST_REDIS=redis_clinica
+HOST_REDIS=<localhost o redis_clinica>
 //========== Autenticación con Google ============
 GOOGLE_CLIENT_ID=<ID_GOOGLE>
 GOOGLE_CLIENT_SECRET=<SECRETO_GOOGLE>
@@ -42,7 +42,10 @@ GOOGLE_CALLBACK_URL= http://<IP_BACKEND o localhost>/api/auth/google/callback
 //========== Envío de Emails ===========
 EMAIL_USER=<CORREO_QUE_ENVIARÁ_EMAILS>
 EMAIL_PASS=<CLAVE_PARA_APIS>
+//========== Servicios ================
+PDF_SERVICE_URL=http://<localhost o pdf-service>:8000
 ```
+**NOTA:** No es necesario contar con credenciales de Google ni Emails para probar la API. En caso de no proporcionarlas, la API desactivará esas caracteristicas.
 
 Dentro de Docker los servicios se comunican utilizando el nombre del servicio definido en `docker-compose`.
 
@@ -66,7 +69,29 @@ No se utiliza `localhost` para comunicación entre contenedores.
 
 ## Opcion Services
 
-Para levantar únicamente estos servicios mediante Docker Compose:
+```
+             ┌────────────────────────────┐
+             │                            │
+             | 2707 ─────► mongo_clinica  │
+             │                            │
+localhost ─► │ 6379 ─────► redis_clinica  |
+             |                            |
+             | 8000 ─────► pdf_service    |
+             │                            │
+             └────────────────────────────┘
+```
+Ejecucion:
+
+``` 
+API Node Local
+   │
+   ├── localhost:27017 ──► Mongo
+   ├── localhost:6379  ──► Redis
+   └── localhost:8000  ──► PDF
+``` 
+**Nota**: En este caso la url de de mongo, redis y pdf-service pueden seguir apuntando al localhost. Asegure de configurar correctamente en el archivo de variables de entorno.
+
+Para levantar únicamente servicios mediante Docker Compose:
 
 Desde la raíz del proyecto ejecutar:
 
@@ -77,15 +102,16 @@ docker compose -f docker/docker-compose.services.yml up -d
 ## Opcion Desarrollo
 
 ```
-                 Docker Network (bridge)
+            Docker Network (bridge)
  ┌───────────────────────────────────────────────┐
  │                                               │
  │   app_clinica  ─────► mongo_clinica           │
- │         │                 │                   │
- │         └────────► redis_clinica              │
+ │    |     │                 │                  │
+ │    |     └────────► redis_clinica             |
+ |    │                                          |
+ |    └────────► pdf_service                     |
  │                                               │
  └───────────────────────────────────────────────┘
-
                  ↑
           localhost:8080
 ```
@@ -99,6 +125,15 @@ El entorno de desarrollo utiliza:
 
 ```
 docker/.env.development
+```
+**Nota**: En este caso la url de de mongo, redis y pdf-service deben apuntar al nombre del contenedor.
+
+```
+...
+DATABASE_URL=mongodb://mongo_clinica:27017/clinica_odontologica
+HOST_REDIS=redis_clinica
+PDF_SERVICE_URL=http://pdf-service:8000 
+...
 ```
 
 ### Levantar el entorno

@@ -103,6 +103,7 @@ services:
     depends_on:
       - mongo_setup
       - redis_clinica
+      - pdf-service
     networks:
       - network_backend_clinica
 
@@ -118,6 +119,19 @@ services:
     depends_on:
       - mongo_setup
       - redis_clinica
+      - pdf-service
+    networks:
+      - network_backend_clinica
+
+  # ==========================================
+  # MICROSERVICIO PDF 
+  # ==========================================
+  pdf-service:
+    build:
+      context: ../pdf-service
+      dockerfile: Dockerfile
+    container_name: clinic-pdf-service
+    restart: unless-stopped
     networks:
       - network_backend_clinica
 

@@ -122,7 +122,90 @@ ORIGIN_FRONTEND=http://localhost:5173
 
 Si no la incluye, por defecto será http://localhost:5173
 
-# 6. Ejecutar el servidor
+## 6.  Microservicio FastAPI — PDF Service
+
+El proyecto incluye un microservicio desarrollado con **Python + FastAPI** encargado de generar archivos PDF a partir de la información de la historia clínica del paciente.
+
+### Requisitos
+
+* Python 3.12 o superior
+* `pip`
+* Entorno virtual (`venv`)
+
+### Instalación
+
+Ubicarse dentro de la carpeta del microservicio:
+
+```bash
+cd pdf-service
+```
+
+Crear el entorno virtual:
+
+```bash
+python3 -m venv .venv
+```
+
+Activar el entorno virtual.
+
+```bash
+source .venv/bin/activate
+```
+
+Una vez activado el entorno virtual, instalar las dependencias:
+
+```bash
+pip install -r requirements.txt
+```
+
+### Levantar el microservicio
+
+Ejecutar:
+
+```bash
+uvicorn main:app --reload
+```
+
+Por defecto, FastAPI quedará disponible en:
+
+```text
+http://localhost:8000
+```
+
+La documentación interactiva de la API puede consultarse en:
+
+```text
+http://localhost:8000/docs
+```
+
+### Ejecutar especificando host y puerto
+
+Para permitir conexiones desde otros dispositivos o contenedores:
+
+```bash
+uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+```
+
+El parámetro `--reload` está destinado al entorno de desarrollo y permite que Uvicorn reinicie automáticamente el servidor cuando detecta cambios en el código.
+
+### Desactivar el entorno virtual
+
+Cuando se termine de trabajar con el microservicio:
+
+```bash
+deactivate
+```
+
+El microservicio expone el endpoint:
+
+```text
+POST /generate-pdf
+```
+
+Este endpoint recibe la información del paciente y genera la historia clínica en formato PDF.
+
+
+# 7. Ejecutar el servidor
 
 **NOTA:** Es necesario levantar un servidor Redis antes de levantar la API.
 
@@ -144,7 +227,7 @@ Una vez iniciado, el servidor estará disponible en:
 http://<IP_SERVIDOR O localhost>:<PORT O 8080>
 ```
 
-# 6.1 Solicitudes a los Endpoints
+# 7.1 Solicitudes a los Endpoints
 
 Los endpoints se encuentran protegidos con credenciales. En el momento de levantar el servidor por primera vez no tendrá un usuario administrador. Puede crear uno con el siguiente comando:
 

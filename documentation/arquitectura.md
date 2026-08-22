@@ -11,19 +11,35 @@ El sistema fue diseñado utilizando una **arquitectura monolítica modular**, or
 
 ## 2. Arquitectura General
 
-El sistema sigue una arquitectura **monolítica**, donde todas las funcionalidades del backend se ejecutan dentro de una misma aplicación.
+El sistema utiliza una arquitectura basada en un **backend monolítico** desarrollado con **Node.js + Express**, complementado por un **microservicio independiente** desarrollado con **Python + FastAPI** para la generación de documentos PDF.
 
-La aplicación expone una **API REST** consumida por el frontend.
+El backend principal concentra la lógica de negocio, autenticación, gestión de pacientes, profesionales, turnos e historias clínicas.
 
-Flujo general:
+El microservicio de PDFs tiene una responsabilidad específica: recibir la información del paciente y generar la historia clínica en formato PDF.
 
-Frontend → API REST → Lógica de negocio → Base de datos
+La comunicación entre ambos servicios se realiza mediante **HTTP**.
+
+### Flujo general
+
+```text
+Frontend (React)
+        │
+        ▼
+Backend API (Node.js + Express)
+        │
+        ├──────────────► MongoDB
+        │
+        ├──────────────► Redis
+        │
+        └── HTTP ──────► PDF Service (FastAPI)
+                              
+```
 
 ---
 
 ## 3. Arquitectura Feature-Based
 
-El proyecto adopta una arquitectura **feature-based**, donde cada funcionalidad del sistema se encapsula en un módulo independiente. Cada módulo agrupa todos los componentes necesarios para implementar una característica específica del negocio, favoreciendo la cohesión, el desacoplamiento y la escalabilidad de la aplicación.
+La API principal adopta una arquitectura **feature-based**, donde cada funcionalidad del sistema se encapsula en un módulo independiente. Cada módulo agrupa todos los componentes necesarios para implementar una característica específica del negocio, favoreciendo la cohesión, el desacoplamiento y la escalabilidad de la aplicación.
 
 Internamente, cada módulo se organiza siguiendo una **arquitectura por capas**, donde cada capa posee una responsabilidad bien definida:
 

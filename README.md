@@ -12,7 +12,7 @@ El sistema permite gestionar:
 - Gestión de pacientes.
 - Gestión de profesionales y sus horarios de atención.
 - Gestión de turnos en tiempo real, con control de disponibilidad y seguimiento con calendario.
-- Historia clínica digital con odontograma.
+- Historia clínica digital y en archivo PDF con odontograma.
 - Administración de usuarios del sistema.
 
 ## Características principales
@@ -24,6 +24,7 @@ El sistema permite gestionar:
 - **Manejos de turnos del dia en tiempo real para doctores y recepcionistas** según el estado de cada turno.
 - **Documentación interactiva de la API** para facilitar el desarrollo y las integraciones.
 - **Arquitectura feature-based, organizada por capas y stateless** para favorecer la escalabilidad y el mantenimiento del sistema.
+- **Exportación de historias clínicas** en formato PDF mediante un microservicio independiente desarrollado con Python y FastAPI.
 
 ## Tecnologías
 
@@ -36,6 +37,7 @@ El sistema permite gestionar:
 - JWT
 - Passport.js
 - Swagger / OpenAPI
+- FastAPI
 
 ## Arquitectura
 
@@ -48,6 +50,14 @@ Routes → Controller → Service → Repository → Database
 ```
 
 Esta organización permite que cada funcionalidad sea independiente y cohesiva, mientras que los componentes compartidos e infraestructura (como cache, colas, sockets y servicios reutilizables) se agrupan en la carpeta `core`.
+
+---
+
+## Servicio de Exportación de historias clínicas
+
+El sistema permite exportar la historia clínica de un paciente en formato PDF.
+
+La generación del documento se realiza mediante un microservicio independiente desarrollado con **Python + FastAPI + ReportLab**, al que el backend principal se comunica mediante HTTP.
 
 ---
 
@@ -90,6 +100,18 @@ src/
 └── server.js          # Punto de entrada de la aplicación e inicio del servidor
 ```
 
+### Estructura del microservicio
+
+```text
+pdf-service/
+├── controllers/
+├── models/
+├── routes/
+├── services/
+├── utils/
+├── main.py
+└── requirements.txt
+```
 
 ## Documentación
 
