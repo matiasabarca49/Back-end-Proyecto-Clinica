@@ -34,20 +34,15 @@ def generate_patient_pdf(patient):
     # TratamientoS
     y -= 25
 
-    if patient.treatments:
-        y = dibujar_tratamientos(pdf, x=50, y=y, treatments=patient.treatments, ancho_contenido=width - 100, page_height= height)
-    else:
-        pdf.drawString(70, y, "No hay tratamientos registrados.")
-
+    y = dibujar_tratamientos(pdf, x=50, y=y, treatments=patient.treatments, ancho_contenido=width - 100, page_height= height)
+    
     y -= 20
 
     # Observaciones
     y -= 25
 
-    if patient.observations:
-        y = dibujar_observaciones(pdf, x=50, y=y, observations=patient.observations, page_height= height, ancho_contenido=width - 100)
-    
-
+    y = dibujar_observaciones(pdf, x=50, y=y, observations=patient.observations, page_height= height, ancho_contenido=width - 100)
+        
     y -= 20
 
     pdf.save()

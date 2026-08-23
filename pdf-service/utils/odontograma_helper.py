@@ -45,27 +45,20 @@ ESTADO_COLOR = {
 
 def dibujar_diente(c, x, y, size=28, numero=None, caras=None, borde=black,
                     extracted=False, corona=False, flags=None):
-    """
-    Dibuja un diente en el canvas de reportlab.
-
-    Parámetros:
-        c: objeto canvas.Canvas
-        x, y: esquina inferior izquierda del diente (en puntos, origen abajo-izq)
-        size: lado del cuadrado del diente
-        numero: número FDI del diente (11, 21, 46, etc.)
-        caras: dict con estado por cara, claves:
-               'oclusal', 'vestibular', 'lingual', 'mesial', 'distal'
-               valores: alguna key de ESTADO_COLOR (default 'sano')
-        borde: color del trazo
-        extracted: si True, tacha el diente completo con una X (ausente/extraído)
-        corona: si True, dibuja un aro indicando corona
-        flags: lista de códigos cortos (str) a mostrar debajo del número,
-               ej. ["INC", "MAL", "PER", "INCR"]
-    """
     if caras is None:
         caras = {}
     if flags is None:
         flags = []
+
+    # --- Determinar orientación según el número FDI ---
+    es_superior = True
+    es_derecho = True
+    if numero is not None:
+        cuadrante = int(str(numero)[0])
+        if cuadrante in (5, 6, 7, 8):  # temporales -> mapear a permanentes
+            cuadrante -= 4
+        es_superior = cuadrante in (1, 2)
+        es_derecho = cuadrante in (1, 4)
 
     def color_de(cara):
         estado = caras.get(cara, "sano")
@@ -73,7 +66,6 @@ def dibujar_diente(c, x, y, size=28, numero=None, caras=None, borde=black,
 
     s = size
 
-    # Diente extraído: se dibuja solo el contorno tachado, sin caras
     if extracted:
         c.setLineWidth(1.2)
         c.setStrokeColor(borde)
@@ -89,14 +81,18 @@ def dibujar_diente(c, x, y, size=28, numero=None, caras=None, borde=black,
             c.drawCentredString(x + s / 2, y - 10, str(numero))
         _dibujar_flags(c, x, y, s, flags)
         return
+
     cx, cy = x + s / 2, y + s / 2
-    m = s * 0.34  # tamaño del cuadrado central (oclusal)
+    m = s * 0.34
 
     c.setLineWidth(0.8)
     c.setStrokeColor(borde)
 
-    # --- Vestibular (triángulo superior) ---
-    c.setFillColor(color_de("vestibular"))
+    # --- Vestibular / Lingual: se invierten arriba/abajo según arcada ---
+    cara_arriba = "vestibular" if es_superior else "lingual"
+    cara_abajo = "lingual" if es_superior else "vestibular"
+
+    c.setFillColor(color_de(cara_arriba))
     p = c.beginPath()
     p.moveTo(x, y + s)
     p.lineTo(x + s, y + s)
@@ -105,8 +101,7 @@ def dibujar_diente(c, x, y, size=28, numero=None, caras=None, borde=black,
     p.close()
     c.drawPath(p, fill=1, stroke=1)
 
-    # --- Lingual / Palatino (triángulo inferior) ---
-    c.setFillColor(color_de("lingual"))
+    c.setFillColor(color_de(cara_abajo))
     p = c.beginPath()
     p.moveTo(x, y)
     p.lineTo(x + s, y)
@@ -115,8 +110,14 @@ def dibujar_diente(c, x, y, size=28, numero=None, caras=None, borde=black,
     p.close()
     c.drawPath(p, fill=1, stroke=1)
 
-    # --- Mesial (triángulo izquierdo) ---
-    c.setFillColor(color_de("mesial"))
+    # --- Mesial / Distal: se invierten izquierda/derecha según cuadrante ---
+    # Si es diente derecho del paciente, mesial queda a la derecha del cuadro
+    # (asumiendo que dibujás el odontograma con el lado derecho del paciente
+    # a la izquierda de la hoja, convención estándar en imagen especular).
+    cara_izq = "distal" if es_derecho else "mesial"
+    cara_der = "mesial" if es_derecho else "distal"
+
+    c.setFillColor(color_de(cara_izq))
     p = c.beginPath()
     p.moveTo(x, y)
     p.lineTo(x, y + s)
@@ -125,8 +126,7 @@ def dibujar_diente(c, x, y, size=28, numero=None, caras=None, borde=black,
     p.close()
     c.drawPath(p, fill=1, stroke=1)
 
-    # --- Distal (triángulo derecho) ---
-    c.setFillColor(color_de("distal"))
+    c.setFillColor(color_de(cara_der))
     p = c.beginPath()
     p.moveTo(x + s, y)
     p.lineTo(x + s, y + s)
@@ -139,23 +139,20 @@ def dibujar_diente(c, x, y, size=28, numero=None, caras=None, borde=black,
     c.setFillColor(color_de("oclusal"))
     c.rect(cx - m / 2, cy - m / 2, m, m, fill=1, stroke=1)
 
-    if "PER" in flags:  # o el flag que corresponda, ej. periodontal (bool del diente)
+    if "PER" in flags:
         c.setFont("Helvetica-Bold", 5)
         c.setFillColor(black)
         c.drawCentredString(cx, cy - 1.5, "PD")
 
-    # --- Contorno general ---
     c.setFillColor(white)
     c.setLineWidth(1.2)
     c.rect(x, y, s, s, fill=0, stroke=1)
 
-    # --- Corona: aro sobre el diente ---
     if corona:
         c.setStrokeColor(HexColor("#8e44ad"))
         c.setLineWidth(1.6)
         c.circle(cx, cy, s * 0.62, fill=0, stroke=1)
 
-    # --- Número del diente ---
     if numero is not None:
         c.setFont("Helvetica", 7)
         c.setFillColor(black)
