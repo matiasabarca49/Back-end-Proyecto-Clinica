@@ -182,10 +182,10 @@ def dibujar_tratamientos(c, x, y, treatments, ancho_contenido,  page_height, fil
         #Verificamos el espacio
         y = verificar_salto_pagina(c, y, fila_alto, page_height = page_height)
 
-        nombre = tratamiento.get("name", "—")
-        inicio = tratamiento.get("dateStart") or "—"
-        fin = tratamiento.get("dateEnd") or "—"
-        status = tratamiento.get("status", "pending")
+        nombre = tratamiento.name or "—"
+        inicio = tratamiento.dateStart or "—"
+        fin = tratamiento.dateEnd or "—"
+        status = tratamiento.status or "pending"
 
         c.setFont("Helvetica", 10)
         c.setFillColor(COLOR_TEXTO)
@@ -268,9 +268,9 @@ def dibujar_observaciones(c, x, y, observations, ancho_contenido, page_height, f
     for obs in observations:
         y = verificar_salto_pagina(c, y, fila_alto, page_height = page_height)
 
-        nombre = obs.get("name", "—")
-        fecha = obs.get("date") or "—"
-        status = obs.get("status", "pending")
+        nombre = obs.name or "—"
+        fecha = obs.date or "—"
+        status = obs.status or "pending"
 
         c.setFont("Helvetica-Bold", 9)
         c.setFillColor(COLOR_LABEL)

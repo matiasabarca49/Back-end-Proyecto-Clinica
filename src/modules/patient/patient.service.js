@@ -3,7 +3,7 @@ import MongoRepository from "../../core/repositories/implementations/mongo.repos
 import { Patient } from "./patient.model.js";
 import { PatientDTO } from "./patient.dto.js";
 //Exception
-import {NotFoundError} from '../../core/exceptions/index.js'
+import {NotFoundError, ServiceUnavailableError} from '../../core/exceptions/index.js'
 
 class PatientsService extends BaseService {
 
@@ -98,23 +98,40 @@ class PatientsService extends BaseService {
 
         if (!patient) throw new NotFoundError("Paciente", patientId);
 
-         const response = await fetch(
-            `${process.env.PDF_SERVICE_URL}/generate-pdf`,
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify(patient)
+        let response;
+        
+        try{
+            response = await fetch(
+               `${process.env.PDF_SERVICE_URL}/medical-history-pdf`,
+               {
+                   method: "POST",
+                   headers: {
+                       "Content-Type": "application/json"
+                   },
+                   body: JSON.stringify(patient)
+               }
+           );
+        }catch(error){
+            throw new ServiceUnavailableError(`El servicio de generación de PDF no está disponible`)
+        }
+
+        if (!response.ok) {
+            if (response.status === 422) {
+                const res = await response.json();
+                console.error(res.detail);
+                throw new ServiceUnavailableError(`Error de validación al generar el PDF. Datos del paciente inválidos.`);
             }
-        );
+
+            throw new ServiceUnavailableError(`Error al generar el PDF`);
+        }
+
 
         const pdfBuffer = Buffer.from(await response.arrayBuffer());
 
         //capturár el nombre generado por el microservicio de PDF
-        const contentDisposition = response.headers.get("content-disposition");
-
         let filename = "historia-clinica.pdf"; // fallback por si algo falla
+
+        const contentDisposition = response.headers.get("content-disposition");
         
         if (contentDisposition) {
             const match = contentDisposition.match(/filename="?([^"]+)"?/);

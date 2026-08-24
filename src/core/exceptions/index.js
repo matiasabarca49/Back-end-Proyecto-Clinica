@@ -21,6 +21,10 @@ import {
   InvalidCredentialsError
 } from './auth.exception.js';
 
+// Importar excepciones de servicios
+import {
+  ServiceUnavailableError
+} from './services.exception.js';
 
 // Exportar todo junto
 export {
@@ -36,6 +40,9 @@ export {
   UnauthorizedError,
   ForbiddenError,
   InvalidCredentialsError,
+
+  // Servicios
+  ServiceUnavailableError
 };
 
 /**

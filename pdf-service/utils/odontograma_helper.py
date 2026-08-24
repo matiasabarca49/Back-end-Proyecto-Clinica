@@ -192,9 +192,9 @@ def procesar_diente_json(diente_obj):
 
     Retorna: (numero, caras_dict, extracted, corona, flags)
     """
-    numero = diente_obj.get("tooth")
-    caries = diente_obj.get("caries", {}) or {}
-    allcaries = bool(diente_obj.get("allcaries"))
+    numero = diente_obj.tooth
+    caries = diente_obj.caries
+    allcaries = diente_obj.allcaries
 
     caras = {}
     for cara in ("vestibular", "mesial", "oclusal", "distal", "lingual"):
@@ -208,20 +208,20 @@ def procesar_diente_json(diente_obj):
 
     # Códigos cortos para condiciones de diente completo sin ícono propio
     flags = []
-    if diente_obj.get("incurable"):
+    if diente_obj.incurable:
         flags.append("INC")
-    if diente_obj.get("malposition"):
+    if diente_obj.malposition:
         flags.append("MAL")
-    if diente_obj.get("periodontal"):
+    if diente_obj.periodontal:
         flags.append("PER")
-    if diente_obj.get("inscrustration"):
+    if diente_obj.inscrustration:
         flags.append("INCR")
 
     return (
         numero,
         caras,
-        bool(diente_obj.get("extracted")),
-        bool(diente_obj.get("corona")),
+        bool(diente_obj.extracted),
+        bool(diente_obj.corona),
         flags,
     )
 
