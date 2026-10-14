@@ -4,7 +4,7 @@
  */
 import mongoose from "mongoose";
 import mongoosePaginate from 'mongoose-paginate-v2'
-import { toothSchema } from "../../core/schemas/tooth.schema.js";
+import { toothSchema } from "../../shared/schemas/tooth.schema.js";
 
 // Verificamos si el modelo está en la caché para evitar errores
 /* if (mongoose.models["patients"]) {
