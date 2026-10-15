@@ -3,7 +3,8 @@ import { queueCheck } from "./checks/queue.check.js";
 import { mongoCheck } from "./checks/mongo.check.js";
 import { redisCheck } from "./checks/redis.check.js";
 import { systemCheck } from "./checks/systemc.check.js";
-import { instance } from "./health.controller.js";
+import { pdfCheck } from "./checks/pdf.check.js";
+import logger from "../../core/logger/logger.js";
 
 const APP_VERSION = packageJson.version;
 
@@ -34,7 +35,8 @@ class HealthService {
                 API: await systemCheck(),
                 mongo: await mongoCheck(),
                 redis: await redisCheck(),
-                bullmq: await queueCheck(), 
+                bullmq: await queueCheck(),
+                pdf: await pdfCheck(),
             };
             return {
                 service: process.env.APP_NAME || "clinic-api",
@@ -47,6 +49,27 @@ class HealthService {
                 services
             };
         }
+
+    /**
+     * Verificar al iniciar el servidor que los servicios externos respondan.
+     * Solo informa por log: un servicio caído no impide que el servidor arranque.
+     * Los servicios DISABLED (sin configurar) ya se avisan en env.config.js.
+     */
+    async checkExternalServices(){
+        const externalServices = [
+            { label: "PDF Service", check: pdfCheck, impact: "la generación de PDF no va a funcionar hasta que el servicio responda" },
+        ];
+
+        for (const { label, check, impact } of externalServices) {
+            const result = await check();
+
+            if (result.status === "UP") {
+                logger.info(`[${label}] UP (${result.latency.value} ${result.latency.unit})`);
+            } else if (result.status === "DOWN") {
+                logger.warn(`[${label}] DOWN (${result.error}): ${impact}`);
+            }
+        }
+    }
 
 }
 

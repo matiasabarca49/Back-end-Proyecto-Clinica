@@ -342,12 +342,16 @@ export default class AppointmentsService extends BaseService {
   }
 
   /**
-   * Actualizar un turno
+   * Actualizar los datos editables de un turno
+   * @param {String} appointmentID ID del turno
+   * @param {Object} toUpdate Datos del turno (body del request)
+   * @returns {Object} Turno actualizado
    */
   async update(appointmentID, toUpdate) {
+    // El DTO descarta todo campo no editable (status, odontogram, operadores $) que venga en el body
     const updatedAppointment = await this.repository.updateByFilter(
       { _id: appointmentID },
-      toUpdate,
+      AppointmentDTO.toUpdate(toUpdate),
     );
 
     if (!updatedAppointment)
@@ -630,6 +634,18 @@ async finalize(appointmentID) {
       
     return appointmentDTO;
 }
+
+  /**
+   * Obtener el odontograma de un turno
+   *
+   * @param {String} appointmentID ID del turno
+   * @returns {Array} Dientes tratados en el turno
+   */
+  async getOdontogram(appointmentID) {
+    const appointment = await super.findById(appointmentID);
+    if (!appointment) throw new NotFoundError("Appointment", appointmentID);
+    return appointment.odontogram;
+  }
 
   /**
    * Agregar, reemplazar o quitar un diente en el odontograma del turno

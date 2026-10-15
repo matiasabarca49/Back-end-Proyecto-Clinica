@@ -5,6 +5,7 @@ import MongoManager from './config/mongoDB.config.js';
 import { initCronJobs } from './core/jobs/cronScheduler.js';
 import { createServer } from 'node:http'
 import app from './app.js';
+import { healthService } from './modules/health/index.js';
 //logger
 import logger from "./core/logger/logger.js";
 //performance
@@ -46,6 +47,9 @@ async function startServer() {
             console.log('-'.repeat(60))
             logger.info(`Servidor iniciado correctamente ${(end - start).toFixed(2)} ms`);
             console.log('━'.repeat(60));
+
+            // Servicios externos: solo informa, no bloquea el arranque
+            healthService.checkExternalServices();
         });
 
 
@@ -56,8 +60,8 @@ async function startServer() {
         
         logger.error({
             message: "Error al iniciar el servidor",
-            error: err.message,
-            stack: err.stack
+            error: error.message,
+            stack: error.stack
         });
         console.log('-'.repeat(50))
         logger.error("[STATUS SERVER] Backend Clínica DOWN");

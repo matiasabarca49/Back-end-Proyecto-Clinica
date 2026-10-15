@@ -54,6 +54,7 @@ export class PatientDTO {
         };
     }
 
+    // Sin dentalStatus: el odontograma se modifica solo con sus endpoints (/odontogram) y al finalizar un turno
     static toUpdate(patient) {
         const updatedPatient = {};
         if (patient.name) updatedPatient.name = this.capitalize(patient.name);
@@ -69,7 +70,6 @@ export class PatientDTO {
         if (patient.nAffiliate) updatedPatient.nAffiliate = patient.nAffiliate;
         if (patient.observations) updatedPatient.observations = patient.observations;
         if (patient.treatments) updatedPatient.treatments = patient.treatments;
-        if (patient.dentalStatus) updatedPatient.dentalStatus = patient.dentalStatus;
         if (patient.idDoctor) updatedPatient.idDoctor = patient.idDoctor;
         if (patient.status) updatedPatient.status = patient.status;
         return updatedPatient;

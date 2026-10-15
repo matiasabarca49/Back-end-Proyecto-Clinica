@@ -30,6 +30,8 @@ export const validateToothBody = [
   ...CARIES_FACES.map((face) =>
     body(`caries.${face}`)
       .exists().withMessage(`El estado de la cara ${face} es requerido`)
+      // isString primero: isIn solo, acepta arrays (["1"]) y números (0)
+      .isString().withMessage(`El estado de la cara ${face} debe ser un texto`)
       .isIn(CARIES_VALUES).withMessage(`El estado de la cara ${face} debe ser "0", "1" o "2"`)
   ),
   ...TOOTH_FLAGS.map((flag) =>

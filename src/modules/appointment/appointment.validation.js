@@ -43,7 +43,8 @@ export const validateGetAppointmets = [
   validate
 ]
 
-export const validateAppointmentData= [
+// Campos del turno que se validan igual al crear y al actualizar
+const appointmentFields = [
   body('date')
     .exists().withMessage('La fecha del turno es requerida')
     .notEmpty().withMessage('La fecha no puede estar vacía')
@@ -78,6 +79,10 @@ export const validateAppointmentData= [
     .exists().withMessage('Atributo requerido')
     .notEmpty().withMessage('No puede estar vacío')
     .isMongoId().withMessage('ID Invalido'),
+];
+
+export const validateAppointmentData = [
+  ...appointmentFields,
   body('status')
     .exists().withMessage('Atributo requerido')
     .notEmpty().withMessage('No puede estar vacío')
@@ -86,9 +91,11 @@ export const validateAppointmentData= [
   validate //middleware
 ];
 
+// Sin status: el estado se cambia con sus propios endpoints (check-in, call, finalize, status)
 export const validateUpdateAppointment = [
   param('id').isMongoId().withMessage('ID Invalido'),
-  ...validateAppointmentData
+  ...appointmentFields,
+  validate //middleware
 ];
 
 
@@ -101,6 +108,11 @@ export const validateChangeStatusAppointment = [
   validate //middleware
 ];
 
+
+export const validateGetOdontogram = [
+  param('id').isMongoId().withMessage('ID Invalido'),
+  validate //middleware
+];
 
 export const validateUpsertTooth = [
   param('id').isMongoId().withMessage('ID Invalido'),

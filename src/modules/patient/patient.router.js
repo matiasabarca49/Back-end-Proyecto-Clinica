@@ -50,7 +50,7 @@ router.get("/:id", authToken, authRoles("admin", "employee", "doctor"), getPatie
  * @middleware authRoles: Verifica que el usuario tenga uno de los roles permitidos
  * @returns {Array} Odontograma del paciente con el ID especificado.
  */
-router.get("/:patientId/odontogram", authToken, authRoles("admin", "employee", "doctor"), getOdontogram)
+router.get("/:patientId/odontogram", authToken, authRoles("admin", "doctor"), getOdontogram)
 
 
 /**

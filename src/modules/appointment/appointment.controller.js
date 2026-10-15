@@ -253,6 +253,29 @@ export const changeStatusAppointment = async (req, res, next) => {
 };
 
 /**
+ * Endpoint que retorna el odontograma de un turno
+ * Respuesta:
+ *        200: retorna un JSON con estado y el odontograma del turno
+ *        404: Error. El turno no existe
+ */
+export const getAppointmentOdontogram = async (req, res, next) => {
+    try {
+
+        const appointmentID = req.params.id;
+
+        const odontogram = await appointmentsService.getOdontogram(appointmentID);
+
+        return res.status(200).json({
+            success: true,
+            data: odontogram
+        });
+
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
  * Endpoint que agrega, reemplaza o quita un diente del odontograma del turno
  * Respuesta:
  *        200: retorna un JSON con estado y el odontograma del turno

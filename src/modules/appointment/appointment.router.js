@@ -2,9 +2,10 @@ import express from 'express';
 import { createAppointment, deleteAppointment, getAppointmentById, getAppointments,updateAppointment, getAvailableAppointments, getNearestAppointments, getTodayAppointments,checkInAppointment,callAppointment,
     finalizeAppointment, 
     changeStatusAppointment,
-    upsertAppointmentTooth} from './appointment.controller.js';
+    upsertAppointmentTooth,
+    getAppointmentOdontogram} from './appointment.controller.js';
 import { authRoles, authToken } from '../../middlewares/auth.middlewares.js';
-import { validateAppointmentData, validateChangeStatusAppointment, validateGetAppointmets, validateUpdateAppointment, validateUpsertTooth } from './appointment.validation.js';
+import { validateAppointmentData, validateChangeStatusAppointment, validateGetAppointmets, validateUpdateAppointment, validateUpsertTooth, validateGetOdontogram } from './appointment.validation.js';
 const { Router } = express;
 const router = new Router();
 
@@ -135,6 +136,19 @@ router.patch("/:id/finalize",authToken,authRoles("admin", "doctor"),finalizeAppo
  * @return {Object} Mensaje de error o éxito
  */
 router.patch("/:id/status",authToken,authRoles("admin", "employee"), validateChangeStatusAppointment, changeStatusAppointment);
+
+/**
+ * Obtener el odontograma de un turno
+ * 
+ * Separado de GET /:id porque son datos clínicos: solo admin y doctor.
+ * 
+ * @route GET /api/appointments/:id/odontogram
+ * @access Private
+ * @middleware auth y authRoles
+ * @validation validateGetOdontogram
+ * @return {Array} Odontograma del turno
+ */
+router.get("/:id/odontogram", authToken, authRoles("admin", "doctor"), validateGetOdontogram, getAppointmentOdontogram);
 
 /**
  * Agregar, reemplazar o quitar un diente en el odontograma del turno

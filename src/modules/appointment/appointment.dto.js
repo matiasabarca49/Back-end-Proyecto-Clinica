@@ -35,7 +35,6 @@ export class AppointmentDTO{
             patientID: appointment.patientID,
             status: appointment.status,
             observations: appointment.observations,
-            odontogram: appointment.odontogram,
             created: appointment.created,
             lastChange: appointment.lastChange
         };
@@ -55,13 +54,19 @@ export class AppointmentDTO{
         };
     }
     
-    static toUpdate(user) {
-        const updatedUser = {};
-        if (user.name) updatedUser.name = this.capitalize(user.name);
-        if (user.lastName) updatedUser.lastName = this.capitalize(user.lastName);
-        if (user.email) updatedUser.email = user.emai;
-        if (user.rol) updatedUser.rol = user.rol;
-        return updatedUser;
+    // Solo los campos editables del turno. El estado se cambia con sus endpoints
+    // (check-in, call, finalize, status) y el odontograma con /odontogram.
+    static toUpdate(appointment) {
+        const updatedAppointment = {};
+        if (appointment.date) updatedAppointment.date = appointment.date;
+        if (appointment.slots) updatedAppointment.slots = appointment.slots;
+        if (appointment.typeAppointment) updatedAppointment.typeAppointment = appointment.typeAppointment;
+        if (appointment.doctorID) updatedAppointment.doctorID = appointment.doctorID;
+        if (appointment.patientID) updatedAppointment.patientID = appointment.patientID;
+        // room y observations pueden vaciarse con ""
+        if (appointment.room !== undefined) updatedAppointment.room = appointment.room;
+        if (appointment.observations !== undefined) updatedAppointment.observations = appointment.observations;
+        return updatedAppointment;
     }
 }
 
