@@ -4,7 +4,7 @@ import { Appointment } from "./appointment.model.js";
 //Base Service
 import BaseService from "../../core/services/base.service.js";
 //Patients Service
-import PatientsService from "../patient/patient.service.js";
+import { PatientsService } from "../patient/index.js";
 const patientsService = new PatientsService();
 //Doctors Service
 import DoctorsService from "../doctor/doctor.service.js";
@@ -25,6 +25,7 @@ import {
   slotsToRanges,
 } from "../../utils/slots.helper.js";
 import {
+  ForbiddenError,
   NotFoundError,
   ValidationError,
 } from "../../core/exceptions/index.js";
@@ -34,6 +35,12 @@ import AppError from "../../core/exceptions/AppErrors.js";
 import CacheService from "../../core/services/cache.service.js";
 import { dateNotHours, getTodaySTR } from "../../utils/dates.helper.js";
 import logger from "../../core/logger/logger.js";
+import { CARIES_FACES, TOOTH_FLAGS } from "../../shared/schemas/tooth.schema.js";
+
+// Un diente sin tratar no tiene ninguna marca en true y todas sus caras de caries están en "0"
+const isUntreatedTooth = (tooth) =>
+  TOOTH_FLAGS.every(flag => !tooth[flag]) &&
+  CARIES_FACES.every(face => tooth.caries[face] === "0");
 
 export default class AppointmentsService extends BaseService {
   constructor() {
@@ -530,6 +537,16 @@ async call(appointmentID) {
     return appointmentDTO;
 }
 
+/**
+ * Finalizar un turno
+ *
+ * Pasa el turno de "called" a "finalized" y guarda su odontograma en el del paciente.
+ * Son dos updates en orden, sin transacción: si la fusión falla el turno no se finaliza, y como
+ * la fusión reemplaza dientes, repetirla con los mismos datos no cambia el resultado.
+ *
+ * @param {String} appointmentID ID del turno
+ * @returns {Object} Turno finalizado
+ */
 async finalize(appointmentID) {
     const appointment = await this.repository.findByFilter({ _id: appointmentID });
 
@@ -543,13 +560,26 @@ async finalize(appointmentID) {
         );
     }
 
-    const updatedAppointment = await this.repository.update(
-        appointmentID,
+    if (appointment.odontogram.length > 0) {
+        // patientID viene populado; es null si el paciente fue eliminado
+        if (!appointment.patientID) throw new NotFoundError("Paciente");
+
+        // Se fusiona antes de finalizar: así un turno finalizado siempre tiene su odontograma en el paciente
+        await patientsService.mergeOdontogram(
+            appointment.patientID._id,
+            appointment.odontogram.map(tooth => tooth.toObject())
+        );
+    }
+
+    // status y lastChange en el filtro: si el turno cambió después de leerlo (ej: se cargó un diente),
+    // no se finaliza y se pide reintentar; el reintento fusiona el odontograma completo.
+    const updatedAppointment = await this.repository.updateByFilter(
+        { _id: appointmentID, status: "called", lastChange: appointment.lastChange },
         { status: "finalized" }
     );
 
-    if (updatedAppointment.modifiedCount === 0) {
-        throw new AppError("No se pudo actualizar el turno", 500);
+    if (!updatedAppointment) {
+        throw new AppError("El turno cambió mientras se finalizaba. Intente nuevamente", 409);
     }
 
     appointment.status = "finalized";
@@ -600,6 +630,62 @@ async finalize(appointmentID) {
       
     return appointmentDTO;
 }
+
+  /**
+   * Agregar, reemplazar o quitar un diente en el odontograma del turno
+   *
+   * Solo se puede mientras el turno está en consulta ("called"); al finalizarlo, el odontograma
+   * se guarda en el del paciente. El body trae el estado completo del diente: si ya está en el
+   * turno se reemplaza, y si llega sin tratar (todo en false y caries en "0") se quita del turno.
+   *
+   * @param {String} appointmentID ID del turno
+   * @param {Object} tooth Estado completo del diente (toothSchema)
+   * @param {Object} userSession Usuario autenticado (req.user)
+   * @returns {Array} Odontograma del turno actualizado
+   */
+  async upsertTooth(appointmentID, tooth, userSession) {
+    const appointment = await this.repository.findByFilter({ _id: appointmentID });
+
+    if (!appointment) throw new NotFoundError("Appointment", appointmentID);
+
+    if (userSession.rol === "doctor" && appointment.doctorID._id.toString() !== userSession.id) {
+      throw new ForbiddenError("Solo el doctor asignado puede modificar el odontograma del turno");
+    }
+
+    if (appointment.status !== "called") {
+      throw new AppError("El odontograma solo se puede modificar mientras el turno está en consulta", 409);
+    }
+
+    // status en el filtro: si el turno se finaliza entre la lectura y la escritura, no se escribe.
+    // Cada update es atómico, así que funciona igual con dos instancias.
+    const inConsultation = { _id: appointmentID, status: "called" };
+    let updated;
+
+    if (isUntreatedTooth(tooth)) {
+      updated = await this.repository.updateByFilter(
+        inConsultation,
+        { $pull: { odontogram: { tooth: tooth.tooth } } }
+      );
+    } else {
+      // Si el diente ya está en el turno se reemplaza; si no, se agrega.
+      // El número de diente va en el filtro para que dos pedidos simultáneos no lo dupliquen.
+      updated = await this.repository.updateByFilter(
+        { ...inConsultation, "odontogram.tooth": tooth.tooth },
+        { $set: { "odontogram.$": tooth } }
+      );
+
+      if (!updated) {
+        updated = await this.repository.updateByFilter(
+          { ...inConsultation, "odontogram.tooth": { $ne: tooth.tooth } },
+          { $push: { odontogram: tooth } }
+        );
+      }
+    }
+
+    if (!updated) throw new AppError("El turno cambió durante la operación. Intente nuevamente", 409);
+
+    return updated.odontogram;
+  }
 
   /**
    * Cache

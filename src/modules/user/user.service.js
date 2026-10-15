@@ -173,7 +173,7 @@ class UsersService extends BaseService{
         
         //Obtener usuario actual
         const prevUser = await super.findById(userID);
-        if (!prevUser) throw new NotFoundError("User", id);
+        if (!prevUser) throw new NotFoundError("User", userID);
 
         //Determinar roles
         const newRol = toUpdate.rol ? normalizeText(toUpdate.rol) : prevUser.rol;
@@ -229,7 +229,7 @@ class UsersService extends BaseService{
     async delete(userID) {
         //Obtener usuario antes de eliminarlo
         const user = await super.findById(userID);
-        if (!user) throw new NotFoundError("User", id);
+        if (!user) throw new NotFoundError("User", userID);
 
         //Si es Doctor, eliminar de la colección Doctor
         const isDoctor = String(user.rol || "").toLowerCase() === "doctor";

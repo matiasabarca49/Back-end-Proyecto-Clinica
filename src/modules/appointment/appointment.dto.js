@@ -35,6 +35,7 @@ export class AppointmentDTO{
             patientID: appointment.patientID,
             status: appointment.status,
             observations: appointment.observations,
+            odontogram: appointment.odontogram,
             created: appointment.created,
             lastChange: appointment.lastChange
         };

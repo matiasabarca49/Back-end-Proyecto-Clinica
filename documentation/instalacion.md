@@ -132,6 +132,12 @@ El proyecto incluye un microservicio desarrollado con **Python + FastAPI** encar
 * `pip`
 * Entorno virtual (`venv`)
 
+#### Variable de entorno
+```
+...
+//========== Servicios ================
+PDF_SERVICE_URL=http://<localhost o pdf-service>:8000
+``` 
 ### Instalación
 
 Ubicarse dentro de la carpeta del microservicio:

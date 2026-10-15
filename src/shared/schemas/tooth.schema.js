@@ -1,5 +1,10 @@
 import mongoose from "mongoose";
 
+// Caras del diente y marcas booleanas de toothSchema.
+// Se exportan para que la validación y las reglas sobre dientes usen la misma lista que el esquema.
+export const CARIES_FACES = ["vestibular", "mesial", "oclusal", "distal", "lingual"];
+export const TOOTH_FLAGS = ["corona", "extracted", "allcaries", "incurable", "malposition", "periodontal", "inscrustration"];
+
 //Esquema de dientes
 export const toothSchema = new mongoose.Schema({
   tooth: { type: Number, required: true },

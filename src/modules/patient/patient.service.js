@@ -4,6 +4,9 @@ import { Patient } from "./patient.model.js";
 import { PatientDTO } from "./patient.dto.js";
 //Exception
 import {NotFoundError, ServiceUnavailableError} from '../../core/exceptions/index.js'
+import { requiredEnvVars } from "../../config/env.config.js";
+import { validateEnvVars } from "../../utils/dotenv.helper.js";
+import logger from "../../core/logger/logger.js";
 
 class PatientsService extends BaseService {
 
@@ -25,7 +28,7 @@ class PatientsService extends BaseService {
 
     async getOdontogram(patientID){
         const patient = await super.findById(patientID)
-        if (!patient) throw new NotFoundError("Paciente", id);
+        if (!patient) throw new NotFoundError("Paciente", patientID);
         return patient.dentalStatus 
     }
 
@@ -94,6 +97,11 @@ class PatientsService extends BaseService {
     }
 
     async getPDF(patientId){
+
+        if(!validateEnvVars("pdf")){
+            throw new ServiceUnavailableError(`Servicio no configurado`)
+        }
+
         const patient = await super.findById(patientId);
 
         if (!patient) throw new NotFoundError("Paciente", patientId);
@@ -102,7 +110,7 @@ class PatientsService extends BaseService {
         
         try{
             response = await fetch(
-               `${process.env.PDF_SERVICE_URL}/medical-history-pdf`,
+               `${requiredEnvVars.PDF_SERVICE_URL}/medical-history-pdf`,
                {
                    method: "POST",
                    headers: {
@@ -118,7 +126,7 @@ class PatientsService extends BaseService {
         if (!response.ok) {
             if (response.status === 422) {
                 const res = await response.json();
-                console.error(res.detail);
+                logger.error(res.detail);
                 throw new ServiceUnavailableError(`Error de validación al generar el PDF. Datos del paciente inválidos.`);
             }
 
@@ -168,7 +176,7 @@ class PatientsService extends BaseService {
 
     async updateTooth(patientId, toothId, toothData){
         const patient = await super.findById(patientId)
-        if(!patient) throw new NotFoundError("Paciente", id)
+        if(!patient) throw new NotFoundError("Paciente", patientId)
 
         const toothNumber = parseInt(toothId);
         
@@ -233,12 +241,51 @@ class PatientsService extends BaseService {
     
     async resetOdontogram(patientId){
         const patient = await super.findById(patientId);
-        if(!patient) throw new NotFoundError("Paciente", id);
+        if(!patient) throw new NotFoundError("Paciente", patientId);
         
         await super.update(patientId, {dentalStatus: []})
 
         return true
         
+    }
+
+    /**
+     * Fusionar en el odontograma del paciente los dientes tratados en un turno
+     *
+     * Cada diente recibido reemplaza al del paciente con el mismo número.
+     * Se hace en una sola operación (update con pipeline), así que es atómica.
+     *
+     * @param {String} patientId ID del paciente
+     * @param {Array} teeth Dientes completos (toothSchema) como objetos planos
+     * @returns {Array} Odontograma del paciente actualizado
+     */
+    async mergeOdontogram(patientId, teeth){
+        const toothNumbers = teeth.map(t => t.tooth);
+
+        const updatedPatient = await this.repository.updateByFilter(
+            { _id: patientId },
+            [{
+                $set: {
+                    dentalStatus: {
+                        $concatArrays: [
+                            {
+                                // Dientes del paciente que no se tocaron en el turno
+                                $filter: {
+                                    input: { $ifNull: ["$dentalStatus", []] },
+                                    cond: { $not: { $in: ["$$this.tooth", toothNumbers] } }
+                                }
+                            },
+                            // $literal: los valores se guardan tal cual, sin interpretarse como expresiones
+                            { $literal: teeth }
+                        ]
+                    }
+                }
+            }]
+        );
+
+        if (!updatedPatient) throw new NotFoundError("Paciente", patientId);
+
+        return updatedPatient.dentalStatus;
     }
 
     // ================= DTO mappers =================

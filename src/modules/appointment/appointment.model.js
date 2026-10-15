@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import mongoosePaginate from 'mongoose-paginate-v2'
+import { toothSchema } from "../../shared/schemas/tooth.schema.js";
 // Creación del Modelo para Appointments
 const appointmentSchema = new mongoose.Schema({
     date: {
@@ -43,6 +44,12 @@ const appointmentSchema = new mongoose.Schema({
     observations: {
         type: String,
         maxlength: 500
+    },
+    // Dientes tratados en este turno (estado completo de cada diente). Empieza vacío.
+    // Se guarda en el odontograma del paciente al finalizar el turno.
+    odontogram: {
+        type: [toothSchema],
+        default: []
     }
 }, {timestamps: {createdAt: 'created', updatedAt: 'lastChange'}});
 mongoose.plugin(mongoosePaginate)

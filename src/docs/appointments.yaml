@@ -414,8 +414,87 @@ paths:
         "500":
           description: "Error en el servidor"
 
+  /api/appointments/{id}/odontogram:
+    post:
+      summary: "Agregar, reemplazar o quitar un diente en el odontograma del turno"
+      description: >
+        El odontograma del turno empieza vacío y guarda solo los dientes tratados en ese turno.
+        El body trae el estado completo del diente después del tratamiento; si el diente ya está
+        en el turno, se reemplaza. Si el diente llega sin tratar (todas las marcas en false y caries
+        en "0"), se quita del odontograma del turno. Solo se permite mientras el turno está en
+        consulta (called); al finalizar el turno (PATCH /api/appointments/{id}/finalize) el
+        odontograma se guarda en el del paciente. Un doctor solo puede modificar los turnos que tiene asignados.
+      tags:
+        - Appointments
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: "ID del turno"
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppointmentTooth"
+      responses:
+        "200":
+          description: "Odontograma del turno actualizado"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AppointmentTooth"
+        "400":
+          description: "Datos del diente o ID inválidos"
+        "403":
+          description: "El doctor no es el asignado al turno"
+        "404":
+          description: "Turno no encontrado"
+        "409":
+          description: "El turno no está en consulta (called) o cambió durante la operación"
+        "500":
+          description: "Error en el servidor"
+
 components:
   schemas:
+    AppointmentTooth:
+      type: object
+      description: "Estado completo de un diente (toothSchema)"
+      required: [tooth, caries, corona, extracted, allcaries, incurable, malposition, periodontal, inscrustration]
+      properties:
+        tooth:
+          type: integer
+          description: "Número de diente según sistema FDI"
+          example: 16
+        caries:
+          type: object
+          required: [vestibular, mesial, oclusal, distal, lingual]
+          properties:
+            vestibular: { type: string, enum: ["0", "1", "2"], example: "0" }
+            mesial: { type: string, enum: ["0", "1", "2"], example: "0" }
+            oclusal: { type: string, enum: ["0", "1", "2"], example: "1" }
+            distal: { type: string, enum: ["0", "1", "2"], example: "0" }
+            lingual: { type: string, enum: ["0", "1", "2"], example: "0" }
+        corona: { type: boolean, example: false }
+        extracted: { type: boolean, example: false }
+        allcaries: { type: boolean, example: false }
+        incurable: { type: boolean, example: false }
+        malposition: { type: boolean, example: false }
+        periodontal: { type: boolean, example: false }
+        inscrustration: { type: boolean, example: false }
+
     AppointmentCreate:
       type: object
       required:

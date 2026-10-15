@@ -16,8 +16,10 @@ export const requiredEnvVars = {
     PORT: process.env.PORT?.trim(),
     PORT_REDIS: process.env.PORT_REDIS?.trim(),
     HOST_REDIS: process.env.HOST_REDIS?.trim(),
+    PDF_SERVICE_URL: process.env.PDF_SERVICE_URL?.trim(),
     email: true,
     google: true,
+    pdf: true,
 };
 
 
@@ -65,3 +67,7 @@ if(!process.env.GOOGLE_CLIENT_ID?.trim() || !process.env.GOOGLE_CLIENT_SECRET?.t
     requiredEnvVars.google = false
 }
 
+if(!process.env.PDF_SERVICE_URL?.trim()){
+    logger.warn("Falta la variable de entorno PDF_SERVICE_URL. Generación de PDF Desactivada")
+    requiredEnvVars.pdf = false
+}

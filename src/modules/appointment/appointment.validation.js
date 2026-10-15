@@ -1,5 +1,6 @@
 import { body, param, query } from 'express-validator';
 import validate from '../../middlewares/validations.middleware.js';
+import { validateToothBody } from '../../shared/validations/tooth.validation.js';
 
 export const validateGetAppointmets = [
   query("doctor")
@@ -100,3 +101,9 @@ export const validateChangeStatusAppointment = [
   validate //middleware
 ];
 
+
+export const validateUpsertTooth = [
+  param('id').isMongoId().withMessage('ID Invalido'),
+  ...validateToothBody,
+  validate //middleware
+];

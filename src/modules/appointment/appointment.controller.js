@@ -208,6 +208,14 @@ export const callAppointment = async (req, res, next) => {
     }
 };
 
+/**
+ * Endpoint que finaliza un turno y guarda su odontograma en el del paciente
+ * Respuesta:
+ *        200: retorna un JSON con estado y el turno finalizado
+ *        400: Error. El turno no está en estado called
+ *        404: Error. El turno o el paciente no existen
+ *        409: Error. El turno cambió mientras se finalizaba; se puede reintentar
+ */
 export const finalizeAppointment = async (req, res, next) => {
     try {
 
@@ -237,6 +245,33 @@ export const changeStatusAppointment = async (req, res, next) => {
         return res.status(200).json({
             success: true,
             data: appointment
+        });
+
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Endpoint que agrega, reemplaza o quita un diente del odontograma del turno
+ * Respuesta:
+ *        200: retorna un JSON con estado y el odontograma del turno
+ *        403: Error. El doctor no es el asignado al turno
+ *        404: Error. El turno no existe
+ *        409: Error. El turno no está en consulta o cambió durante la operación
+ */
+export const upsertAppointmentTooth = async (req, res, next) => {
+    try {
+
+        const appointmentID = req.params.id;
+
+        // req.user: el service comprueba que un doctor solo modifique sus propios turnos.
+        // El body ya fue validado como diente completo; Mongoose descarta campos fuera del esquema.
+        const odontogram = await appointmentsService.upsertTooth(appointmentID, req.body, req.user);
+
+        return res.status(200).json({
+            success: true,
+            data: odontogram
         });
 
     } catch (error) {

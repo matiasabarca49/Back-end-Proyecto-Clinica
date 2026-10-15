@@ -1,9 +1,10 @@
 import express from 'express';
 import { createAppointment, deleteAppointment, getAppointmentById, getAppointments,updateAppointment, getAvailableAppointments, getNearestAppointments, getTodayAppointments,checkInAppointment,callAppointment,
     finalizeAppointment, 
-    changeStatusAppointment} from './appointment.controller.js';
+    changeStatusAppointment,
+    upsertAppointmentTooth} from './appointment.controller.js';
 import { authRoles, authToken } from '../../middlewares/auth.middlewares.js';
-import { validateAppointmentData, validateChangeStatusAppointment, validateGetAppointmets, validateUpdateAppointment } from './appointment.validation.js';
+import { validateAppointmentData, validateChangeStatusAppointment, validateGetAppointmets, validateUpdateAppointment, validateUpsertTooth } from './appointment.validation.js';
 const { Router } = express;
 const router = new Router();
 
@@ -116,7 +117,7 @@ router.patch("/:id/call",authToken,authRoles("admin", "doctor"),callAppointment)
 /**
  * Actualizar el estado de un turno a finalizado
  * 
- * Esto permite generar un evento que notifica al doctor
+ * Guarda el odontograma del turno en el del paciente y genera un evento que notifica al doctor
  * 
  * @route PATCH /api/appointments/:id/finalize
  * @middleware auth y authRoles
@@ -134,5 +135,19 @@ router.patch("/:id/finalize",authToken,authRoles("admin", "doctor"),finalizeAppo
  * @return {Object} Mensaje de error o éxito
  */
 router.patch("/:id/status",authToken,authRoles("admin", "employee"), validateChangeStatusAppointment, changeStatusAppointment);
+
+/**
+ * Agregar, reemplazar o quitar un diente en el odontograma del turno
+ * 
+ * Solo mientras el turno está en consulta (called). El body trae el estado completo del diente:
+ * si ya está en el turno se reemplaza, y si llega sin tratar se quita.
+ * 
+ * @route POST /api/appointments/:id/odontogram
+ * @access Private
+ * @middleware auth y authRoles
+ * @validation validateUpsertTooth
+ * @return {Array} Odontograma del turno
+ */
+router.post("/:id/odontogram", authToken, authRoles("admin", "doctor"), validateUpsertTooth, upsertAppointmentTooth);
 
 export default router;
