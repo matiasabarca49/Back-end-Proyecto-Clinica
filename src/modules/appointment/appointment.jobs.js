@@ -1,6 +1,6 @@
 import { Appointment } from "./appointment.model.js";
 import { sendAppointmentReminder } from "../../utils/email.helpers.js";
-import { slotsToRanges } from "../../utils/slots.helper.js";
+import { slotsToRange } from "./appointment.helpers.js";
 import logger from "../../core/logger/logger.js";
 
 /**
@@ -74,8 +74,7 @@ export const sendDailyAppointmentReminders = async () => {
         const patientFullName = `${patient.name} ${patient.lastName}`;
         const doctorFullName = `Dr. ${doctor.name} ${doctor.lastName}`;
         
-        const timeRanges = slotsToRanges(appointment.slots, "09:00", 30);
-        const appointmentTime = timeRanges.join(", ") || "Horario no especificado";
+        const appointmentTime = slotsToRange(appointment.slots, appointment.duration);
         
         // Traducir tipo de cita
         const typeTranslations = {

@@ -1,11 +1,12 @@
 import express from 'express';
-import { createAppointment, deleteAppointment, getAppointmentById, getAppointments,updateAppointment, getAvailableAppointments, getNearestAppointments, getTodayAppointments,checkInAppointment,callAppointment,
+import { createAppointment, getAppointmentById, getAppointments,updateAppointment, getAvailableAppointments, getNearestAppointments, getTodayAppointments,checkInAppointment,callAppointment,
     finalizeAppointment, 
     changeStatusAppointment,
     upsertAppointmentTooth,
-    getAppointmentOdontogram} from './appointment.controller.js';
+    getAppointmentOdontogram,
+    getAvailability} from './appointment.controller.js';
 import { authRoles, authToken } from '../../middlewares/auth.middlewares.js';
-import { validateAppointmentData, validateChangeStatusAppointment, validateGetAppointmets, validateUpdateAppointment, validateUpsertTooth, validateGetOdontogram } from './appointment.validation.js';
+import { validateAppointmentData, validateChangeStatusAppointment, validateGetAppointmets, validateUpdateAppointment, validateUpsertTooth, validateGetOdontogram, validateGetAvailable, validateGetNearest, validateGetAvailability, validateCheckIn } from './appointment.validation.js';
 const { Router } = express;
 const router = new Router();
 
@@ -31,24 +32,39 @@ router.get("/", authToken, authRoles("admin", "employee", "doctor"), validateGet
 router.get("/today", authToken, authRoles("admin", "employee", "doctor", "dashboard"),getTodayAppointments);
 
 /**
- * Obtener turnos disponibles para un doctor específico
- * 
- * @route GET /api/appointments/available/:id
- * @access Private
- * @middleware auth y authRoles 
- * @return {Array} Lista de turnos disponibles para el doctor
+ * Obtener la grilla de un doctor en un día: slots libres y ocupados
+ *
+ * @route GET /api/appointments/available/:id?day=YYYY-MM-DD
+ * @access Private(admin, employee, doctor). Un doctor solo puede consultar el suyo
+ * @middleware auth y authRoles
+ * @validation validateGetAvailable
+ * @return {Object} { date, duration, slots, occupiedSlots } con los slots en minutos del día
  */
-router.get("/available/:id", authToken, authRoles("admin", "employee", "doctor"),getAvailableAppointments)
+router.get("/available/:id", authToken, authRoles("admin", "employee", "doctor"), validateGetAvailable, getAvailableAppointments)
 
 /**
- * Obtener los turnos más cercanos a una fecha específica
- * 
+ * Obtener el día más cercano con slots libres de un doctor, a partir de mañana
+ *
  * @route GET /api/appointments/nearest/:id
- * @access Private
+ * @access Private(admin, employee, doctor). Un doctor solo puede consultar el suyo
  * @middleware auth y authRoles
- * @return {Array} Lista de turnos más cercanos para el usuario
+ * @validation validateGetNearest
+ * @return {Object} { date, duration, slots, slotsText } del día encontrado
  */
-router.get("/nearest/:id", authToken, authRoles("admin", "employee", "doctor"),getNearestAppointments)
+router.get("/nearest/:id", authToken, authRoles("admin", "employee", "doctor"), validateGetNearest, getNearestAppointments)
+
+/**
+ * Obtener la disponibilidad diaria de un doctor en un rango, para el calendario
+ *
+ * Va antes de /:id: si no, "availability" se tomaría como el ID de un turno.
+ *
+ * @route GET /api/appointments/availability?doctor=ID&from=YYYY-MM-DD&to=YYYY-MM-DD
+ * @access Private(admin, employee, doctor). Un doctor solo puede consultar el suyo
+ * @middleware auth y authRoles
+ * @validation validateGetAvailability
+ * @return {Object} { doctorID, frequency, from, to, days: [{ date, status, total, occupied, free }] }
+ */
+router.get("/availability", authToken, authRoles("admin", "employee", "doctor"), validateGetAvailability, getAvailability)
 
 /**
  * Obtener un turno por ID
@@ -73,16 +89,6 @@ router.post("/", authToken, authRoles("admin", "employee", "doctor"), validateAp
 
 
 /**
- * Eliminar un turno por ID
- * 
- * @route DELETE /api/appointments/:id
- * @access Private
- * @middleware auth y authRoles
- * @return {Object} Mensaje de error o éxito
- */
-router.delete("/:id", authToken,  authRoles("admin") ,deleteAppointment);
-
-/**
  * Actualizar un turno por ID
  * 
  * @route PUT /api/appointments/:id
@@ -102,7 +108,7 @@ router.put("/:id", authToken,  authRoles("admin", "employee", "doctor"), validat
  * @middleware auth y authRoles
  * @return {Object} Mensaje de error o éxito
  */
-router.patch("/:id/check-in", authToken, authRoles("admin", "employee", "doctor"), checkInAppointment);
+router.patch("/:id/check-in", authToken, authRoles("admin", "employee", "doctor"), validateCheckIn, checkInAppointment);
 
 /**
  * Actualizar el estado de un turno a llamado

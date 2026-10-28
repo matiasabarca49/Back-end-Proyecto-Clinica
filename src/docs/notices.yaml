@@ -347,8 +347,8 @@ paths:
           description: "Error en el servidor"
 
     delete:
-      summary: "Eliminar un aviso"
-      description: "Solo Admin y Employee pueden eliminar avisos"
+      summary: "Dar de baja un aviso"
+      description: "Soft delete: lo deja con active en false y deja de aparecer. Solo Admin y Employee"
       tags:
         - Notices
       security:
@@ -362,7 +362,7 @@ paths:
             type: string
       responses:
         "200":
-          description: "El aviso se eliminó exitosamente"
+          description: "El aviso se dio de baja exitosamente"
           content:
             application/json:
               schema:

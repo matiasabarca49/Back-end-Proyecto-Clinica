@@ -6,6 +6,9 @@ paths:
         - Doctors
       security:
         - cookieAuth: []
+      description: >
+        Solo admin y employee. Un doctor recibe 403: el listado incluye las fichas y horarios
+        de los demás doctores.
       parameters:
         - name: search
           in: query
@@ -64,50 +67,54 @@ paths:
                         type: boolean
                       hasPrevPage:
                         type: boolean
+        "403":
+          description: "Rol sin permiso (doctor)"
         "500":
           description: "Error en el servidor"
 
-    post:
-      summary: "Crear un nuevo doctor"
+  /api/doctors/schedules:
+    get:
+      summary: "Obtener los horarios de los doctores"
       tags:
         - Doctors
       security:
         - cookieAuth: []
-      requestBody:
-        description: "Datos del doctor en formato JSON"
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/DoctorCreate"
+      description: >
+        Admin y employee reciben los horarios de todos los doctores. Un doctor recibe solo el suyo
+        (un array con un único elemento).
       responses:
-        "201":
-          description: "El doctor se creó exitosamente"
+        "200":
+          description: "Horarios obtenidos exitosamente"
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  status:
-                    type: string
-                    example: "Success"
-                  patients:
-                    $ref: "#/components/schemas/DoctorResponse"
-        "409":
-          description: "Conflicto - DNI o matrícula profesional duplicados"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: "ERROR"
-                  code:
-                    type: integer
-                    example: 11000
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                          description: "Nombre y apellido"
+                          example: "Juan Perez"
+                        schedules:
+                          $ref: "#/components/schemas/DoctorSchedules"
+                        color:
+                          type: string
+                          example: "#336699"
+                        frequency:
+                          type: integer
+                          description: "Duración de cada turno, en minutos"
+                          example: 30
         "500":
-          description: "Error en la creación del doctor"
+          description: "Error en el servidor"
 
   /api/doctors/{id}:
     get:
@@ -116,6 +123,9 @@ paths:
         - Doctors
       security:
         - cookieAuth: []
+      description: >
+        Admin y employee pueden pedir cualquier doctor. Un doctor solo puede pedir su propia ficha:
+        con otro id recibe 403, exista o no ese doctor.
       parameters:
         - name: id
           in: path
@@ -131,18 +141,20 @@ paths:
               schema:
                 type: object
                 properties:
-                  status:
-                    type: string
-                    example: "Success"
-                  doctors:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
                     $ref: "#/components/schemas/DoctorResponse"
+        "403":
+          description: "Un doctor pidió la ficha de otro doctor"
         "404":
-          description: "Doctor no encontrado"
+          description: "Doctor no encontrado o dado de baja"
         "500":
           description: "Error en el servidor"
 
     put:
-      summary: "Actualizar un doctor"
+      summary: "Actualizar un doctor (solo admin)"
       tags:
         - Doctors
       security:
@@ -154,8 +166,12 @@ paths:
           description: "ID del doctor"
           schema:
             type: string
+      description: >
+        Actualización parcial de los datos profesionales: solo se modifican los campos enviados.
+        Nombre, apellido y email son datos de la cuenta y se editan por PUT /api/users/{id},
+        que actualiza usuario y doctor juntos. Si se envían aquí, se ignoran, igual que status y _id.
       requestBody:
-        description: "Datos a actualizar del doctor"
+        description: "Datos profesionales a actualizar"
         required: true
         content:
           application/json:
@@ -163,116 +179,100 @@ paths:
               $ref: "#/components/schemas/DoctorUpdate"
             example:
               phone: "+5492612345678"
-              email: "nuevo.email@example.com"
+              frequency: 30
       responses:
-        "201":
+        "200":
           description: "El doctor se actualizó exitosamente"
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  status:
-                    type: string
-                    example: "Success"
-                  doctors:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
                     $ref: "#/components/schemas/DoctorResponse"
+        "400":
+          description: "Datos inválidos (formato de algún campo, horarios o frecuencia fuera de rango)"
+        "403":
+          description: "Solo admin puede actualizar un doctor"
         "404":
-          description: "Doctor no encontrado"
+          description: "Doctor no encontrado o dado de baja"
+        "409":
+          description: "DNI o matrícula profesional ya registrados en otro doctor"
         "500":
           description: "Error en el servidor"
 
-    delete:
-      summary: "Eliminar un doctor"
-      tags:
-        - Doctors
-      security:
-        - cookieAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          description: "ID del doctor"
-          schema:
-            type: string
-      responses:
-        "200":
-          description: "El doctor se eliminó exitosamente"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: "Success"
-                  doctors:
-                    $ref: "#/components/schemas/DoctorResponse"
-        "404":
-          description: "Doctor no encontrado"
-        "500":
-          description: "Error en el servidor"
 
 components:
   schemas:
-    DoctorCreate:
-      type: object
-      required:
-        - name
-        - lastName
-        - dni
-        - phone
-        - email
-        - professionalLicense
-      properties:
-        name:
-          type: string
-          description: "Nombre del doctor"
-          example: "Juan"
-        lastName:
-          type: string
-          description: "Apellido del doctor"
-          example: "Pérez"
-        dni:
-          type: string
-          description: "Número de DNI del doctor (debe ser único)"
-          example: "12345678"
-        phone:
-          type: string
-          description: "Teléfono del doctor"
-          example: "+5492612345678"
-        email:
-          type: string
-          format: email
-          description: "Email del doctor"
-          example: "juan.perez@clinica.com"
-        professionalLicense:
-          type: string
-          description: "Matrícula profesional del doctor (debe ser única)"
-          example: "MP12345"
-
     DoctorUpdate:
       type: object
+      description: "Todos los campos son opcionales: solo se actualizan los enviados"
       properties:
-        name:
-          type: string
-          description: "Nombre del doctor"
-        lastName:
-          type: string
-          description: "Apellido del doctor"
         dni:
           type: string
-          description: "Número de DNI del doctor"
+          description: "Número de DNI del doctor (único)"
         phone:
           type: string
           description: "Teléfono del doctor"
-        email:
-          type: string
-          format: email
-          description: "Email del doctor"
         professionalLicense:
           type: string
-          description: "Matrícula profesional del doctor"
+          description: "Matrícula profesional del doctor (única)"
+        color:
+          type: string
+          description: "Color hexadecimal del doctor en la agenda"
+          example: "#8f897fff"
+        frequency:
+          type: integer
+          minimum: 5
+          maximum: 240
+          description: "Duración de cada turno, en minutos"
+        schedules:
+          $ref: "#/components/schemas/DoctorSchedules"
+
+    DoctorSchedules:
+      type: object
+      description: >
+        Semana completa de atención. Si se envía, deben venir los 6 días (monday a saturday)
+        y reemplaza a la anterior. Cada día requiere inicio y fin en formato H:MM o HH:MM,
+        con el fin posterior al inicio.
+      additionalProperties: false
+      required: [monday, tuesday, wednesday, thursday, friday, saturday]
+      properties:
+        monday:
+          $ref: "#/components/schemas/DoctorScheduleDay"
+        tuesday:
+          $ref: "#/components/schemas/DoctorScheduleDay"
+        wednesday:
+          $ref: "#/components/schemas/DoctorScheduleDay"
+        thursday:
+          $ref: "#/components/schemas/DoctorScheduleDay"
+        friday:
+          $ref: "#/components/schemas/DoctorScheduleDay"
+        saturday:
+          $ref: "#/components/schemas/DoctorScheduleDay"
+      example:
+        monday: { start: "09:00", end: "18:00" }
+        tuesday: { start: "09:00", end: "18:00" }
+        wednesday: { start: "14:00", end: "18:00" }
+        thursday: { start: "09:00", end: "18:00" }
+        friday: { start: "09:00", end: "18:00" }
+        saturday: { start: "09:00", end: "13:00" }
+
+    DoctorScheduleDay:
+      type: object
+      required: [start, end]
+      properties:
+        start:
+          type: string
+          pattern: "^([01]?[0-9]|2[0-3]):[0-5][0-9]$"
+          example: "09:00"
+        end:
+          type: string
+          pattern: "^([01]?[0-9]|2[0-3]):[0-5][0-9]$"
+          example: "18:00"
 
     DoctorResponse:
       type: object
@@ -306,6 +306,10 @@ components:
           type: string
           description: "Matrícula profesional del doctor"
           example: "MP12345"
+        status:
+          type: boolean
+          description: "true = activo, false = inactivo (no recibe turnos ni tiene días disponibles)"
+          example: true
 
   securitySchemes:
     cookieAuth:

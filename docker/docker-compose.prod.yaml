@@ -64,26 +64,41 @@ services:
       - bash
       - -c
       - |
-        echo "Esperando a MongoDB..."
+        # Si algo falla, termina con error y las APIs no arrancan
+        set -e
+        # Los tres nodos tienen que responder: rs.initiate falla si falta alguno.
+        # $$ porque docker compose interpreta $ en el archivo
+        echo "Esperando a los nodos de MongoDB..."
 
-        until mongosh --host mongo_primary --eval "db.adminCommand('ping')" >/dev/null 2>&1; do
+        for host in mongo_primary mongo_secondary_1 mongo_secondary_2; do
+          until mongosh --host $$host --eval "db.adminCommand('ping')" >/dev/null 2>&1; do
+            sleep 2
+          done
+        done
+
+        # Solo la primera vez: en los arranques siguientes el replica set ya existe
+        echo "Inicializando Replica Set (si no existe)..."
+
+        mongosh --host mongo_primary --quiet --eval '
+          try { rs.status() } catch (e) {
+            rs.initiate({
+              _id: "rs0",
+              members: [
+                { _id: 0, host: "mongo_primary:27017", priority: 2 },
+                { _id: 1, host: "mongo_secondary_1:27017", priority: 1 },
+                { _id: 2, host: "mongo_secondary_2:27017", priority: 1 }
+              ]
+            });
+          }
+        '
+
+        # Las APIs arrancan cuando este servicio termina: se espera a que haya un primario que acepte escrituras
+        echo "Esperando primario..."
+        until mongosh --host mongo_primary --quiet --eval "quit(db.hello().isWritablePrimary ? 0 : 1)" >/dev/null 2>&1; do
           sleep 2
         done
 
-        echo "Inicializando Replica Set..."
-
-        mongosh --host mongo_primary --eval '
-          rs.initiate({
-            _id: "rs0",
-            members: [
-              { _id: 0, host: "mongo_primary:27017", priority: 2 },
-              { _id: 1, host: "mongo_secondary_1:27017", priority: 1 },
-              { _id: 2, host: "mongo_secondary_2:27017", priority: 1 }
-            ]
-          });
-        '
-
-        echo "Replica Set inicializado."
+        echo "Replica Set listo."
 
     networks:
       - network_backend_clinica
@@ -96,14 +111,19 @@ services:
     build:
       context: ..
       dockerfile: docker/dockerfile.prod
+    restart: unless-stopped
     environment:
       INSTANCE_NAME: app_node_1
     env_file:
       - .env.production
     depends_on:
-      - mongo_setup
-      - redis_clinica
-      - pdf-service
+      # Espera a que el replica set tenga primario: sin él la API no conecta y fallan las transacciones
+      mongo_setup:
+        condition: service_completed_successfully
+      redis_clinica:
+        condition: service_started
+      pdf-service:
+        condition: service_started
     networks:
       - network_backend_clinica
 
@@ -112,14 +132,19 @@ services:
     build:
       context: ..
       dockerfile: docker/dockerfile.prod
+    restart: unless-stopped
     environment:
       INSTANCE_NAME: app_node_2
     env_file:
       - .env.production
     depends_on:
-      - mongo_setup
-      - redis_clinica
-      - pdf-service
+      # Espera a que el replica set tenga primario: sin él la API no conecta y fallan las transacciones
+      mongo_setup:
+        condition: service_completed_successfully
+      redis_clinica:
+        condition: service_started
+      pdf-service:
+        condition: service_started
     networks:
       - network_backend_clinica
 

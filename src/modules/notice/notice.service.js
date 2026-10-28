@@ -9,6 +9,7 @@ import BaseService from "../../core/services/base.service.js";
 import MongoRepository from "../../core/repositories/implementations/mongo.repository.js";
 import { NoticeDTO } from "./notice.dto.js";
 import { NotFoundError, ValidationError } from "../../core/exceptions/index.js";
+import { searchRegex } from "../../shared/utils/regex.helper.js";
 import logger from "../../core/logger/logger.js";
 
 export default class NoticesService extends BaseService {
@@ -35,7 +36,7 @@ export default class NoticesService extends BaseService {
       };
     }
 
-    const notices = await this.repository.findManyByFilter(query);
+    const notices = await this.repository.findManyByFilter({ ...query, active: true });
     if (!notices) return [];
     const formatted = this.toManyDTO(notices).map(enrichNoticeData);
     return formatted;
@@ -45,7 +46,7 @@ export default class NoticesService extends BaseService {
    * 🔹 Obtiene un aviso por ID
    */
   async findById(id) {
-    const noticeFounded = await super.findById(id);
+    const noticeFounded = await super.findActiveById(id);
     if (!noticeFounded) throw new NotFoundError("Notice", id);
     return enrichNoticeData(this.toDTO(noticeFounded));
   }
@@ -67,7 +68,7 @@ export default class NoticesService extends BaseService {
       };
     }
 
-    noticesGetted = await this.repository.findPaginate(dQuery, dLimit, dPage, dSort);
+    noticesGetted = await this.repository.findPaginate({ ...dQuery, active: true }, dLimit, dPage, dSort);
     
     if (noticesGetted) {
       noticesGetted.docs = this.toManyDTO(noticesGetted.docs).map(enrichNoticeData);
@@ -80,11 +81,11 @@ export default class NoticesService extends BaseService {
    * 🔹 Busca avisos que coincidan con texto
    */
   async findBytitleOrDescription(query) {
-    const searchRegex = new RegExp(query, "i");
+    const regex = searchRegex(query);
     const found = await this.repository.findByFilter({
       $or: [
-        { title: searchRegex },
-        { description: searchRegex }
+        { title: regex },
+        { description: regex }
       ]
     });
 
@@ -116,13 +117,13 @@ export default class NoticesService extends BaseService {
     return this.toDTO(noticeAdded); // ← este era el fix
 }
   /**
-   * 🔹 Elimina un aviso por ID
+   * 🔹 Da de baja un aviso por ID (soft delete: queda con active en false)
    */
   async delete(noticeID, user) {
     if (!["admin", "employee"].includes(user?.rol)) {
       throw new ValidationError("No autorizado para eliminar avisos");
     }
-    const deletedNotice = await super.delete(noticeID);
+    const deletedNotice = await super.deactivate(noticeID);
     if (!deletedNotice) throw new NotFoundError("Notice", noticeID);
     return this.toDTO(deletedNotice)
   }
@@ -134,8 +135,8 @@ export default class NoticesService extends BaseService {
     if (!["admin", "employee"].includes(user?.rol)) {
         throw new ValidationError("No autorizado para actualizar avisos");
     }
-    // Verificar que existe antes de actualizar
-    const exists = await super.findById(noticeID);
+    // Verificar que existe antes de actualizar. Uno dado de baja no se edita: da 404
+    const exists = await super.findActiveById(noticeID);
     if (!exists) throw new NotFoundError("Notice", noticeID);
     
     await super.update(noticeID, toUpdate);

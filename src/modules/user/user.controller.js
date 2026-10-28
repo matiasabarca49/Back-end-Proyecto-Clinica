@@ -1,6 +1,4 @@
-import { getRedisClient } from "../../config/redis.config.js";
-import logger from "../../core/logger/logger.js";
-import { CreateUserRequestDTO } from "./user.dto.js";
+import { CreateUserRequestDTO, UpdateUserRequestDTO } from "./user.dto.js";
 import UsersService from "./user.service.js";
 const usersService = new UsersService();
 
@@ -89,9 +87,9 @@ export const createUser = async (req, res, next) => {
  */
 export const updateUser = async (req, res, next) => {
     try {
-        const userData = req.body;
+        //DTO de Request
+        const userData = new UpdateUserRequestDTO(req.body);
         const userID = req.params.id;
-        const userSession = req.user;
 
         // Llamar al service
         const userUpdated = await usersService.update(userID, userData);
@@ -108,22 +106,11 @@ export const updateUser = async (req, res, next) => {
 };
 
 /**
- * Elimina un usuario
- * También elimina su registro en la colección Doctor si corresponde
+ * Da de baja un usuario (y su registro en Doctor si corresponde) y cierra su sesión
  */
 export const deleteUser = async (req, res, next) => {
     try {
         const userID = req.params.id;
-        const userSession = req.user;
-
-        //Verificando que el usuario a eliminar no tenga una sesión activa
-        const redisClient = await getRedisClient()
-        const isActive = await redisClient.get(`session:${userID}`)
-
-        if(isActive){
-            logger.warn(`El usuario ${userID} no se puede eliminar porque tiene una sesión activa`)
-            return res.status(403).json({ success: false, message: "El usuario tiene una sesión activa" });
-        } 
 
         const userDeleted = await usersService.delete(userID);
 

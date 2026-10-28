@@ -11,7 +11,8 @@ export class DoctorDTO {
         this.professionalLicense = doctor.professionalLicense;
         this.email = doctor.email?.toLowerCase();
         this.phone = doctor.phone;
-        this.status = doctor.status || 'active'
+        // ?? y no ||: con || un doctor inactivo (false) quedaría activo
+        this.status = doctor.status ?? true
         this.schedules = doctor.schedules || {
             monday: { start: "09:00", end: "18:00" },
             tuesday: { start: "09:00", end: "18:00" },
@@ -42,49 +43,30 @@ export class DoctorDTO {
             email: doctor.email,
             phone: doctor.phone,
             schedules: doctor.schedules,
+            status: doctor.status,
             color: doctor.color,
             frequency: doctor.frequency,
             created: doctor.created,
             lastChange: doctor.lastChange
         };
     }
-
-    static toUpdate(doctor) {
-        const updatedDoctor = {};
-        if (doctor.name) updatedDoctor.name = this.capitalize(doctor.name);
-        if (doctor.lastName) updatedDoctor.lastName = this.capitalize(doctor.lastName);
-        if (doctor.dni) updatedDoctor.dni = doctor.dni;
-        if (doctor.professionalLicense) updatedDoctor.professionalLicense = doctor.professionalLicense;
-        if (doctor.email) updatedDoctor.email = doctor.email.toLowerCase();
-        if (doctor.phone) updatedDoctor.phone = doctor.phone;
-        if (doctor.frequency) updatedDoctor.frequency = doctor.frequency;
-        return updatedDoctor;
-    }
 }
 
-//Para entrada de Datos
-export class CreateDoctorDTO {
+/**
+ * DTO de request para actualizar un doctor (PUT /doctors/:id).
+ * Solo copia los campos permitidos que vengan en el body: la actualización es parcial.
+ * El estado y las fechas de auditoría no se modifican por esta vía.
+ * Nombre, apellido y email son datos de la cuenta: se editan por PUT /users/:id,
+ * que actualiza usuario y doctor juntos.
+ */
+export class UpdateDoctorRequestDTO {
     constructor(doctor) {
-        this.name = this.normalize(doctor.name);
-        this.lastName = this.normalize(doctor.lastName);
-        this.dni = doctor.dni;
-        this.professionalLicense = doctor.professionalLicense;
-        this.email = this.normalizeEmail(doctor.email);
-        this.phone = doctor.phone;
-        this.created = doctor.created;
-        this.lastChange = doctor.lastChange;
-        this.status = doctor.status;
-        this.schedules = doctor.schedules;
-        this.color = doctor.color;
-        this.frequency= doctor.frequency;
-    }
-
-    normalize(str){
-        return str?.trim().replace(/\s+/g, ' ') || '';
-    }
-
-    normalizeEmail(email) {
-        return email?.toLowerCase().trim() || ''; 
+        if (doctor.dni !== undefined) this.dni = doctor.dni;
+        if (doctor.professionalLicense !== undefined) this.professionalLicense = doctor.professionalLicense;
+        if (doctor.phone !== undefined) this.phone = doctor.phone;
+        if (doctor.schedules !== undefined) this.schedules = doctor.schedules;
+        if (doctor.color !== undefined) this.color = doctor.color;
+        if (doctor.frequency !== undefined) this.frequency = doctor.frequency;
     }
 }
 

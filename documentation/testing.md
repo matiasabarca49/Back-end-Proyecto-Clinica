@@ -43,7 +43,7 @@ Un archivo por feature como máximo, con DB aislada (`mongodb-memory-server`), s
 ### 6. Estructura
 
 ```
-tests/
+__test__/
 ├── unit/
 │   └── <feature>/
 └── integration/

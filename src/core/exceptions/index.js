@@ -11,7 +11,8 @@ import AppError from './AppErrors.js';
 import {
   NotFoundError,
   ValidationError,
-  DuplicateError
+  DuplicateError,
+  ConflictError
 } from './validations.exception.js';
 
 // Importar excepciones de autenticación
@@ -35,7 +36,8 @@ export {
   NotFoundError,
   ValidationError,
   DuplicateError,
-  
+  ConflictError,
+
   // Autenticación
   UnauthorizedError,
   ForbiddenError,
@@ -51,7 +53,7 @@ export {
  * import {
  *   NotFoundError,
  *   ValidationError,
- *   AppointmentConflictError
+ *   ConflictError
  * } from  './exceptions';
  * 
  *

@@ -29,18 +29,10 @@ export class UserDTO{
             created: user.created,
             lastChange: user.lastChange,
             status: user.status,
+            active: user.active,
             lastLogintAt: user.lastLogintAt,
             mustChangePassword: user.mustChangePassword
         };
-    }
-
-    static toUpdate(user) {
-        const updatedUser = {};
-        if (user.name) updatedUser.name = this.capitalize(user.name);
-        if (user.lastName) updatedUser.lastName = this.capitalize(user.lastName);
-        if (user.email) updatedUser.email = user.emai;
-        if (user.rol) updatedUser.rol = user.rol;
-        return updatedUser;
     }
 }
 
@@ -84,5 +76,38 @@ export class CreateUserRequestDTO {
 
         const rolNormalized = rol.trim().toLowerCase();
         return rolesMap[rolNormalized] || 'employee';
+    }
+}
+
+/**
+ * DTO de request para actualizar un usuario (PUT /users/:id).
+ * Solo copia los campos permitidos que vengan en el body: la actualización es parcial.
+ * La contraseña, el estado y los datos de seguridad no se modifican por esta vía.
+ */
+export class UpdateUserRequestDTO {
+
+    constructor(user){
+        // Misma capitalización que el alta (UserDTO): "juan carlos" -> "Juan carlos"
+        if (user.name !== undefined) this.name = UserDTO.capitalize(this.normalize(user.name));
+        if (user.lastName !== undefined) this.lastName = UserDTO.capitalize(this.normalize(user.lastName));
+        if (user.email !== undefined) this.email = this.normalizeEmail(user.email);
+        // Se recibe solo para validar que no cambie el rol
+        if (user.rol !== undefined) this.rol = user.rol;
+        // Datos adicionales para Doctor
+        if (user.dni !== undefined) this.dni = user.dni;
+        if (user.phone !== undefined) this.phone = user.phone;
+        if (user.professionalLicense !== undefined) this.professionalLicense = user.professionalLicense;
+        if (user.schedules !== undefined) this.schedules = user.schedules;
+        if (user.color !== undefined) this.color = user.color;
+        if (user.frequency !== undefined) this.frequency = user.frequency;
+    }
+
+    // Helpers de normalización
+    normalize(str){
+        return str?.trim().replace(/\s+/g, ' ') || '';
+    }
+
+    normalizeEmail(email) {
+        return email?.toLowerCase().trim() || '';
     }
 }

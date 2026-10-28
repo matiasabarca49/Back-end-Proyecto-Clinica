@@ -177,27 +177,38 @@ Representa los turnos asignados entre pacientes y doctores.
 ```json
 {
   "_id": "699e3d33e1d5d098de4002d7",
-  "date": "date",
-  "slots": [3],
+  "date": "2026-11-02",
+  "slots": [840, 870],
+  "duration": 30,
   "typeAppointment": "consulta",
   "room": "Consultorio 1",
   "doctorID": "698bc69b8de2f1225c93db1f",
   "patientID": "699e377f783618c8fb31b2db",
   "status": "confirmed",
   "observations": "",
+  "odontogram": [],
   "created": "date",
   "lastChange": "date"
 }
 ```
 
+- **date:** día del turno, `YYYY-MM-DD`.
+- **slots:** minuto del día en que empieza cada slot, consecutivos en la grilla del doctor (`[840, 870]` = 14:00 y 14:30).
+- **duration:** minutos de cada slot: la frecuencia del doctor al reservar. Se guarda en el turno para que un cambio de frecuencia no altere los turnos ya reservados. El turno dura `slots.length × duration` (el ejemplo, de 14:00 a 15:00).
+- **odontogram:** dientes tratados en el turno; al finalizarlo se fusionan en el odontograma del paciente.
+
 Estados posibles:
 
 - pending  
 - confirmed  
+- waiting (en sala de espera)  
+- called (en consulta)  
 - noshow  
 - rescheduled  
 - finalized  
 - canceled
+
+Todos los estados salvo `canceled` ocupan el horario del turno: un cancelado se conserva pero libera sus slots.
 
 # 7. Relaciones
 
@@ -216,4 +227,22 @@ Cada turno referencia:
 - un doctor
 
 **El odontograma se presenta como un documento embebido dentro de Patient, por lo que no se modela como una entidad independiente.**
+
+# 8. Consistencia de las escrituras
+
+**Operaciones atómicas.** En MongoDB, una escritura sobre un documento se aplica completa o no se aplica. `MongoRepository` aprovecha esto:
+
+- Lee y escribe en un solo paso (`findOneAndUpdate`, `findOneAndDelete`) en lugar de leer y después escribir.
+- Pone en el filtro la condición que debe seguir cumpliéndose (ej: `status: "called"`): si el documento cambió entre la lectura y la escritura, no se modifica y el service responde 409.
+- Los updates corren los validadores del esquema sobre los campos enviados.
+- Los índices únicos impiden duplicados aunque dos pedidos lleguen a la vez: DNI y matrícula del doctor, DNI del paciente, email del usuario, y horario de los turnos activos (doctor o paciente, día y slot).
+
+**Transacciones.** Cuando una operación escribe en más de una colección, se ejecuta con `withTransaction` (`config/mongoDB.config.js`): se guardan todas las escrituras o ninguna.
+
+| Operación | Colecciones |
+|-----------|-------------|
+| Crear, editar o borrar un usuario doctor | `users` + `doctors` |
+| Finalizar un turno (fusiona su odontograma en el paciente) | `appointments` + `patients` |
+
+Cada operación dentro de la transacción recibe `{ session }`. Requiere MongoDB como replica set (ver [despliegue en docker](despliegue-docker.md)).
 

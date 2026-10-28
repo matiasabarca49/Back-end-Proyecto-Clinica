@@ -86,15 +86,14 @@ router.post("/:patientId/odontogram/:toothId", authToken, authRoles("admin", "do
  */
 router.post("/:id/observations", authToken, authRoles("admin", "doctor"), validateAddObservation, addObservation)
 
-/** Ruta para crear un PDF de historia clinica.
- * @route POST /patients/pdf/:id
+/** Ruta para descargar la historia clínica de un paciente en PDF.
+ * @route GET /api/patients/pdf/:id
  * @access Private(admin, doctor)
  * @middleware authToken: Verifica el token de acceso en la cookie y valida la sesión en Redis
- * @middleware authRoles: Verifica que el usuario tenga uno de los roles permitidos (admin, doctor)
- * @validator validateAddObservation: Valida los datos de la observacion
- * @returns {Object} Paciente actualizado con la nueva observación.
+ * @middleware authRoles: Solo admin y doctor, porque contiene datos clínicos
+ * @returns {File} PDF de la historia clínica
  */
-router.get("/pdf/:id/", authToken, authRoles("admin", "doctor", "employee"), getPDF)
+router.get("/pdf/:id/", authToken, authRoles("admin", "doctor"), getPDF)
 
 /** 
  * Ruta para agregar un nuevo tratamiento a un paciente por su ID.

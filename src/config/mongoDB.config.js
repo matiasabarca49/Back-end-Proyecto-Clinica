@@ -59,6 +59,24 @@ class MongoManager {
     }
 }
 
+/**
+ * Ejecuta un bloque de operaciones como una sola transacción: se guardan todas o ninguna.
+ * Cada operación dentro de fn debe recibir { session }; si no, queda fuera de la transacción.
+ * Si fn lanza un error, se descarta todo y el error se relanza.
+ * Ante un error transitorio de Mongo (ej: conflicto de escritura) se reintenta fn completa,
+ * por eso adentro solo van operaciones de la base: emails, sockets y cache van después.
+ * @param {(session: mongoose.ClientSession) => Promise<any>} fn Operaciones a ejecutar
+ * @returns {Promise<any>} Lo que devuelva fn
+ */
+export const withTransaction = async (fn) => {
+    const session = await mongoose.startSession();
+    try {
+        return await session.withTransaction(() => fn(session));
+    } finally {
+        await session.endSession();
+    }
+};
+
 //ÚNICA instancia SINGLETON
 const mongoManagerInstance = new MongoManager(process.env.DATABASE_URL || "mongodb://localhost:27017/clinica_odontologica");
 

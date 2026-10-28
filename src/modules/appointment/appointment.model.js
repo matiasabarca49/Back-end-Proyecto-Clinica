@@ -1,6 +1,10 @@
 import mongoose from "mongoose";
 import mongoosePaginate from 'mongoose-paginate-v2'
 import { toothSchema } from "../../shared/schemas/tooth.schema.js";
+
+// Estados en los que el turno ocupa su horario. Un turno cancelado se conserva pero libera sus slots
+export const ACTIVE_STATUSES = ["pending", "confirmed", "waiting", "called", "noshow", "rescheduled", "finalized"];
+
 // Creación del Modelo para Appointments
 const appointmentSchema = new mongoose.Schema({
     date: {
@@ -9,14 +13,22 @@ const appointmentSchema = new mongoose.Schema({
         match: /^\d{4}-\d{2}-\d{2}$/  // valida formato YYYY-MM-DD
     },
     slots: {
-        type: [Number], // uno o varios slots (ej: [4] o [10,11,12])
+        type: [Number], // Minuto del día en que empieza cada slot (ej: 14:00 y 14:30 → [840, 870])
         required: true,
         validate: {
             validator: function(slots) {
-                return slots.every(s => s >= 0 && s <= 53); // slots mayor a 0(cero)
+                return slots.every(s => Number.isInteger(s) && s >= 0 && s < 1440);
             },
-            message: "Los slots deben estar entre 0 y 17"
+            message: "Los slots deben ser minutos del día entre 0 y 1439"
             }
+    },
+    // Duración de cada slot en minutos: la frecuencia del doctor al reservar.
+    // Se guarda en el turno para que un cambio de frecuencia no altere los turnos ya reservados
+    duration: {
+        type: Number,
+        required: true,
+        min: 5,
+        max: 240
     },
     typeAppointment: {
         type: String,
@@ -54,11 +66,15 @@ const appointmentSchema = new mongoose.Schema({
 }, {timestamps: {createdAt: 'created', updatedAt: 'lastChange'}});
 mongoose.plugin(mongoosePaginate)
 
-// Constraint para evitar que un doctor tenga citas solapadas
-appointmentSchema.index({ doctorID: 1, date: 1, slots: 1 }, { unique: true });
+// Solo los turnos activos ocupan su horario. Mongo usa estos índices únicamente en consultas
+// que filtran por status: { $in: ACTIVE_STATUSES }
+const activeOnly = { partialFilterExpression: { status: { $in: ACTIVE_STATUSES } } };
 
-//Constraint para evitar que un paciente tenga citas solapadas
-appointmentSchema.index({ patientID: 1, date: 1, slots: 1 }, { unique: true });
+// Constraint para evitar que un doctor tenga dos turnos activos que empiecen a la misma hora
+appointmentSchema.index({ doctorID: 1, date: 1, slots: 1 }, { unique: true, ...activeOnly });
+
+//Constraint para evitar que un paciente tenga dos turnos activos que empiecen a la misma hora
+appointmentSchema.index({ patientID: 1, date: 1, slots: 1 }, { unique: true, ...activeOnly });
 
 // Population
 appointmentSchema.pre("find", function() {

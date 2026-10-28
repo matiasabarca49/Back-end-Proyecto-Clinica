@@ -77,7 +77,7 @@ export const getTodayAppointments = async (req, res, next) => {
 export const getAppointmentById = async (req, res, next) => {
     try {
         const appointmentID = req.params.id;
-        const appointmentGetted = await appointmentsService.findById(appointmentID);
+        const appointmentGetted = await appointmentsService.findById(appointmentID, req.user);
         
         return res.status(200).json({ success: true, data: appointmentGetted })
             
@@ -99,29 +99,10 @@ export const createAppointment = async (req, res, next) => {
         // Crear DTO de Borde de creación de cita
         const appointment = new CreateAppointmentDTO(req.body);
 
-        const appointmentCreated = await appointmentsService.create(appointment);
+        const appointmentCreated = await appointmentsService.create(appointment, req.user);
         
         return res.status(201).json({ success: true, data: appointmentCreated });
         
-    } catch (error) {
-        next(error)
-    }
-};
-
-/**
- * Endpoint que elimina una cita de la colección mediante su ID
- * Params: ID de la cita
- * Respuesta:
- *        200: retorna un JSON con estado y objeto de la cita eliminada
- *        404: Error. El ID no existe en la DB o solicitud mal hecha
- */
-export const deleteAppointment = async (req, res, next) => {
-    try {
-        const appointmentID = req.params.id;
-        const appointmentDeleted = await appointmentsService.delete(appointmentID);
-        
-        return res.status(200).json({ success: true, data: appointmentDeleted })
-            
     } catch (error) {
         next(error)
     }
@@ -139,7 +120,7 @@ export const updateAppointment = async (req, res, next) => {
     try {
         const appointmentData = req.body;
         const appointmentID = req.params.id;
-        const appointmentUpdated = await appointmentsService.update(appointmentID, appointmentData);
+        const appointmentUpdated = await appointmentsService.update(appointmentID, appointmentData, req.user);
         
         return res.status(201).json({ success: true, data: appointmentUpdated })
             
@@ -148,23 +129,60 @@ export const updateAppointment = async (req, res, next) => {
     }
 };
 
+/**
+ * Endpoint que retorna la grilla de un doctor en un día: slots libres y ocupados
+ * Respuesta:
+ *        200: retorna un JSON con estado y { date, duration, slots, occupiedSlots } (minutos del día)
+ *        400: Error. ID o fecha inválidos
+ *        403: Error. Un doctor pidió la grilla de otro doctor
+ *        404: Error. El doctor no existe
+ */
 export const getAvailableAppointments = async (req, res, next) => {
     try {
         const { id } = req.params;
         const { day } = req.query;
-        const availableAppointments = await appointmentsService.getAvailableAppointments(id, day);
-        
-        return res.status(200).json({ success: true, data: availableAppointments.data })
-            
+        const availableAppointments = await appointmentsService.getAvailableAppointments(id, day, req.user);
+
+        return res.status(200).json({ success: true, data: availableAppointments })
+
     } catch (error) {
         next(error)
     }
 };
 
+/**
+ * Endpoint que retorna la disponibilidad diaria de un doctor en un rango, para el calendario
+ * Query: doctor, from, to (YYYY-MM-DD)
+ * Respuesta:
+ *        200: retorna un JSON con estado y { doctorID, frequency, from, to, days }
+ *        400: Error. ID, fechas o rango inválidos
+ *        403: Error. Un doctor pidió la disponibilidad de otro doctor
+ *        404: Error. El doctor no existe
+ */
+export const getAvailability = async (req, res, next) => {
+    try {
+        const { doctor, from, to } = req.query;
+        const availability = await appointmentsService.getAvailability(doctor, from, to, req.user);
+
+        return res.status(200).json({ success: true, data: availability })
+
+    } catch (error) {
+        next(error)
+    }
+};
+
+/**
+ * Endpoint que retorna el día más cercano con slots libres de un doctor, a partir de mañana
+ * Respuesta:
+ *        200: retorna un JSON con estado y { date, duration, slots, slotsText }
+ *        400: Error. ID inválido
+ *        403: Error. Un doctor pidió los turnos libres de otro doctor
+ *        404: Error. El doctor no existe o no tiene slots libres en los próximos 60 días
+ */
 export const getNearestAppointments = async (req, res, next) => {
     try {
         const { id } = req.params;
-        const nearestAppointments = await appointmentsService.getNearestAppointments(id);
+        const nearestAppointments = await appointmentsService.getNearestAppointments(id, req.user);
         
         return res.status(200).json({ success: true, data: nearestAppointments })
             
@@ -180,7 +198,7 @@ export const checkInAppointment = async (req, res, next) => {
 
         const room = req.body.room
 
-        const appointment = await appointmentsService.checkIn(appointmentID, room);
+        const appointment = await appointmentsService.checkIn(appointmentID, room, req.user);
 
         return res.status(200).json({
             success: true,
@@ -196,7 +214,7 @@ export const callAppointment = async (req, res, next) => {
 
         const appointmentID = req.params.id;
 
-        const appointment = await appointmentsService.call(appointmentID);
+        const appointment = await appointmentsService.call(appointmentID, req.user);
 
         return res.status(200).json({
             success: true,
@@ -221,7 +239,7 @@ export const finalizeAppointment = async (req, res, next) => {
 
         const appointmentID = req.params.id;
 
-        const appointment = await appointmentsService.finalize(appointmentID);
+        const appointment = await appointmentsService.finalize(appointmentID, req.user);
 
         return res.status(200).json({
             success: true,
@@ -263,7 +281,7 @@ export const getAppointmentOdontogram = async (req, res, next) => {
 
         const appointmentID = req.params.id;
 
-        const odontogram = await appointmentsService.getOdontogram(appointmentID);
+        const odontogram = await appointmentsService.getOdontogram(appointmentID, req.user);
 
         return res.status(200).json({
             success: true,

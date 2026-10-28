@@ -1,4 +1,4 @@
-import { MongoMemoryServer } from 'mongodb-memory-server';
+import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
 import bcrypt from 'bcrypt'; //
 import { User } from '../src/modules/user/user.model.js'; 
@@ -9,7 +9,8 @@ let mongoServer;
 
 // Se ejecuta ANTES de todos los tests
 export const connectDB = async () => {
-  mongoServer = await MongoMemoryServer.create();//Crea BD en MEMORIA
+  // Replica set de un nodo: sin él, Mongo no admite transacciones (withTransaction)
+  mongoServer = await MongoMemoryReplSet.create({ replSet: { count: 1, storageEngine: 'wiredTiger' } });//Crea BD en MEMORIA
   const uri = mongoServer.getUri();// URI temporal
   await mongoose.connect(uri);// Conecta a la DB Temporal
   console.log('✅ MongoDB en memoria conectada para tests');

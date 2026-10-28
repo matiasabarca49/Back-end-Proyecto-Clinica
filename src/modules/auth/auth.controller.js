@@ -1,5 +1,5 @@
 import AuthService from "./auth.service.js";
-import UsersService from "../user/user.service.js";
+import { UsersService } from "../user/index.js";
 
 
 const authService = new AuthService();

@@ -102,8 +102,10 @@ paths:
                     example: "Success"
                   patients:
                     $ref: "#/components/schemas/PatientResponse"
+        "404":
+          description: "El doctor asignado (idDoctor) no existe o fue dado de baja"
         "409":
-          description: "Conflicto - DNI duplicado"
+          description: "Conflicto - DNI duplicado (también si es de un paciente dado de baja)"
           content:
             application/json:
               schema:
@@ -193,7 +195,7 @@ paths:
                   patients:
                     $ref: "#/components/schemas/PatientResponse"
         "404":
-          description: "Paciente no encontrado"
+          description: "Paciente no encontrado o dado de baja"
         "500":
           description: "Error en el servidor"
 
@@ -235,12 +237,17 @@ paths:
                   patients:
                     $ref: "#/components/schemas/PatientResponse"
         "404":
-          description: "Paciente no encontrado"
+          description: "Paciente no encontrado o dado de baja"
         "500":
           description: "Error en el servidor"
 
     delete:
-      summary: "Eliminar un paciente"
+      summary: "Dar de baja un paciente"
+      description: >
+        Soft delete: no borra el paciente, lo deja con active en false para no romper sus turnos.
+        Un dado de baja no aparece en listados ni búsquedas y responde 404 en todos sus endpoints
+        (incluidas escrituras, odontograma y PDF). Sus turnos lo siguen mostrando (historial).
+        No se puede dar de baja a un paciente con turnos sin cerrar. Roles: admin.
       tags:
         - Patients
       security:
@@ -254,7 +261,7 @@ paths:
             type: string
       responses:
         "200":
-          description: "El paciente se eliminó exitosamente"
+          description: "El paciente se dio de baja exitosamente"
           content:
             application/json:
               schema:
@@ -266,7 +273,9 @@ paths:
                   patients:
                     $ref: "#/components/schemas/PatientResponse"
         "404":
-          description: "Paciente no encontrado"
+          description: "Paciente no encontrado o ya dado de baja"
+        "409":
+          description: "El paciente tiene turnos sin cerrar: hay que cancelarlos o marcarlos como ausentes"
         "500":
           description: "Error en el servidor"
   /patients/:id/observations:
@@ -426,7 +435,7 @@ paths:
         "200":
           description: "Observacion eliminada con éxito"
         "404":
-          description: "Paciente no encontrado"
+          description: "Paciente no encontrado o dado de baja"
         "500":
           description: "Error en el servidor"
   /api/patients/:patientId/treatment/:idTreatment:
@@ -438,7 +447,7 @@ paths:
         "200":
           description: "Tratamiento eliminado con éxito"
         "404":
-          description: "Paciente no encontrado"
+          description: "Paciente no encontrado o dado de baja"
         "500":
           description: "Error en el servidor"
   /api/patients/:patientId/odontogram:
@@ -450,7 +459,7 @@ paths:
         "200":
           description: "Tratamiento eliminado con éxito"
         "404":
-          description: "Paciente no encontrado"
+          description: "Paciente no encontrado o dado de baja"
         "500":
           description: "Error en el servidor"
     delete:
@@ -461,7 +470,7 @@ paths:
         "200":
           description: "Tratamiento eliminado con éxito"
         "404":
-          description: "Paciente no encontrado"
+          description: "Paciente no encontrado o dado de baja"
         "500":
           description: "Error en el servidor"
 components:

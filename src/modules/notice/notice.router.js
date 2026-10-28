@@ -8,6 +8,7 @@ import {
 } from './notice.controller.js';
 
 import { authToken, authRoles } from '../../middlewares/auth.middlewares.js';
+import { validateNoticeData, validateUpdateNotice } from './notice.validation.js';
 
 const router = express.Router();
 
@@ -33,18 +34,20 @@ router.get("/:id", authToken, authRoles("admin", "employee", "doctor"), getNotic
  * 
  * @route POST /notices
  * @access Private(Admin y Employee)
+ * @middleware auth, authRoles y validateNoticeData
  * @returns {Object} Aviso creado
  */
-router.post("/", authToken, authRoles("admin", "employee"), createNotice);
+router.post("/", authToken, authRoles("admin", "employee"), validateNoticeData, createNotice);
 
 /**
  * Actualiza un aviso existente
  * 
  * @route PUT /notices/:id
  * @access Private(Admin y Employee)
+ * @middleware auth, authRoles y validateUpdateNotice
  * @returns {Object} Mensaje de éxito o error
  */
-router.put("/:id", authToken, authRoles("admin", "employee"), updateNotice);
+router.put("/:id", authToken, authRoles("admin", "employee"), validateUpdateNotice, updateNotice);
 
 /**
  * Elimina un aviso

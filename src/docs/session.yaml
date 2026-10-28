@@ -46,6 +46,8 @@ paths:
                   reason:
                     type: string
                     example: "Credenciales Incorrectas"
+        "403":
+          description: "El usuario fue dado de baja (se valida después de la contraseña)"
         "500":
           description: "Error en el servidor"
 
@@ -95,6 +97,8 @@ paths:
                   reason:
                     type: string
                     example: "Credenciales Incorrectas"
+        "403":
+          description: "El usuario fue dado de baja: no se envía el código"
         "500":
           description: "Error en el servidor"
 
@@ -159,6 +163,8 @@ paths:
                   reason:
                     type: string
                     example: "Código inválido"
+        "403":
+          description: "El usuario fue dado de baja después de pedir el código"
         "500":
           description: "Error en el servidor"
 
@@ -274,7 +280,7 @@ paths:
                     type: string
                     example: "No existe el token de refresco o ha expirado"
         "403":
-          description: "Token de refresco no válido"
+          description: "Token de refresco no válido, o el usuario fue dado de baja"
         "500":
           description: "Error en el servidor"
 

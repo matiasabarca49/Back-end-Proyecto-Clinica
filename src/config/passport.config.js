@@ -1,10 +1,10 @@
 import passport from "passport";
-import UsersService from '../modules/user/user.service.js';
+import { UsersService, UserDTO } from '../modules/user/index.js';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
-import { UserDTO } from '../modules/user/user.dto.js';
 import crypto from 'crypto';
 import { createhash } from "../utils/utils.js";
 import { validateEnvVars } from "../utils/dotenv.helper.js";
+import logger from "../core/logger/logger.js";
 
 const usersService = new UsersService();
 

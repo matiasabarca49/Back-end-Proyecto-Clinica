@@ -12,7 +12,7 @@ Antes de ejecutar el proyecto, es necesario tener instaladas las siguientes herr
 
 - Node.js (versión 20 o superior)
 - pnpm (version 10 o superior)
-- MongoDB Atlas o una instancia local de MongoDB
+- MongoDB Atlas o una instancia local de MongoDB configurada como **replica set** (la API usa transacciones, que MongoDB no admite en un servidor standalone)
 - Git
 - Servidor Redis levantado.
 
@@ -23,7 +23,7 @@ Opcional:
 
 El sistema requiere una instancia de MongoDB y un servidor Redis para su funcionamiento. Para facilitar la configuración del entorno de desarrollo, estos servicios pueden levantarse mediante Docker Compose. 
 
-Revisa la guía [despliegue en docker](despliegue-docker.md) para levantar los servicios necesarios. 
+Revisa la guía [despliegue en docker](despliegue-docker.md) para levantar los servicios necesarios. Para un MongoDB local sin Docker, iniciarlo con `--replSet rs0` y ejecutar una vez `rs.initiate()` (ver la sección "MongoDB como replica set" de esa guía). 
 
 ---
 
@@ -92,7 +92,7 @@ Ejemplo de archivo env:
 
 ```
 NODE_ENV=development
-DATABASE_URL=mongodb://<IP_SERVIDOR_DB o localhost>/clinica_odontologica
+DATABASE_URL=mongodb://<IP_SERVIDOR_DB o localhost>/clinica_odontologica?replicaSet=rs0
 SECRET_SESSIONS=UNA_CLAVE_SECRETA_PARA_LAS_SESIONES
 PORT=PUERTO_PARA_ACCEDER_A_LA_API
 PORT_REDIS=PUERTO_REDIS_O_6379

@@ -28,7 +28,9 @@ const noticesSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId, 
         ref: "users", 
         required: function() { return this.visibility === "particular"; } 
-    }
+    },
+    // Soft delete: true = activo, false = dado de baja
+    active: { type: Boolean, default: true }
 }, { timestamps: {createdAt: 'created', updatedAt: 'lastChange'} });
 
 // Plugin de paginación

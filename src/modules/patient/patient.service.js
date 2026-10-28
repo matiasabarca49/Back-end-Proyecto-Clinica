@@ -3,10 +3,14 @@ import MongoRepository from "../../core/repositories/implementations/mongo.repos
 import { Patient } from "./patient.model.js";
 import { PatientDTO } from "./patient.dto.js";
 //Exception
-import {NotFoundError, ServiceUnavailableError} from '../../core/exceptions/index.js'
+import {ConflictError, NotFoundError, ServiceUnavailableError} from '../../core/exceptions/index.js'
 import { requiredEnvVars } from "../../config/env.config.js";
 import { validateEnvVars } from "../../utils/dotenv.helper.js";
 import logger from "../../core/logger/logger.js";
+import { searchRegex } from "../../shared/utils/regex.helper.js";
+import { DoctorsService } from "../doctor/index.js";
+
+const doctorsService = new DoctorsService();
 
 class PatientsService extends BaseService {
 
@@ -16,18 +20,18 @@ class PatientsService extends BaseService {
     }
 
     async findAll(filters = {}) {
-        const patients = await super.findAll(filters);
+        const patients = await super.findAll({ ...filters, active: true });
         return this.toManyDTO(patients);
     }
 
     async findById(id) {
-        const patient = await super.findById(id);
+        const patient = await super.findActiveById(id);
         if (!patient) throw new NotFoundError("Paciente", id);
         return this.toDTO(patient);
     }
 
     async getOdontogram(patientID){
-        const patient = await super.findById(patientID)
+        const patient = await super.findActiveById(patientID)
         if (!patient) throw new NotFoundError("Paciente", patientID);
         return patient.dentalStatus 
     }
@@ -35,7 +39,7 @@ class PatientsService extends BaseService {
     async paginatePatients(filters = {}, limit, page, sort) {
 
         if(filters.search){
-            const regex = new RegExp(filters.search, "i");
+            const regex = searchRegex(filters.search);
             filters = {...filters,
                 $or: [
                     { name: regex },
@@ -49,6 +53,7 @@ class PatientsService extends BaseService {
 
             delete filters.search; // Eliminar la propiedad search del objeto filters
         }
+        filters = { ...filters, active: true };
         
         //Default sort: fecha de creación descendente
         const defaultSort = sort ? {lastName: parseInt(sort)} : {lastName: -1}
@@ -59,18 +64,25 @@ class PatientsService extends BaseService {
         return result;
     }
 
-    async searchPaginate(query, dftLimit, dftPage, dftSort, userSession) {
-        const regex = new RegExp(query, "i");
+    /**
+     * @param {String} query Texto a buscar
+     * @param {Object} [options] limit, page, sort de la paginación.
+     *                           includeInactive: incluye a los dados de baja. Lo usa el filtro por nombre del
+     *                           listado de turnos, para que el historial de un paciente dado de baja se siga encontrando
+     */
+    async searchPaginate(query, { limit, page, sort, includeInactive = false } = {}) {
+        const regex = searchRegex(query);
         let dftQuery = {
             $or: [
                 { name: regex },
                 { lastName: regex },
                 { email: regex },
-                { DNI: regex }
+                { dni: regex }
             ]
         };
+        if (!includeInactive) dftQuery.active = true;
 
-        const result = await this.repository.findPaginate(dftQuery, dftLimit, dftPage, dftSort);
+        const result = await this.repository.findPaginate(dftQuery, limit, page, sort);
         result.docs = this.toManyDTO(result.docs);
         return result;
     }
@@ -82,6 +94,9 @@ class PatientsService extends BaseService {
             ? userSession.id
             : newPatient.idDoctor;
 
+        // Lanza NotFoundError si el doctor no existe o fue dado de baja
+        await doctorsService.findById(newPatient.idDoctor);
+
         newPatient.status = 'active';
 
         const patientDTO = new PatientDTO(newPatient);
@@ -91,9 +106,13 @@ class PatientsService extends BaseService {
     }
 
     async update(id, toUpdate) {
-        const updated = await super.update(id, this.toUpdateDTO(toUpdate));
+        // Si cambia el doctor asignado: NotFoundError si no existe o fue dado de baja
+        if (toUpdate.idDoctor) await doctorsService.findById(toUpdate.idDoctor);
+
+        // Un paciente dado de baja no se edita: da 404
+        const updated = await this.repository.updateByFilter({ _id: id, active: true }, this.toUpdateDTO(toUpdate));
         if (!updated) throw new NotFoundError("Paciente", id);
-        return updated;
+        return this.toDTO(updated);
     }
 
     async getPDF(patientId){
@@ -102,7 +121,7 @@ class PatientsService extends BaseService {
             throw new ServiceUnavailableError(`Servicio no configurado`)
         }
 
-        const patient = await super.findById(patientId);
+        const patient = await super.findActiveById(patientId);
 
         if (!patient) throw new NotFoundError("Paciente", patientId);
 
@@ -153,7 +172,7 @@ class PatientsService extends BaseService {
 
     async addObservation(patientId, observation){
         const patientUpdated = await this.repository.updateByFilter(
-            {_id: patientId},
+            {_id: patientId, active: true},
             { $push: { observations: observation } }
         );
 
@@ -164,7 +183,7 @@ class PatientsService extends BaseService {
 
     async addTreatment(patientId, treatment){
         const patientUpdated = await this.repository.updateByFilter(
-            {_id: patientId},
+            {_id: patientId, active: true},
             { $push: { treatments: treatment } }
         );
 
@@ -175,7 +194,7 @@ class PatientsService extends BaseService {
 
 
     async updateTooth(patientId, toothId, toothData){
-        const patient = await super.findById(patientId)
+        const patient = await super.findActiveById(patientId)
         if(!patient) throw new NotFoundError("Paciente", patientId)
 
         const toothNumber = parseInt(toothId);
@@ -202,26 +221,35 @@ class PatientsService extends BaseService {
             });
         }
 
-        const updatedPatient = await super.update(patientId, {dentalStatus: dentalStatus});
+        // active en el filtro: si se dio de baja después de leerlo, no se escribe
+        const updatedPatient = await this.repository.updateByFilter({ _id: patientId, active: true }, {dentalStatus: dentalStatus});
+        if (!updatedPatient) throw new NotFoundError("Paciente", patientId);
 
         return updatedPatient;
     }
 
     async delete(id) {
-        const patient = await super.findById(id);
+        // Import diferido: appointment.service crea un PatientsService al cargarse, así que un import
+        // estático armaría un ciclo entre los dos módulos y uno de ellos quedaría sin inicializar
+        const { AppointmentsService } = await import("../appointment/index.js");
+        if (await new AppointmentsService().hasOpenAppointments({ patientID: id })) {
+            throw new ConflictError("El paciente tiene turnos sin cerrar. Cancele o marque como ausente sus turnos antes de darlo de baja");
+        }
+
+        // Soft delete: el paciente queda con active en false para no romper sus turnos
+        const patient = await super.deactivate(id);
         if (!patient) throw new NotFoundError("Paciente", id);
 
-        await super.delete(id);
         return this.toDTO(patient);
     }
     
     async deleteObservation(patientId, idObservation){
-        const patient = await super.findById(patientId);
+        const patient = await super.findActiveById(patientId);
 
         if (!patient) throw new NotFoundError("Paciente", patientId);
 
         const updatedPatient = await this.repository.updateByFilter(
-            { _id: patientId },
+            { _id: patientId, active: true },
             { $pull: { observations: { _id: idObservation } } }
         );
 
@@ -229,21 +257,26 @@ class PatientsService extends BaseService {
     }
 
     async deleteTreatment(patientId, idTreatment){
-        const patient = await super.findById(patientId);
+        const patient = await super.findActiveById(patientId);
         if (!patient) throw new NotFoundError("Paciente", patientId);
         
+        // El tratamiento en el filtro: si no existe, no hay documento que coincida y se responde 404
         const updatedPatient = await this.repository.updateByFilter(
-            { _id: patientId },
+            { _id: patientId, active: true, "treatments._id": idTreatment },
             { $pull: { treatments: { _id: idTreatment } } }
         );
-    
+
+        if (!updatedPatient) throw new NotFoundError("Tratamiento", idTreatment);
+
     }
     
     async resetOdontogram(patientId){
-        const patient = await super.findById(patientId);
+        const patient = await super.findActiveById(patientId);
         if(!patient) throw new NotFoundError("Paciente", patientId);
         
-        await super.update(patientId, {dentalStatus: []})
+        // active en el filtro: si se dio de baja después de leerlo, no se escribe
+        const updatedPatient = await this.repository.updateByFilter({ _id: patientId, active: true }, {dentalStatus: []})
+        if (!updatedPatient) throw new NotFoundError("Paciente", patientId);
 
         return true
         
@@ -257,9 +290,10 @@ class PatientsService extends BaseService {
      *
      * @param {String} patientId ID del paciente
      * @param {Array} teeth Dientes completos (toothSchema) como objetos planos
+     * @param {Object} options Dentro de una transacción, { session } de quien la abrió
      * @returns {Array} Odontograma del paciente actualizado
      */
-    async mergeOdontogram(patientId, teeth){
+    async mergeOdontogram(patientId, teeth, options = {}){
         const toothNumbers = teeth.map(t => t.tooth);
 
         const updatedPatient = await this.repository.updateByFilter(
@@ -280,7 +314,8 @@ class PatientsService extends BaseService {
                         ]
                     }
                 }
-            }]
+            }],
+            options
         );
 
         if (!updatedPatient) throw new NotFoundError("Paciente", patientId);

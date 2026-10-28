@@ -1,165 +1,237 @@
 paths:
-  /api/appointments/:
+  /api/appointments:
     get:
-      summary: "Obtener citas todasl las citas o con paginación"
+      summary: "Obtener turnos, todos o filtrados con paginación"
+      description: >
+        Sin parámetros devuelve todos los turnos en un array. Con algún parámetro devuelve un objeto
+        paginado. Un usuario con rol doctor solo ve sus propios turnos (el filtro doctor se ignora).
+        Roles: admin, employee, doctor.
       tags:
         - Appointments
       security:
         - cookieAuth: []
       parameters:
-        - name: person
+        - name: doctor
           in: query
           required: false
-          description: "Búscar turnos de un doctor o paciente especifico. Puede ser por nombre, apellido o ID"
+          description: "ID del doctor, o texto a buscar en nombre, apellido, DNI o matrícula"
           schema:
             type: string
-            format: string
-        - name: query
+        - name: patient
           in: query
           required: false
-          description: "Filtro por fecha, tipo de consulta o consultorio"
+          description: "ID del paciente, o texto a buscar en sus datos"
           schema:
             type: string
-        - name: status
+        - name: from
           in: query
           required: false
-          description: "Filtro por estado del turno"
-          schema:
-            type: string
-            enum: ["pending", "confirmed", "noshow", "eescheduled","finalized", "canceled"]
-        - name: sort
-          in: query
-          required: false
-          description: "Ordenamiento por fecha (1=ASC, -1=DESC)"
-          schema:
-            type: integer
-            enum: [1, -1]
-        - name: page
-          in: query
-          required: false
-          description: "Número de página"
-          schema:
-            type: integer
-            default: 1
-        - name: limit
-          in: query
-          required: false
-          description: "Límite de resultados por página"
-          schema:
-            type: integer
-            default: 10
-      responses:
-        "200":
-          description: "Citas paginadas obtenidas exitosamente"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: "Success"
-                  appointments:
-                    type: object
-                    properties:
-                      docs:
-                        type: array
-                        items:
-                          $ref: "#/components/schemas/AppointmentResponse"
-                      totalDocs:
-                        type: integer
-                      limit:
-                        type: integer
-                      page:
-                        type: integer
-                      totalPages:
-                        type: integer
-                      hasNextPage:
-                        type: boolean
-                      hasPrevPage:
-                        type: boolean
-        "500":
-          description: "Error en el servidor"
-
-  /api/appointments/paginate:
-    get:
-      summary: "Obtener citas con paginación"
-      tags:
-        - Appointments
-      security:
-        - cookieAuth: []
-      parameters:
-        - name: search
-          in: query
-          required: false
-          description: "Búsqueda por fecha (YYYY-MM-DD)"
+          description: "Fecha inicial, incluida (YYYY-MM-DD)"
           schema:
             type: string
             format: date
-        - name: query
+        - name: to
           in: query
           required: false
-          description: "Filtro por ID de doctor"
+          description: "Fecha final, incluida (YYYY-MM-DD)"
           schema:
             type: string
+            format: date
+        - name: room
+          in: query
+          required: false
+          description: "Consultorio (búsqueda parcial)"
+          schema:
+            type: string
+        - name: typeAppointment
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: ["consulta", "cirugia", "control", "tratamiento"]
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/AppointmentStatus"
         - name: sort
           in: query
           required: false
-          description: "Ordenamiento por fecha (1=ASC, -1=DESC)"
+          description: "Orden por fecha y horario (1=ASC, -1=DESC)"
           schema:
             type: integer
             enum: [1, -1]
         - name: page
           in: query
           required: false
-          description: "Número de página"
           schema:
             type: integer
             default: 1
         - name: limit
           in: query
           required: false
-          description: "Límite de resultados por página"
           schema:
             type: integer
             default: 10
       responses:
         "200":
-          description: "Citas paginadas obtenidas exitosamente"
+          description: "Turnos obtenidos"
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  status:
-                    type: string
-                    example: "Success"
-                  appointments:
-                    type: object
-                    properties:
-                      docs:
-                        type: array
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    oneOf:
+                      - type: array
+                        description: "Sin parámetros: todos los turnos"
                         items:
-                          $ref: "#/components/schemas/AppointmentResponse"
-                      totalDocs:
-                        type: integer
-                      limit:
-                        type: integer
-                      page:
-                        type: integer
-                      totalPages:
-                        type: integer
-                      hasNextPage:
-                        type: boolean
-                      hasPrevPage:
-                        type: boolean
+                          $ref: "#/components/schemas/AppointmentShortResponse"
+                      - $ref: "#/components/schemas/AppointmentPage"
+        "400":
+          description: "Parámetros inválidos"
+        "500":
+          description: "Error en el servidor"
+
+    post:
+      summary: "Crear un turno"
+      description: >
+        Los slots son minutos del día (14:00 → 840), deben ser consecutivos y estar en la grilla del
+        día del doctor: desde el inicio de su horario, de a su frecuencia, sin pasar el cierre. El domingo
+        no se atiende, y un doctor inactivo no recibe turnos. No puede superponerse con otro turno activo del doctor ni del paciente (los
+        cancelados no cuentan). La duración del turno se toma de la frecuencia actual del doctor.
+        room es opcional, texto de hasta 50 caracteres; observations, texto de hasta 500. Un doctor
+        solo puede reservar a su propio nombre. Roles: admin, employee, doctor.
+      tags:
+        - Appointments
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppointmentCreate"
+      responses:
+        "201":
+          description: "Turno creado"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: "#/components/schemas/AppointmentShortResponse"
+        "400":
+          description: "Datos inválidos, el doctor está inactivo o no atiende ese día, slots fuera del horario o no consecutivos, o el doctor o el paciente ya tienen un turno en ese horario"
+        "403":
+          description: "Un doctor intenta reservar a nombre de otro doctor"
+        "404":
+          description: "Doctor o paciente no encontrado o dado de baja"
+        "409":
+          description: "Otro pedido reservó el mismo horario al mismo tiempo"
+        "500":
+          description: "Error en el servidor"
+
+  /api/appointments/today:
+    get:
+      summary: "Obtener los turnos de hoy"
+      description: >
+        Primera página (10 turnos) de los turnos del día. Un usuario con rol doctor solo ve los suyos.
+        Roles: admin, employee, doctor, dashboard.
+      tags:
+        - Appointments
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: "Turnos de hoy"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: "#/components/schemas/AppointmentPage"
+        "500":
+          description: "Error en el servidor"
+
+  /api/appointments/availability:
+    get:
+      summary: "Disponibilidad diaria de un doctor para el calendario"
+      description: >
+        Devuelve todos los días del rango, también los que el doctor no atiende, con la cantidad de
+        slots de su horario, los ocupados por turnos activos y los libres. Usa la misma regla que la
+        reserva, así que un slot libre se puede reservar. Máximo 62 días por consulta.
+        Roles: admin, employee, doctor. Un doctor solo puede consultar su propia disponibilidad:
+        con otro doctor recibe 403, exista o no.
+      tags:
+        - Appointments
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: doctor
+          in: query
+          required: true
+          description: "ID del doctor"
+          schema:
+            type: string
+        - name: from
+          in: query
+          required: true
+          description: "Fecha inicial, incluida (YYYY-MM-DD)"
+          schema:
+            type: string
+            format: date
+            example: "2026-11-01"
+        - name: to
+          in: query
+          required: true
+          description: "Fecha final, incluida (YYYY-MM-DD)"
+          schema:
+            type: string
+            format: date
+            example: "2026-11-30"
+      responses:
+        "200":
+          description: "Disponibilidad del rango"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: "#/components/schemas/Availability"
+        "400":
+          description: "ID o fechas inválidos, fecha final anterior a la inicial o rango mayor a 62 días"
+        "403":
+          description: "Un doctor pidió la disponibilidad de otro doctor"
+        "404":
+          description: "Doctor no encontrado o dado de baja"
         "500":
           description: "Error en el servidor"
 
   /api/appointments/available/{id}:
     get:
-      summary: "Obtener turnos disponibles para un doctor en un día específico"
-      description: "Devuelve los slots disponibles (no ocupados) para un doctor en una fecha determinada"
+      summary: "Grilla de un doctor en un día: slots libres y ocupados"
+      description: >
+        La grilla del día del doctor separada en slots libres (slots) y ocupados (occupiedSlots); juntos
+        forman la grilla completa. Ocupado = se superpone con algún turno activo (los cancelados no
+        cuentan). Si el doctor no atiende ese día o está inactivo, ambos vienen vacíos.
+        Roles: admin, employee, doctor. Un doctor solo puede consultar su propia grilla:
+        con otro doctor recibe 403, exista o no.
       tags:
         - Appointments
       security:
@@ -174,45 +246,61 @@ paths:
         - name: day
           in: query
           required: true
-          description: "Fecha en formato YYYY-MM-DD"
+          description: "Fecha (YYYY-MM-DD)"
           schema:
             type: string
             format: date
-            example: "2025-10-15"
+            example: "2026-11-02"
       responses:
         "200":
-          description: "Turnos disponibles obtenidos exitosamente"
+          description: "Slots libres del día"
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   success:
-                    type: string
-                    example: "Success"
+                    type: boolean
+                    example: true
                   data:
                     type: object
-                    description: "Objeto con slots disponibles y horarios"
                     properties:
-                      availableSlots:
+                      date:
+                        type: string
+                        format: date
+                        example: "2026-11-02"
+                      duration:
+                        type: integer
+                        description: "Duración de cada slot en minutos (frecuencia actual del doctor)"
+                        example: 30
+                      slots:
                         type: array
+                        description: "Minuto del día en que empieza cada slot libre"
                         items:
                           type: integer
-                        example: [0, 1, 2, 5, 6, 10, 15]
-                      availableHours:
+                        example: [540, 570, 660, 690]
+                      occupiedSlots:
                         type: array
+                        description: "Minuto del día en que empieza cada slot de la grilla que ya tiene un turno activo"
                         items:
-                          type: string
-                        example: ["09:00 - 09:30", "09:30 - 10:00", "11:30 - 12:00"]
+                          type: integer
+                        example: [600, 630]
+        "400":
+          description: "ID o fecha inválidos"
+        "403":
+          description: "Un doctor pidió la grilla de otro doctor"
         "404":
-          description: "No se encontraron turnos disponibles"
+          description: "Doctor no encontrado o dado de baja"
         "500":
           description: "Error en el servidor"
 
   /api/appointments/nearest/{id}:
     get:
-      summary: "Obtener los próximos turnos de un doctor"
-      description: "Devuelve los turnos más cercanos en el tiempo para un doctor específico"
+      summary: "Día más cercano con slots libres de un doctor"
+      description: >
+        Busca a partir de mañana, en los próximos 60 días, el primer día con algún slot libre.
+        Roles: admin, employee, doctor. Un doctor solo puede consultar el suyo:
+        con otro doctor recibe 403, exista o no.
       tags:
         - Appointments
       security:
@@ -226,93 +314,49 @@ paths:
             type: string
       responses:
         "200":
-          description: "Próximos turnos obtenidos exitosamente"
+          description: "Día encontrado y sus slots libres"
           content:
             application/json:
               schema:
                 type: object
                 properties:
                   success:
-                    type: string
-                    example: "Success"
+                    type: boolean
+                    example: true
                   data:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/AppointmentResponse"
+                    type: object
+                    properties:
+                      date:
+                        type: string
+                        format: date
+                        example: "2026-11-02"
+                      duration:
+                        type: integer
+                        example: 30
+                      slots:
+                        type: array
+                        description: "Minuto del día en que empieza cada slot libre"
+                        items:
+                          type: integer
+                        example: [540, 570]
+                      slotsText:
+                        type: array
+                        items:
+                          type: string
+                        example: ["09:00 - 09:30", "09:30 - 10:00"]
+        "400":
+          description: "ID inválido"
+        "403":
+          description: "Un doctor pidió los turnos libres de otro doctor"
         "404":
-          description: "No se encontraron turnos"
+          description: "Doctor no encontrado o dado de baja, o sin slots libres en los próximos 60 días"
         "500":
           description: "Error en el servidor"
 
-  /api/appointments/filter:
-    get:
-      summary: "Obtener citas por filtro específico"
-      description: "Filtra citas por fecha, estado, doctor o paciente"
-      tags:
-        - Appointments
-      security:
-        - cookieAuth: []
-      parameters:
-        - name: date
-          in: query
-          required: false
-          description: "Filtrar por fecha (YYYY-MM-DD)"
-          schema:
-            type: string
-            format: date
-        - name: status
-          in: query
-          required: false
-          description: "Filtrar por estado"
-          schema:
-            type: string
-            enum: ["Pending", "Confirmed", "NoShow", "Rescheduled", "Finalized", "Canceled"]
-        - name: doctorID
-          in: query
-          required: false
-          description: "Filtrar por ID de doctor"
-          schema:
-            type: string
-        - name: patientID
-          in: query
-          required: false
-          description: "Filtrar por ID de paciente"
-          schema:
-            type: string
-        - name: typeAppointment
-          in: query
-          required: false
-          description: "Filtrar por tipo de cita"
-          schema:
-            type: string
-            enum: ["consulta", "cirugia", "control", "tratamiento"]
-        - name: room
-          in: query
-          required: false
-          description: "Filtrar por consultorio"
-          schema:
-            type: string
-      responses:
-        "200":
-          description: "Citas encontradas exitosamente"
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: "Success"
-                  appointments:
-                    type: array
-                    items:
-                      $ref: "#/components/schemas/AppointmentResponse"
-        "404":
-          description: "No se encontraron citas con los criterios especificados"
-
   /api/appointments/{id}:
     get:
-      summary: "Obtener una cita por ID"
+      summary: "Obtener un turno por ID"
+      description: "Roles: admin, employee, doctor."
       tags:
         - Appointments
       security:
@@ -321,29 +365,38 @@ paths:
         - name: id
           in: path
           required: true
-          description: "ID de la cita"
+          description: "ID del turno"
           schema:
             type: string
       responses:
         "200":
-          description: "La cita se obtuvo exitosamente"
+          description: "Turno encontrado"
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  status:
-                    type: string
-                    example: "Success"
-                  appointment:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
                     $ref: "#/components/schemas/AppointmentResponse"
+        "400":
+          description: "ID inválido"
+        "403":
+          description: "Un doctor intenta ver un turno de otro doctor"
         "404":
-          description: "Cita no encontrada"
+          description: "Turno no encontrado"
         "500":
           description: "Error en el servidor"
 
     put:
-      summary: "Actualizar una cita"
+      summary: "Actualizar un turno"
+      description: >
+        Un turno finalizado no se puede modificar. Si cambia el doctor, el paciente, la fecha o los
+        slots, se aplican las mismas reglas que al crear y la duración pasa a ser la frecuencia actual
+        del doctor. Si solo cambian sala, tipo u observaciones, no se vuelve a validar el horario.
+        Roles: admin, employee, doctor.
       tags:
         - Appointments
       security:
@@ -352,43 +405,44 @@ paths:
         - name: id
           in: path
           required: true
-          description: "ID de la cita"
+          description: "ID del turno"
           schema:
             type: string
       requestBody:
-        description: "Datos a actualizar en la cita"
         required: true
         content:
           application/json:
             schema:
               $ref: "#/components/schemas/AppointmentUpdate"
-            example:
-              date: "2025-10-15"
-              slots: [4, 5]
-              typeAppointment: "control"
-              doctorID: "676491db50d8d925d49439cc"
-              patientID: "6797d8bda81e0d869ae05572"
-              observations: "Paciente confirmó asistencia"
       responses:
         "201":
-          description: "La cita se actualizó exitosamente"
+          description: "Turno actualizado"
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  status:
-                    type: string
-                    example: "Success"
-                  appointment:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
                     $ref: "#/components/schemas/AppointmentResponse"
+        "400":
+          description: "Datos inválidos o el nuevo horario no se puede reservar"
+        "403":
+          description: "Un doctor intenta editar un turno de otro doctor o pasárselo a otro"
         "404":
-          description: "Cita no encontrada"
+          description: "Turno, doctor o paciente no encontrado (o doctor/paciente dado de baja)"
+        "409":
+          description: "El turno está finalizado; se intenta mover (doctor, paciente, fecha u horario) un turno en espera o en consulta; cambió de estado o se eliminó mientras se editaba; o el horario se reservó al mismo tiempo"
         "500":
           description: "Error en el servidor"
 
-    delete:
-      summary: "Eliminar una cita"
+  /api/appointments/{id}/check-in:
+    patch:
+      summary: "Registrar la llegada del paciente (pasa a waiting)"
+      description: >
+        Solo desde confirmed o called. Notifica al doctor por Socket.IO. Roles: admin, employee, doctor.
       tags:
         - Appointments
       security:
@@ -397,24 +451,175 @@ paths:
         - name: id
           in: path
           required: true
-          description: "ID de la cita"
+          description: "ID del turno"
           schema:
             type: string
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                room:
+                  type: string
+                  description: "Consultorio asignado al llegar"
+                  example: "Consultorio 2"
       responses:
         "200":
-          description: "La cita se eliminó exitosamente"
+          description: "Turno en espera"
           content:
             application/json:
               schema:
                 type: object
                 properties:
-                  status:
-                    type: string
-                    example: "Success"
-                  appointment:
-                    $ref: "#/components/schemas/AppointmentResponse"
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: "#/components/schemas/AppointmentShortResponse"
+        "400":
+          description: "El turno no está confirmado ni llamado, o el consultorio no es un texto de hasta 50 caracteres"
+        "403":
+          description: "Un doctor sobre un turno de otro doctor"
         "404":
-          description: "Cita no encontrada"
+          description: "Turno no encontrado"
+        "409":
+          description: "El turno cambió de estado mientras se hacía el check-in (ej: se canceló)"
+        "500":
+          description: "Error en el servidor"
+
+  /api/appointments/{id}/call:
+    patch:
+      summary: "Llamar al paciente (pasa a called)"
+      description: "Solo desde waiting. Notifica por Socket.IO. Roles: admin, doctor."
+      tags:
+        - Appointments
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: "ID del turno"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Turno llamado"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: "#/components/schemas/AppointmentShortResponse"
+        "400":
+          description: "El turno no está en espera"
+        "403":
+          description: "Un doctor sobre un turno de otro doctor"
+        "404":
+          description: "Turno no encontrado"
+        "409":
+          description: "El turno dejó de estar en espera mientras se llamaba"
+        "500":
+          description: "Error en el servidor"
+
+  /api/appointments/{id}/finalize:
+    patch:
+      summary: "Finalizar el turno (pasa a finalized)"
+      description: >
+        Solo desde called. Guarda el odontograma del turno en el del paciente y después finaliza el
+        turno. Notifica por Socket.IO. Un turno finalizado ya no se puede editar. Roles: admin, doctor.
+      tags:
+        - Appointments
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: "ID del turno"
+          schema:
+            type: string
+      responses:
+        "200":
+          description: "Turno finalizado"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: "#/components/schemas/AppointmentShortResponse"
+        "400":
+          description: "El turno no está llamado"
+        "403":
+          description: "Un doctor sobre un turno de otro doctor"
+        "404":
+          description: "Turno o paciente no encontrado"
+        "409":
+          description: "El turno cambió mientras se finalizaba; se puede reintentar"
+        "500":
+          description: "Error en el servidor"
+
+  /api/appointments/{id}/status:
+    patch:
+      summary: "Cambiar el estado del turno"
+      description: >
+        Para los estados que no tienen su propio endpoint. No se puede usar sobre un turno en espera,
+        en consulta o finalizado (siguen su propio flujo). Un turno cancelado libera su horario: el
+        registro se conserva, pero sus slots se pueden volver a reservar. Volver a confirmed un turno
+        cancelado, ausente o reprogramado aplica las mismas reglas que reservar (incluido que el doctor y
+        el paciente no estén dados de baja). Notifica por Socket.IO. Roles: admin, employee.
+      tags:
+        - Appointments
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: "ID del turno"
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status:
+                  type: string
+                  enum: ["confirmed", "noshow", "rescheduled", "canceled"]
+                  example: "canceled"
+      responses:
+        "200":
+          description: "Estado actualizado"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: "#/components/schemas/AppointmentShortResponse"
+        "400":
+          description: "Estado inválido, o al reactivar un cancelado su horario ya no se puede reservar"
+        "404":
+          description: "Turno no encontrado, o al reabrirlo su doctor o paciente fue dado de baja"
+        "409":
+          description: "El turno está en espera, en consulta o finalizado, o cambió mientras se actualizaba"
         "500":
           description: "Error en el servidor"
 
@@ -452,6 +657,8 @@ paths:
                       $ref: "#/components/schemas/AppointmentTooth"
         "400":
           description: "ID inválido"
+        "403":
+          description: "Un doctor sobre un turno de otro doctor"
         "404":
           description: "Turno no encontrado"
         "500":
@@ -511,6 +718,24 @@ paths:
 
 components:
   schemas:
+    AppointmentStatus:
+      type: string
+      description: "Estado del turno. Todos ocupan su horario salvo canceled"
+      enum: ["pending", "confirmed", "waiting", "called", "noshow", "rescheduled", "finalized", "canceled"]
+      example: "pending"
+
+    AppointmentSlots:
+      type: array
+      description: >
+        Minuto del día en que empieza cada slot (14:00 → 840). Deben ser consecutivos según la
+        frecuencia del doctor: [840, 870] con 30 minutos es un turno de 14:00 a 15:00.
+      items:
+        type: integer
+        minimum: 0
+        maximum: 1439
+      minItems: 1
+      example: [840, 870]
+
     AppointmentTooth:
       type: object
       description: "Estado completo de un diente (toothSchema)"
@@ -550,49 +775,39 @@ components:
         date:
           type: string
           format: date
-          description: "Fecha de la cita en formato YYYY-MM-DD"
-          example: "2025-10-15"
+          description: "Fecha del turno (YYYY-MM-DD)"
+          example: "2026-11-02"
         slots:
-          type: array
-          items:
-            type: integer
-            minimum: 0
-            maximum: 17
-          description: "Array de slots numéricos (0-17). Cada slot representa 30 minutos desde las 09:00"
-          example: [4, 5]
+          $ref: "#/components/schemas/AppointmentSlots"
         typeAppointment:
           type: string
           enum: ["consulta", "cirugia", "control", "tratamiento"]
-          description: "Tipo de cita médica"
           example: "consulta"
         room:
           type: string
-          description: "Número de consultorio o sala"
-          example: "5"
+          description: "Consultorio"
+          example: "Consultorio 1"
         doctorID:
           type: string
-          description: "ID del doctor asignado (referencia a colección doctors)"
           example: "676491db50d8d925d49439cc"
         patientID:
           type: string
-          description: "ID del paciente (referencia a colección patients)"
           example: "6797d8bda81e0d869ae05572"
         status:
           type: string
-          enum: ["Pending", "Confirmed", "NoShow", "Rescheduled", "Finalized", "Canceled"]
-          description: "Estado actual de la cita"
-          example: "Pending"
+          description: "Un turno nuevo solo puede ser pending o confirmed; los demás estados se alcanzan con check-in, call, finalize y status"
+          enum: ["pending", "confirmed"]
+          example: "pending"
         observations:
           type: string
           maxLength: 500
-          description: "Observaciones adicionales sobre la cita"
           example: "Paciente debe traer exámenes previos"
 
     AppointmentUpdate:
       type: object
       description: >
         Campos editables del turno. Los demás campos del body se ignoran: el estado se cambia con
-        check-in, call, finalize y status, y el odontograma con /odontogram.
+        check-in, call, finalize y status, la duración la fija el sistema y el odontograma se edita con /odontogram.
       required:
         - date
         - slots
@@ -603,10 +818,9 @@ components:
         date:
           type: string
           format: date
+          example: "2026-11-02"
         slots:
-          type: array
-          items:
-            type: integer
+          $ref: "#/components/schemas/AppointmentSlots"
         typeAppointment:
           type: string
           enum: ["consulta", "cirugia", "control", "tratamiento"]
@@ -620,72 +834,160 @@ components:
           type: string
           maxLength: 500
 
-    AppointmentResponse:
+    AppointmentShortResponse:
       type: object
+      description: "Turno con los datos de contacto del doctor y del paciente (listados y cambios de estado)"
       properties:
         id:
           type: string
-          description: "ID único de la cita"
-          example: "67a1b2c3d4e5f6g7h8i9j0k1"
         date:
           type: string
           format: date
-          description: "Fecha de la cita"
-          example: "2025-10-15"
+          example: "2026-11-02"
         slots:
-          type: array
-          items:
-            type: integer
-          description: "Slots numéricos asignados"
-          example: [4, 5]
+          $ref: "#/components/schemas/AppointmentSlots"
+        duration:
+          type: integer
+          description: "Duración de cada slot en minutos, fijada al reservar"
+          example: 30
         slotsText:
-          type: array
-          items:
-            type: string
-          description: "Horarios en formato legible (generados automáticamente)"
-          example: ["11:00 - 12:00"]
+          type: string
+          description: "Horario del turno"
+          example: "14:00 - 15:00"
         typeAppointment:
           type: string
           enum: ["consulta", "cirugia", "control", "tratamiento"]
-          example: "consulta"
         room:
           type: string
-          example: "5"
         doctorID:
           type: object
-          description: "Información completa del doctor (populada)"
           properties:
-            _id:
-              type: string
-            name:
-              type: string
-            lastName:
-              type: string
-            email:
-              type: string
-            professionalLicense:
-              type: string
+            id: { type: string }
+            name: { type: string }
+            lastName: { type: string }
+            email: { type: string }
+            dni: { type: string }
+            phone: { type: string }
+            frequency: { type: integer }
         patientID:
           type: object
-          description: "Información completa del paciente (populada)"
           properties:
-            _id:
-              type: string
-            name:
-              type: string
-            lastName:
-              type: string
-            DNI:
-              type: string
-            email:
-              type: string
+            id: { type: string }
+            name: { type: string }
+            lastName: { type: string }
+            email: { type: string }
+            dni: { type: string }
+            phone: { type: string }
         status:
+          $ref: "#/components/schemas/AppointmentStatus"
+
+    AppointmentResponse:
+      type: object
+      description: "Turno completo, con el doctor y el paciente populados (sin el odontograma)"
+      properties:
+        id:
           type: string
-          enum: ["Pending", "Confirmed", "NoShow", "Rescheduled", "Finalized", "Canceled"]
-          example: "Pending"
+        date:
+          type: string
+          format: date
+          example: "2026-11-02"
+        slots:
+          $ref: "#/components/schemas/AppointmentSlots"
+        duration:
+          type: integer
+          description: "Duración de cada slot en minutos, fijada al reservar"
+          example: 30
+        slotsText:
+          type: string
+          description: "Horario del turno"
+          example: "14:00 - 15:00"
+        typeAppointment:
+          type: string
+          enum: ["consulta", "cirugia", "control", "tratamiento"]
+        room:
+          type: string
+        doctorID:
+          type: object
+          description: "Documento del doctor"
+        patientID:
+          type: object
+          description: "Documento del paciente"
+        status:
+          $ref: "#/components/schemas/AppointmentStatus"
         observations:
           type: string
-          example: "Paciente debe traer exámenes previos"
+        created:
+          type: string
+          format: date-time
+        lastChange:
+          type: string
+          format: date-time
+
+    AppointmentPage:
+      type: object
+      description: "Página de turnos (mongoose-paginate-v2)"
+      properties:
+        docs:
+          type: array
+          items:
+            $ref: "#/components/schemas/AppointmentShortResponse"
+        totalDocs:
+          type: integer
+        limit:
+          type: integer
+        page:
+          type: integer
+        totalPages:
+          type: integer
+        hasNextPage:
+          type: boolean
+        hasPrevPage:
+          type: boolean
+
+    Availability:
+      type: object
+      properties:
+        doctorID:
+          type: string
+          example: "676491db50d8d925d49439cc"
+        frequency:
+          type: integer
+          description: "Frecuencia actual del doctor en minutos"
+          example: 30
+        from:
+          type: string
+          format: date
+          example: "2026-11-01"
+        to:
+          type: string
+          format: date
+          example: "2026-11-30"
+        days:
+          type: array
+          description: "Un elemento por cada día del rango, en orden"
+          items:
+            type: object
+            properties:
+              date:
+                type: string
+                format: date
+              status:
+                type: string
+                description: "closed: el doctor no atiende ese día o está inactivo. full: sin slots libres. available: con slots libres"
+                enum: ["closed", "full", "available"]
+              total:
+                type: integer
+                description: "Slots del horario del doctor ese día"
+              occupied:
+                type: integer
+                description: "Slots que se superponen con algún turno activo"
+              free:
+                type: integer
+                description: "Slots libres"
+          example:
+            - { date: "2026-11-01", status: "closed", total: 0, occupied: 0, free: 0 }
+            - { date: "2026-11-02", status: "available", total: 18, occupied: 5, free: 13 }
+            - { date: "2026-11-03", status: "full", total: 18, occupied: 18, free: 0 }
 
   securitySchemes:
     cookieAuth:

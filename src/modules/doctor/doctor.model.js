@@ -94,17 +94,26 @@ const doctorSchema = new mongoose.Schema({
                     }
                 },
     },
+    // true = activo, false = inactivo (no recibe turnos). Por defecto activo, para que la respuesta siempre traiga el estado
     status: {
-        type: String,
-        enum: ['active', 'inactive']
+        type: Boolean,
+        default: true
+    },
+    // Soft delete: true = activo, false = dado de baja. La ficha no se borra para no romper sus turnos
+    active: {
+        type: Boolean,
+        default: true
     },
     color: {
         type: String,
         default: "#8f897fff"
     },
+    // Duración de cada slot en minutos. Mismo rango que doctor.validation.js: con 0 no se podrían armar los slots del día
     frequency: {
         type: Number,
-        default: 30
+        default: 30,
+        min: 5,
+        max: 240
     },
 },{ timestamps: { createdAt: 'created', updatedAt: 'lastChange' }});
 mongoose.plugin(mongoosePaginate)

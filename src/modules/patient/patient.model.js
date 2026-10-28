@@ -104,6 +104,11 @@ const patientsSchema = new mongoose.Schema({
         enum: ["active", "inactive", "blocked"],
         default: "active"
     },
+    // Soft delete: true = activo, false = dado de baja. El paciente no se borra para no romper sus turnos
+    active: {
+        type: Boolean,
+        default: true
+    },
     idDoctor: {
             type: String,
             required: true

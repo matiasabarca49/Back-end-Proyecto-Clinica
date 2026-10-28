@@ -1,5 +1,7 @@
-import { dateNotHours } from "../../utils/dates.helper.js";
-import { slotsToHours, slotsToRanges } from "../../utils/slots.helper.js";
+import { slotsToRange } from "./appointment.helpers.js";
+
+// Los slots se guardan ordenados: las reglas de reserva y el orden de los listados lo suponen
+const sortSlots = (slots) => [...slots].sort((a, b) => a - b);
 
 /**
  * Clase que formatea la información de una cita médica.
@@ -9,6 +11,7 @@ export class AppointmentDTO{
     constructor(appointment){
         this.date = appointment.date;
         this.slots = appointment.slots;
+        this.duration = appointment.duration;
         this.typeAppointment = appointment.typeAppointment;
         this.room = appointment.room;
         this.doctorID = appointment.doctorID;
@@ -28,7 +31,8 @@ export class AppointmentDTO{
             id: appointment._id,
             date: appointment.date,
             slots: appointment.slots,
-            slotsText: slotsToRanges(appointment.slots, appointment.doctorID.frequency),
+            duration: appointment.duration,
+            slotsText: slotsToRange(appointment.slots, appointment.duration),
             typeAppointment: appointment.typeAppointment,
             room: appointment.room,
             doctorID: appointment.doctorID,
@@ -45,7 +49,8 @@ export class AppointmentDTO{
             id: appointment._id,
             date: appointment.date,
             slots: appointment.slots,
-            slotsText: slotsToRanges(appointment.slots, appointment.doctorID.frequency),
+            duration: appointment.duration,
+            slotsText: slotsToRange(appointment.slots, appointment.duration),
             typeAppointment: appointment.typeAppointment,
             room: appointment.room,
             doctorID: { id: appointment.doctorID.id, name: appointment.doctorID.name, lastName: appointment.doctorID.lastName, email: appointment.doctorID.email,dni: appointment.doctorID.dni, phone: appointment.doctorID.phone, frequency: appointment.doctorID.frequency},
@@ -59,7 +64,7 @@ export class AppointmentDTO{
     static toUpdate(appointment) {
         const updatedAppointment = {};
         if (appointment.date) updatedAppointment.date = appointment.date;
-        if (appointment.slots) updatedAppointment.slots = appointment.slots;
+        if (appointment.slots) updatedAppointment.slots = sortSlots(appointment.slots);
         if (appointment.typeAppointment) updatedAppointment.typeAppointment = appointment.typeAppointment;
         if (appointment.doctorID) updatedAppointment.doctorID = appointment.doctorID;
         if (appointment.patientID) updatedAppointment.patientID = appointment.patientID;
@@ -73,7 +78,7 @@ export class AppointmentDTO{
 export class CreateAppointmentDTO{
     constructor(appointment){
         this.date = appointment.date;
-        this.slots = appointment.slots || [];
+        this.slots = sortSlots(appointment.slots || []);
         this.typeAppointment = this.normalizeType(appointment.typeAppointment);
         this.room = appointment.room;
         this.doctorID = appointment.doctorID;

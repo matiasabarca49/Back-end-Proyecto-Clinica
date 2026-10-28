@@ -12,9 +12,9 @@ El proyecto cuenta con tres configuraciones de Docker:
 docker/
 ├── Dockerfile.dev
 ├── Dockerfile.prod
-├── docker-compose.dev.yml
-├── docker-compose.prod.yml
-├── docker-compose.services.yml
+├── docker-compose.dev.yaml
+├── docker-compose.prod.yaml
+├── docker-compose.services.yaml
 ├── .env.development
 └── .env.production
 ```
@@ -30,7 +30,7 @@ Ejemplo:
 ```env
 NODE_ENV=development
 ORIGIN_FRONTEND=<URL_FRONTEND>
-DATABASE_URL=mongodb://<localhost o mongo_clinica>:27017/clinica_odontologica
+DATABASE_URL=mongodb://<localhost o mongo_clinica>:27017/clinica_odontologica?replicaSet=rs0
 SECRET_SESSIONS=your_secret_sessions_key
 PORT=8080
 PORT_REDIS=6379
@@ -57,6 +57,17 @@ redis_clinica:6379
 ```
 
 No se utiliza `localhost` para comunicación entre contenedores.
+
+## MongoDB como replica set
+
+La API usa transacciones (por ejemplo, al crear un usuario doctor o al finalizar un turno), y MongoDB solo las admite en un replica set. Los tres compose lo levantan así:
+
+- **Services y Desarrollo:** replica set de un nodo (`rs0`). El `healthcheck` del contenedor de Mongo lo inicia la primera vez; un volumen con datos de un Mongo standalone se conserva.
+- **Producción:** replica set de tres nodos, iniciado por el servicio `mongo_setup`. Las APIs arrancan cuando termina. Si falla en el primer despliegue (por ejemplo, un nodo no respondió), las APIs no arrancan: relanzarlo con `docker compose -f docker-compose.prod.yaml up -d mongo_setup` y luego levantar el resto.
+
+Con Mongo standalone, las operaciones con transacción responden 500.
+
+**No reutilizar el volumen de Mongo entre Services y Desarrollo:** cada uno anuncia el nodo con un nombre distinto (`localhost` y `mongo_clinica`), y ese nombre queda guardado en el volumen. Por eso usan volúmenes distintos (`mongo_data` y `mongo_clinica_data`).
 
 ---
 
@@ -91,12 +102,18 @@ API Node Local
 ``` 
 **Nota**: En este caso la url de de mongo, redis y pdf-service pueden seguir apuntando al localhost. Asegure de configurar correctamente en el archivo de variables de entorno.
 
+El miembro del replica set se anuncia como `localhost:27017`, así que la API debe correr en el host:
+
+```
+DATABASE_URL=mongodb://localhost:27017/clinica_odontologica?replicaSet=rs0
+```
+
 Para levantar únicamente servicios mediante Docker Compose:
 
 Desde la raíz del proyecto ejecutar:
 
 ```bash
-docker compose -f docker/docker-compose.services.yml up -d
+docker compose -f docker/docker-compose.services.yaml up -d
 ```
 
 ## Opcion Desarrollo
@@ -130,10 +147,16 @@ docker/.env.development
 
 ```
 ...
-DATABASE_URL=mongodb://mongo_clinica:27017/clinica_odontologica
+DATABASE_URL=mongodb://mongo_clinica:27017/clinica_odontologica?replicaSet=rs0
 HOST_REDIS=redis_clinica
 PDF_SERVICE_URL=http://pdf-service:8000 
 ...
+```
+
+El miembro del replica set se anuncia como `mongo_clinica:27017`, un nombre que solo existe dentro de la red de Docker. Para conectarse desde el host (por ejemplo con Compass) usar `directConnection=true`:
+
+```
+mongodb://localhost:27017/clinica_odontologica?directConnection=true
 ```
 
 ### Levantar el entorno
@@ -141,7 +164,7 @@ PDF_SERVICE_URL=http://pdf-service:8000
 Desde la raíz del proyecto ejecutar:
 
 ```bash
-docker compose -f docker/docker-compose.dev.yml up --build
+docker compose -f docker/docker-compose.dev.yaml up --build
 ```
 
 La primera vez se utiliza `--build` para crear la imagen.
@@ -149,7 +172,7 @@ La primera vez se utiliza `--build` para crear la imagen.
 En ejecuciones posteriores:
 
 ```bash
-docker compose -f docker/docker-compose.dev.yml up
+docker compose -f docker/docker-compose.dev.yaml up
 ```
 
 ---
@@ -369,19 +392,19 @@ DATABASE_URL=mongodb://mongo_primary:27017,mongo_secondary_1:27017,mongo_seconda
 Desde la carpeta `docker` ejecutar:
 
 ```bash
-docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yaml up -d --build
 ```
 
 Para detener el entorno:
 
 ```bash
-docker compose -f docker-compose.prod.yml down
+docker compose -f docker-compose.prod.yaml down
 ```
 
 Para reconstruir únicamente las instancias de la API:
 
 ```bash
-docker compose -f docker-compose.prod.yml up -d --build app_node_1 app_node_2
+docker compose -f docker-compose.prod.yaml up -d --build app_node_1 app_node_2
 ```
 
 # Comandos útiles

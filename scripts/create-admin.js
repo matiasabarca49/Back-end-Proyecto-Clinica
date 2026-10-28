@@ -4,7 +4,7 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 
 // Importar el servicio
-import UsersService from '../src/modules/user/user.service.js';
+import { UsersService } from '../src/modules/user/index.js';
 const usersService = new UsersService()
 
 dotenv.config({

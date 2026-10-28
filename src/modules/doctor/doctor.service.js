@@ -7,7 +7,8 @@ import MongoRepository from "../../core/repositories/implementations/mongo.repos
 //DTO
 import { DoctorDTO, DoctorScheduleResponseDTO } from "./doctor.dto.js";
 
-import { NotFoundError, ValidationError } from "../../core/exceptions/index.js";
+import { ForbiddenError, NotFoundError, ValidationError } from "../../core/exceptions/index.js";
+import { searchRegex } from "../../shared/utils/regex.helper.js";
 
 export default class DoctorsService extends BaseService{
     constructor() {
@@ -16,25 +17,35 @@ export default class DoctorsService extends BaseService{
     }
 
     async findAll(){
-        const doctors = await super.findAll()
+        const doctors = await super.findAll({ active: true })
         return this.toManyDTO(doctors)
     }
 
-    async findById(id){
-        const doctor = await super.findById(id)
+    /**
+     * @param {String} id ID del doctor
+     * @param {Object} [user] Usuario autenticado (req.user): un doctor solo puede pedir su propia ficha.
+     *                        Sin user (llamadas internas de otras features) no se restringe.
+     */
+    async findById(id, user){
+        // Antes de consultar: un doctor no debe poder distinguir ids existentes (404) de ajenos (403)
+        if (user?.rol === "doctor" && String(id).toLowerCase() !== String(user.id)) {
+            throw new ForbiddenError("Un doctor solo puede ver su propia ficha")
+        }
+        const doctor = await super.findActiveById(id)
         if(!doctor) throw new NotFoundError("Doctor", id)
         return this.toDTO(doctor)
     }
 
+    // Incluye a los dados de baja: la usa el filtro por nombre del listado de turnos, para que su historial se siga encontrando
     async searchPaginate(query){
-        const searchRegex = new RegExp(query, 'i')
+        const regex = searchRegex(query)
         const resultPaginate = await this.repository.findPaginate({
             $or:[
-                {name: searchRegex},
-                {name_search: searchRegex},
-                {lastName: searchRegex},
-                {dni: searchRegex},
-                {professionalLicense: searchRegex}
+                {name: regex},
+                {name_search: regex},
+                {lastName: regex},
+                {dni: regex},
+                {professionalLicense: regex}
             ]
         })
         resultPaginate.docs = this.toManyDTO(resultPaginate.docs)
@@ -45,7 +56,7 @@ export default class DoctorsService extends BaseService{
         //Default query: {}
         let filter = {};
         if(search){
-            const regex = new RegExp(search, "i");
+            const regex = searchRegex(search);
             filter = {
                 $or: [
                     { name: regex },
@@ -55,7 +66,8 @@ export default class DoctorsService extends BaseService{
                 ]
             };
         }
-        
+        filter.active = true;
+
         //Default sort: fecha de creación descendente
         const defaultSort = sort ? {lastName: parseInt(sort)} : {lastName: -1}
         const resultPaginate = await this.repository.findPaginate(filter, limit, page, defaultSort)
@@ -63,34 +75,38 @@ export default class DoctorsService extends BaseService{
         return resultPaginate
     }
 
-    async getSchedules(){
-        const doctors = await super.findAll()
+    /**
+     * @param {Object} [user] Usuario autenticado (req.user): un doctor solo recibe su propio horario.
+     *                        Sin user (llamadas internas de otras features) no se restringe.
+     */
+    async getSchedules(user){
+        // El _id de la ficha del doctor es el mismo que el de su usuario
+        const filters = user?.rol === "doctor" ? { _id: user.id, active: true } : { active: true }
+        const doctors = await super.findAll(filters)
         return this.toManyScheduleDTO(doctors)
-
     }
 
-    async create(newDoctor) {
+    async create(newDoctor, options = {}) {
         const newDoctorFormated = new DoctorDTO(newDoctor);
-        const doctorAdded = await super.create(newDoctorFormated);
-
-        if (!doctorAdded) {
-            throw new Error("Error al crear el doctor");
-        }
-
-        return doctorAdded
+        // options: dentro de una transacción trae la session de quien la abrió
+        return await super.create(newDoctorFormated, options);
     }
 
-    async delete(doctorID) {
-        const deletedDoctor = await super.delete(doctorID);
+    async delete(doctorID, options = {}) {
+        // options: dentro de una transacción trae la session de quien la abrió
+        // Soft delete: la ficha queda con active en false para no romper sus turnos
+        const deletedDoctor = await super.deactivate(doctorID, options);
         if (!deletedDoctor) {
             throw new NotFoundError("Doctor", doctorID);
         }
         return this.toDTO(deletedDoctor);
     }
 
-    async update(doctorID, toUpdate) {
+    async update(doctorID, toUpdate, options = {}) {
         toUpdate.lastChange = new Date();
-        const dcotorUpdated = await super.update(doctorID, toUpdate);
+        // options: dentro de una transacción trae la session de quien la abrió
+        // Una ficha dada de baja no se edita: da 404
+        const dcotorUpdated = await this.repository.updateByFilter({ _id: doctorID, active: true }, toUpdate, options);
         if (!dcotorUpdated) {
             throw new NotFoundError("Doctor", doctorID);
         }

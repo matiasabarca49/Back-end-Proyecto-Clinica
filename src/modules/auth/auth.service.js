@@ -1,6 +1,7 @@
-import {AppError, InvalidCredentialsError, NotFoundError, ValidationError} from "../../core/exceptions/index.js";
+import {AppError, ForbiddenError, InvalidCredentialsError, NotFoundError, ValidationError} from "../../core/exceptions/index.js";
 import { generateTokens } from "../../core/services/jwt.service.js";
 import { User } from "../user/user.model.js";
+import { UserDTO } from "../user/index.js";
 import MongoRepository from "../../core/repositories/implementations/mongo.repository.js";
 import RedisRepository from "../../core/repositories/implementations/redis.repository.js";
 import { send2FACode, sendLoginSuccessNotification } from "../../utils/email.helpers.js";
@@ -25,6 +26,9 @@ class AuthService extends BaseService {
         const isPasswordValid = isValidPassword(user.password, credentials.password);
         
         if (!isPasswordValid) throw new InvalidCredentialsError('credenciales incorrectas');
+
+        // Después de la contraseña: a quien no la conoce no se le revela que la cuenta fue dada de baja
+        if (!user.active) throw new ForbiddenError('El usuario fue dado de baja');
 
         //Obtenemos los tokens. accessToken y refreshToken
         const tokens = generateTokens(user);
@@ -51,6 +55,9 @@ class AuthService extends BaseService {
     async login2factor(email) {
         const user = await this.repository.findByFilter({ email: email });
         if (!user) throw new InvalidCredentialsError('credenciales incorrectas');
+
+        // Antes de generar y enviar el código
+        if (!user.active) throw new ForbiddenError('El usuario fue dado de baja');
 
         //
         /* const isPasswordValid = isValidPassword(user.password, credentials.password);
@@ -103,6 +110,8 @@ class AuthService extends BaseService {
         //Buscar usuario
         const user = await super.findById(userId);;
         if (!user) throw new NotFoundError("Usuario", userId);
+        // Lo pueden haber dado de baja después de pedir el código
+        if (!user.active) throw new ForbiddenError('El usuario fue dado de baja');
         
         // Generar token JWT
         const tokens = generateTokens(user);
@@ -136,6 +145,8 @@ class AuthService extends BaseService {
     }
 
     async loginGoogle(user) {
+        // user viene de findUserByEmail (passport), que incluye active: no hace falta otra consulta
+        if (!user.active) throw new ForbiddenError('El usuario fue dado de baja');
         //Formatear para cambiar el ID por _ID
    
         const tokens = generateTokens(user);
@@ -199,16 +210,18 @@ class AuthService extends BaseService {
         //Creamos hash de la contraseña
         const hashPassword = createhash(newPassword)
         arrayPassword.push(hashPassword)
-        //Actualizamos los atributos de contraseñas
-        user.passwordHistory = arrayPassword
-        user.mustChangePassword = false;
-        user.passwordChangedAt = new Date();
-        //Aplicamos la contraseña nueva
-        user.password = hashPassword
 
-        const userUpdated = await super.update(userSession.id, user)
+        // Solo los campos de la contraseña: el update valida lo que se envía, no el usuario completo
+        const userUpdated = await super.update(userSession.id, {
+            password: hashPassword,
+            passwordHistory: arrayPassword,
+            mustChangePassword: false,
+            passwordChangedAt: new Date()
+        })
+        if (!userUpdated) throw new NotFoundError("Usuario", userSession.id);
 
-        return userUpdated
+        // DTO de respuesta: no exponer el hash de la contraseña ni el historial
+        return UserDTO.toResponse(userUpdated)
     }
 
     async refreshSession(userId, refreshToken) {
@@ -216,6 +229,8 @@ class AuthService extends BaseService {
         const user = await super.findById(userId);
 
         if (!user) throw new NotFoundError("Usuario", userId);
+        // Antes de tocar los tokens: un dado de baja no renueva la sesión
+        if (!user.active) throw new ForbiddenError('El usuario fue dado de baja');
 
         //Eliminar la token de refresco anterior en Redis
         const isDeleted = await this.sessionRepository.deleteRefreshToken(refreshToken);

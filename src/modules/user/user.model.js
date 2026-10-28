@@ -30,6 +30,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: ["active", "inactive", "blocked", "suspended", "disabled"],
     },
+    // Soft delete: true = activo, false = dado de baja. El usuario no se borra para no romper sus referencias
+    active: {
+      type: Boolean,
+      default: true,
+    },
     //Actividad
     lastLogintAt: {
       type: Date,

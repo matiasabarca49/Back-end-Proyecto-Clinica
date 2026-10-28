@@ -4,10 +4,23 @@ services:
     image: mongo:7
     container_name: clinic-mongodb
     restart: unless-stopped
+    # Replica set de un nodo: habilita transacciones.
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
     ports:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+    # Inicia el replica set la primera vez y queda healthy cuando hay un primario que acepta escrituras.
+    # El miembro se anuncia como localhost:27017 porque la API corre en el host.
+    healthcheck:
+      test: >
+        mongosh --quiet --eval "try { rs.status() }
+        catch (e) { rs.initiate({ _id: 'rs0', members: [{ _id: 0, host: 'localhost:27017' }] }) }
+        quit(db.hello().isWritablePrimary ? 0 : 1)"
+      interval: 5s
+      timeout: 10s
+      retries: 10
+      start_period: 10s
 
   redis:
     image: redis:7-alpine

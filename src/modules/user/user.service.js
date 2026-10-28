@@ -1,18 +1,25 @@
 //DTO
 import { UserDTO } from "./user.dto.js";
-import { DoctorDTO } from "../doctor/doctor.dto.js";
+import { DoctorsService } from "../doctor/index.js";
+import { AppointmentsService } from "../appointment/index.js";
 //Model
 import { User } from "./user.model.js";
 //Utils
 import { createhash, normalizeText } from "../../utils/utils.js";
 //Service
 import BaseService from "../../core/services/base.service.js";
-import DoctorService from "../doctor/doctor.service.js";
 //Repository
 import MongoRepository from "../../core/repositories/implementations/mongo.repository.js";
-import { NotFoundError, ValidationError } from "../../core/exceptions/index.js";
-import logger from "../../core/logger/logger.js";
+import { ConflictError, NotFoundError, ValidationError } from "../../core/exceptions/index.js";
+import { searchRegex } from "../../shared/utils/regex.helper.js";
 import { getRequestId } from "../../core/request-context/requestContext.js";
+import { withTransaction } from "../../config/mongoDB.config.js";
+import RedisRepository from "../../core/repositories/implementations/redis.repository.js";
+
+const sessionRepository = new RedisRepository();
+
+// Campos que se sincronizan con la ficha del doctor al editar un usuario doctor
+const DOCTOR_FIELDS = ["name", "lastName", "email", "dni", "phone", "professionalLicense", "schedules", "color", "frequency"];
 
 class UsersService extends BaseService{
 
@@ -26,7 +33,7 @@ class UsersService extends BaseService{
      * @returns {Promise<Array>} Array de usuarios formateados como DTO
      */
     async findAll(){
-        const users = await super.findAll()
+        const users = await super.findAll({ active: true })
         return this.toManyDTO(users)
     }
 
@@ -46,8 +53,8 @@ class UsersService extends BaseService{
      * @returns {Promise<Array>} Array de usuarios formateados como DTO
      */
     async searchUsers({ status, rol}){
-        const filter = {};
-        
+        const filter = { active: true };
+
         if (status) filter.status = status;
         if (rol) filter.rol = rol;
         
@@ -62,7 +69,7 @@ class UsersService extends BaseService{
      * @returns {Promise<Object>} Usuario formateado como DTO
      */
     async findById(id){
-        const user = await super.findById(id)
+        const user = await super.findActiveById(id)
         if(!user) throw new NotFoundError("User", id);
         return this.toDTO(user)
     }
@@ -80,19 +87,19 @@ class UsersService extends BaseService{
         //Default query: {}
         let filter = {};
         if(search){
-            const regex = new RegExp(search, "i");
+            const regex = searchRegex(search);
             filter = {
                 $or: [
                     { name: regex },
                     { lastName: regex },
-                    { email: regex },
-                    { DNI: regex }
+                    { email: regex }
                 ]
             };
         }
         if(rol){
             filter.rol = rol;
         }
+        filter.active = true;
 
         //Default sort: fecha de creación descendente
         const defaultSort = sort ? {lastName: parseInt(sort)} : {lastName: -1}
@@ -104,8 +111,7 @@ class UsersService extends BaseService{
     /**
      * Crea un usuario y opcionalmente su registro en la colección Doctor
      * @param {Object} newUser - Datos del nuevo usuario
-     * @param {Object} userSession - Usuario autenticado (req.user)
-     * @returns {Promise<Object>} { status, dt?, error? }
+     * @returns {Promise<Object>} Usuario creado
      */
     async create(newUser) {
     
@@ -134,31 +140,21 @@ class UsersService extends BaseService{
         //DTO de dominio
         const userFormated = new UserDTO(newUser);
 
-        const userAdded = await super.create(userFormated);
-
-        //retornar si no es doctor
+        // Sin ficha de doctor es un solo documento: la escritura ya es atómica
         if (!isDoctor) {
+            const userAdded = await super.create(userFormated);
             return this.toDTO(userAdded);
         }
 
-        // Crear registro Doctor
-        const newDoctor = {
-            ...newUser,
-            id: userAdded._id,
-            status: "active"
-        };
+        const doctorService = new DoctorsService();
 
-        const formattedDoctor = new DoctorDTO(newDoctor);
-
-        const doctorService = new DoctorService();
-
-        const doctorAdded = await doctorService.create(formattedDoctor);
-
-        if (!doctorAdded) {
-            await super.delete(userAdded._id);
-
-            throw new Error("Error al crear el Doctor");
-        }
+        // Usuario y ficha se guardan juntos: si la ficha falla (ej: dni o matrícula repetidos), tampoco queda el usuario
+        const userAdded = await withTransaction(async (session) => {
+            const user = await super.create(userFormated, { session });
+            // El status del doctor es booleano (activo), distinto del status del usuario
+            await doctorService.create({ ...newUser, id: user._id, status: true }, { session });
+            return user;
+        });
 
         return this.toDTO(userAdded);
     }
@@ -167,17 +163,18 @@ class UsersService extends BaseService{
      * Actualiza un usuario y sincroniza con la colección Doctor si corresponde
      * @param {String} userID - ID del usuario
      * @param {Object} toUpdate - Datos a actualizar
-     * @returns {Promise<Object>} Usuario actualizado o false
+     * @returns {Promise<Object>} Usuario actualizado
      */
     async update(userID, toUpdate) {
         
-        //Obtener usuario actual
-        const prevUser = await super.findById(userID);
+        //Obtener usuario actual. Uno dado de baja no se edita: da 404
+        const prevUser = await super.findActiveById(userID);
         if (!prevUser) throw new NotFoundError("User", userID);
 
         //Determinar roles
-        const newRol = toUpdate.rol ? normalizeText(toUpdate.rol) : prevUser.rol;
         const prevRol = prevUser.rol ? normalizeText(prevUser.rol) : "";
+        // Si no viene rol, se compara con el actual ya normalizado
+        const newRol = toUpdate.rol ? normalizeText(toUpdate.rol) : prevRol;
         const isDoctor = prevUser.rol === "doctor" ;
 
         // No permitir cambio de rol
@@ -185,63 +182,67 @@ class UsersService extends BaseService{
             throw new ValidationError("No se permite cambiar el rol del usuario");
         }
 
-        //Actualizar usuario principal
-        const updatedUser = await super.update(
-            userID,
-            toUpdate
-        );
+        // El rol solo se usa para la validación anterior: no se guarda
+        const { rol, ...userFields } = toUpdate;
 
-        if (!updatedUser) throw new Error("Error al actualizar el usuario");
-
-        // Si no es Doctor, retornar usuario actualizado
-        if(!isDoctor) return updatedUser;
-
-        //Validar datos de Doctor si corresponde
-        const isDoctorDataValid = this._validateDoctorData(toUpdate);
-
-        if (!isDoctorDataValid) {
-            throw new ValidationError("Faltan campos de Doctor");
+        // Si no es Doctor, solo se actualiza el usuario
+        // active en el filtro de las escrituras: si se dio de baja después de leerlo, no se escribe
+        if(!isDoctor) {
+            const updatedUser = await this.repository.updateByFilter({ _id: userID, active: true }, userFields);
+            if (!updatedUser) throw new NotFoundError("User", userID);
+            return this.toDTO(updatedUser);
         }
 
-        let updatedFields = {};
-        if(toUpdate.name) updatedFields.name = toUpdate.name;
-        if(toUpdate.lastName) updatedFields.lastName = toUpdate.lastName;
-        if(toUpdate.email) updatedFields.email = toUpdate.email;
-        if(toUpdate.dni) updatedFields.dni = toUpdate.dni;
-        if(toUpdate.phone) updatedFields.phone = toUpdate.phone;
-        if(toUpdate.professionalLicense) updatedFields.professionalLicense = toUpdate.professionalLicense;
-        if(toUpdate.color) updatedFields.color = toUpdate.color;
-        if(toUpdate.schedules) updatedFields.schedules = toUpdate.schedules;
-        if(toUpdate.frequency) updatedFields.frequency = toUpdate.frequency;
-        const updatedDoctor = new DoctorDTO(updatedFields);
-        const doctorService = new DoctorService();
-        await doctorService.update(userID, updatedDoctor);
+        // Doctor: la actualización es parcial, solo se envían los campos que vinieron
+        const doctorFields = Object.fromEntries(
+            DOCTOR_FIELDS
+                .filter(field => toUpdate[field] !== undefined)
+                .map(field => [field, toUpdate[field]])
+        );
 
-        return updatedUser;
+        const doctorService = new DoctorsService();
+
+        // Ficha y cuenta se actualizan juntas: si una falla (ej: dni, matrícula o email repetidos), no se guarda ninguna
+        const updatedUser = await withTransaction(async (session) => {
+            await doctorService.update(userID, doctorFields, { session });
+            const user = await this.repository.updateByFilter({ _id: userID, active: true }, userFields, { session });
+            if (!user) throw new NotFoundError("User", userID);
+            return user;
+        });
+
+        return this.toDTO(updatedUser);
     }
 
     /**
-     * Elimina un usuario y su registro en Doctor (si corresponde)
-     * 
+     * Da de baja un usuario y su registro en Doctor (si corresponde) y cierra su sesión.
+     * No se borran: quedan con active en false
+     *
      * @param {String} userID - ID del usuario
-     * @returns {Promise<Object | false>} Usuario eliminado formateado o false
+     * @returns {Promise<Object>} Usuario dado de baja
      */
     async delete(userID) {
-        //Obtener usuario antes de eliminarlo
-        const user = await super.findById(userID);
-        if (!user) throw new NotFoundError("User", userID);
+        // Usuario y ficha se dan de baja juntos: si falla la baja de la ficha, el usuario tampoco se da de baja
+        const deletedUser = await withTransaction(async (session) => {
+            // La baja devuelve el usuario: con su rol se sabe si tiene ficha, sin leerlo antes
+            const user = await super.deactivate(userID, { session });
+            if (!user) throw new NotFoundError("User", userID);
 
-        //Si es Doctor, eliminar de la colección Doctor
-        const isDoctor = String(user.rol || "").toLowerCase() === "doctor";
-        if (isDoctor) {
-            const doctorService = new DoctorService();
-            await doctorService.delete(userID)
-        }
+            if (user.rol === "doctor") {
+                // Con turnos abiertos no se da de baja: se lanza el error y la transacción revierte la baja del usuario
+                const appointmentsService = new AppointmentsService();
+                if (await appointmentsService.hasOpenAppointments({ doctorID: userID }, { session })) {
+                    throw new ConflictError("El profesional tiene turnos sin cerrar. Cancele, reasigne o marque como ausente sus turnos antes de darlo de baja");
+                }
+                const doctorService = new DoctorsService();
+                await doctorService.delete(userID, { session });
+            }
+            return user;
+        });
 
-        //Eliminar usuario
-        await super.delete(userID);
+        // Después de guardar la baja: cierra la sesión en Redis, y su próxima request recibe 401
+        await sessionRepository.delete(userID);
 
-        return this.toDTO(user);
+        return this.toDTO(deletedUser);
     }
 
     // ==================== MÉTODOS PRIVADOS ====================

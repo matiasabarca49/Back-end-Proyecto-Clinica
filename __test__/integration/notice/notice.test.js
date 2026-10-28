@@ -1,6 +1,7 @@
 import request from 'supertest';
-import app from '../src/app.js';
-import { clearDB, createAdminSession, createAdminToken, createAdminUser } from './helpers.tests.js';
+import app from '../../../src/app.js';
+import { Notice } from '../../../src/modules/notice/notice.model.js';
+import { clearDB, createAdminSession, createAdminToken, createAdminUser } from '../../helpers.tests.js';
 
 let accessToken;
 
@@ -87,7 +88,7 @@ describe('API de Notices', () => {
                 .post('/api/notices')
                 .set('Cookie', `accessToken=${accessToken}`)
                 .send(noticeInvalido)
-                .expect(500);
+                .expect(400);
 
             expect(response.body.success).toBe(false);
         });
@@ -158,7 +159,7 @@ describe('API de Notices', () => {
     });
 
     describe('DELETE /api/notices/:id', () => {
-        it('debería eliminar un aviso', async () => {
+        it('da de baja el aviso sin borrarlo y deja de responder por id', async () => {
             const crearResponse = await request(app)
                 .post('/api/notices')
                 .set('Cookie', `accessToken=${accessToken}`)
@@ -171,7 +172,10 @@ describe('API de Notices', () => {
                 .set('Cookie', `accessToken=${accessToken}`)
                 .expect(200);
 
-            // Verificar que ya no existe
+            // Sigue en la base, pero inactivo
+            const notice = await Notice.findById(noticeId).lean();
+            expect(notice.active).toBe(false);
+
             await request(app)
                 .get(`/api/notices/${noticeId}`)
                 .set('Cookie', `accessToken=${accessToken}`)
